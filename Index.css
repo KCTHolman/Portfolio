@@ -21,8 +21,8 @@ padding:0;
 
 }
 .container1-empty-space{
-width:50%;
-height:100%;
+    width:50%;
+    height:100%;
 }
 
 .container-totaal{
@@ -31,24 +31,18 @@ height:100%;
     display:flex;
     flex-direction: column;
 }
-.container-menu{
-position: fixed;
-width: 40%;
-height: 100vh;
-}
+
 
 .container-intro{
     display:flex;
     flex-direction: row;
     width:100%;
     height:100vh;
-    ;
-    
 }
 
 .container-projecten{
     display:flex;
-    flex-direction: row;
+    flex-direction:row;
     width:100%;
     height:100vh;
 
@@ -70,40 +64,60 @@ height: 100vh;
 
 }
 
-.box1-menu1{
+/* ---------------MENU -------------- */
+.container-menu{
+    position: fixed;
+    width: 50%;
+    height: 100vh;
+    }
+.menu{
     background-color: rgba(0,0,0,0.7);
-    width: 30%;
+    width: 50%;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    align-items: center;
     font-size: 100px;
 }
 
-.menu1-boven{
+.menu-boven{
     width:100%;
-    height: 70vh;
+    height: 30vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    align-content: flex-end;
 }
-.menu1-boven-onderdeel{
+
+.menu-boven-inhoud{
+    width: 100%;
+    height:100px;
+    display: flex;
+    justify-content: end;
+    align-content: flex-end;
+    margin-left: 300px; /*NOG REPAREREN!!!!*/
+    margin-top: 5px; /*NOG REPAREREN!!!!*/
+}
+.hamburger{
     width: 70%;
     height: 60%;
 }
-
-.titel{
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    font-size: 16px;
-    color: rgb(196, 140, 21);
+.menu-boven-inhoud img{
+width:50px;
+height: 50px;
+}
+.menu-midden{ /*NETJES MAKEN */
+    width:100%;
+    height: 30vh;
+    display: flex;
+    flex-direction: column;
+    align-content: flex-end;
+    padding-left: 150px;
+    font-size:24px;
+    font-weight: 600;
+    color: white;
+    list-style: none;
+    margin-top:5px;
 }
 
-.inhoud-text{
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    font-size: 15px;
-    color: whitesmoke;
-}
 .menu1-onder{
     width:10%;
     height: 30vh;
@@ -117,13 +131,29 @@ height: 100vh;
     border: 1px solid white;
     list-style: none;
     border-radius: 50%;
-
-
 }
+
 .button-active{
     background-color: pink;
     
 }
+
+/* ----------------EINDE MENU  ---------------------------------- */
+.titel{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 16px;
+    color: rgb(196, 140, 21);
+}
+
+.inhoud-text{
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 15px;
+    color: whitesmoke;
+}
+
+
+
+
 
 
 .box2-inhoud{
