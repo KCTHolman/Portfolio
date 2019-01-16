@@ -8,29 +8,33 @@
     <title>Design Website</title>
     <link href="Index.css" rel="stylesheet" type="text/css">
     <link href="Secties/sectie1/Sectie1.css" rel="stylesheet" type="text/css">
-    <script src="Index.js" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css?family=Encode+Sans+Semi+Expanded|Gugi" rel="stylesheet">
+    <link href="../CV/CV.css" rel="stylesheet" type="text/css">
+    <link href="../../../../hackathon/vanDropbox/hackathon/mobi/css/contactpagina.css">
+
 
 </head>
 
 <body>
     <div class="container-menu">
-        <div class="menu">
-            <div class="menu-boven">
-                <div class="menu-boven-inhoud ">
-                    <img src="Images/hamburger-menu.png">
+        <div class="menu animatie">
+            <div class=" menu-above">
+                <div class="menu-bove-content-empty"></div>
+                <div class="menu-above-content ">
+                    <img id="hamburger" class="hamburger " src="Images/hamburger-menu.png">
                 </div>
             </div>
-            <div class="menu-midden">
-                    <lu>
-                        <li>HOME</li>
-                        <li>CV</li>
-                        <li>Projecten</li>
-                        <li>Contact</li>
-                    </lu>
-                </div>
+            <div class="animatie menu-middle">
+                <lu>
+                    <li class="home-button">HOME</li>
+                    <li class="CV-button">CV</li>
+                    <li class="Projecten-button">Projecten</li>
+                    <li class="Contact-button">Contact</li>
+                </lu>
+            </div>
         </div>
 
-        <div class="menu1-onder">
+        <div class="menu1-under">
             <ul>
                 <a href="#section1">
                     <li class="menu-item" id="bol1"></li>
@@ -47,11 +51,11 @@
             </ul>
         </div>
     </div>
-    <div class="box2-inhoud"></div>
+    <div class="box2-content"></div>
     <div class="box3-menu2">
-        <div class="menu2-boven"></div>
-        <div class="menu2-midden"></div>
-        <div class="menu2-onder"></div>
+        <div class="menu2-above"></div>
+        <div class="menu2-middle"></div>
+        <div class="menu2-under"></div>
     </div>
 
     </div>
@@ -68,13 +72,18 @@
                 <div class="middle">
                     <h2>Portfolio Koen Holman</h2>
 
-                    Sinds 8 januari ben ik begonnen bij Codegorilla.
-                    Hierin wordt ik opgeleid als junior developer. Op deze website vind je mijn CV en projecten waar ik
-                    momenteel mee bezig ben.
+                    <div class="text">Sinds 8 januari ben ik begonnen bij Codegorilla.
+                        Hierin wordt ik opgeleid als junior developer. Op deze website vind je mijn CV en projecten
+                        waar ik
+                        momenteel mee bezig ben.
 
-                    De projecten zullen zich voornamelijk foccussen op HTML, CSS, JavaScript en PHP
-
-                    <div class="right">right</div>
+                        De projecten zullen zich voornamelijk foccussen op HTML, CSS, JavaScript en PHP
+                    </div>
+                    <div class="images">
+                        <div class="intro-content1 debug"><img class="intro-content1" src="Images/website1.png"></div>
+                        <div class="intro-content2"></div>
+                        <div class="intro-content3"></div>
+                    </div>
                 </div>
 
             </div>
@@ -88,7 +97,7 @@
             </div>
             <div class="container">
                 <div class="left">
-                    left
+
                 </div>
                 <div class="middle">
                     <h2>Projecten</h2>
@@ -99,7 +108,7 @@
 
                     De projecten zullen zich voornamelijk foccussen op HTML, CSS, JavaScript en PHP
 
-                    <div class="right">right</div>
+                    <div class="right"></div>
                 </div>
 
             </div>
@@ -115,16 +124,23 @@
                 <div class="left">
                     left
                 </div>
-                <div class="middle">
-                    <h2>CV</h2>
+                <div class="middle debug">
+                    <div class="CV-inhoud">
+                        <div class="Opleiding">
+                            <h2>Opleidig</h2>
+                        </div>
+                        <div class="Ervaring ">
+                            <h2>Ervaring</h2>
+                        </div>
+                        <div class="Foto">
+                            <h2>foto</h2>
+                        </div>
+                        <div class="Overig ">
+                            <h2>overig</h2>
+                        </div>
+                    </div>
 
-                    Sinds 8 januari ben ik begonnen bij Codegorilla.
-                    Hierin wordt ik opgeleid als junior developer. Op deze website vind je mijn CV en projecten waar ik
-                    momenteel mee bezig ben.
 
-                    De projecten zullen zich voornamelijk foccussen op HTML, CSS, JavaScript en PHP
-
-                    <div class="right">right</div>
                 </div>
 
             </div>
@@ -139,18 +155,32 @@
             </div>
             <div class="container">
                 <div class="left">
-                    left
+
                 </div>
                 <div class="middle">
-                    <h2>Contact</h2>
+                    <div class="form">
+                        <h2>Contact us!</h2>
+                        <h4>Heeft u vragen, stel ze gerust. Wij horen graag van u.</h4>
 
-                    Sinds 8 januari ben ik begonnen bij Codegorilla.
-                    Hierin wordt ik opgeleid als junior developer. Op deze website vind je mijn CV en projecten waar ik
-                    momenteel mee bezig ben.
+                        <p class="invultag">Naam</p>
+                        <label for="name"></label>
+                        <input class="gegevens debug" type="text" name="fullname"> <br />
+                        <p class="invultag">E-mail</p>
+                        <label for="Email"></label>
+                        <input class="gegevens" type="text" name="email"> <br />
 
-                    De projecten zullen zich voornamelijk foccussen op HTML, CSS, JavaScript en PHP
+                        <label for=""></label>
 
-                    <div class="right">right</div>
+
+                        <p class="invultag">Opmerkingen</p>
+                        <label for="subject"></label>
+                        <textarea class="gegevens" name="subject" style="height:200px" style="width:200px"></textarea>
+                        <br />
+                        <button id="verzend">verzenden</button>
+                        </option>
+                    </div>
+
+                    <div class="right"></div>
                 </div>
 
             </div>
@@ -163,7 +193,8 @@
 
 
 
-
+    <script src="Index.js" type="text/javascript"></script>
+    <script src="animatie-menu.js" type="text/javascript"></script>
 </body>
 
 </html>

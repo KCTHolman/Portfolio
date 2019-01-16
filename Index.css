@@ -4,15 +4,25 @@
 html{
     scroll-behavior: smooth;
     /* overflow: hidden; */
+    font-family: 'Encode Sans Semi Expanded', sans-serif;
+    
 }
 
 body{
 margin: 0;
 padding:0;
-
     
 }
-
+h2{
+    font-family: 'Gugi', cursive;
+    font-size:25px;
+}
+li{
+    margin-right: 10px;
+}
+.text{
+    padding-left:25px;
+}
 .container1-total{
     width: 100%;
     height: 100%;
@@ -71,7 +81,7 @@ padding:0;
     height: 100vh;
     }
 .menu{
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0,0,0,0.6);
     width: 50%;
     height: 100vh;
     display: flex;
@@ -79,46 +89,107 @@ padding:0;
     font-size: 100px;
 }
 
-.menu-boven{
+.menu-above{
     width:100%;
-    height: 30vh;
+    height: 40vh;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-content: flex-end;
 }
 
-.menu-boven-inhoud{
+.menu-bove-content{
     width: 100%;
     height:100px;
     display: flex;
-    justify-content: end;
+    justify-content: space-around;
     align-content: flex-end;
-    margin-left: 300px; /*NOG REPAREREN!!!!*/
-    margin-top: 5px; /*NOG REPAREREN!!!!*/
+
+/*     margin-left: 300px;
+    margin-top: 5px; */
 }
+
+.menu-bove-content-empty{
+width:60%;
+height:100%;
+}
+
+.menu-above-content img{
+    width:50px;
+    height: 50px;
+}
+
 .hamburger{
     width: 70%;
     height: 60%;
 }
-.menu-boven-inhoud img{
-width:50px;
-height: 50px;
-}
-.menu-midden{ /*NETJES MAKEN */
+
+.menu-middle{ 
     width:100%;
     height: 30vh;
     display: flex;
     flex-direction: column;
     align-content: flex-end;
-    padding-left: 150px;
-    font-size:24px;
+    font-size:30px;
     font-weight: 600;
-    color: white;
+    color: rgba(255, 255, 255, 0.952);
     list-style: none;
-    margin-top:5px;
+    cursor: pointer;
+    text-align-last: right;
+
+}
+.home-button{
+    color: white;
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+}
+.home-button:hover{
+    animation-delay: 1s;
+    color: green;
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+    
 }
 
-.menu1-onder{
+.CV-button{
+    color: white;
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+}
+.CV-button:hover{
+    animation-delay: 1s;
+    color: rgb(121, 121, 61);
+    animation-timing-function:ease-in-out;
+    transition: 0.5s;
+    
+}
+
+.Projecten-button{
+    color: white;
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+}
+.Projecten-button:hover{
+    animation-delay: 1s;
+    color: rgb(66, 157, 209);
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+    
+}
+
+.Contact-button{
+    color: white;
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+}
+.Contact-button:hover{
+    animation-delay: 1s;
+    color: rgb(192, 80, 80);
+    animation-timing-function:ease-in-out;
+    transition: 0.3s;
+    
+}
+
+.menu1-under{
     width:10%;
     height: 30vh;
 
@@ -138,6 +209,10 @@ height: 50px;
     
 }
 
+
+.animate-menu{
+background:red;
+    }
 /* ----------------EINDE MENU  ---------------------------------- */
 .titel{
     font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -151,34 +226,55 @@ height: 50px;
     color: whitesmoke;
 }
 
-
-
-
-
-
-.box2-inhoud{
-
+.middle{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 500px;
 }
-.box3-menu2{
-
-}
-.menu2-boven{
-
-}
-.menu2-midden{
-
-}
-.menu2-onder{
-
-}
-.intro-banner{
+.banner{
     width:100%;
+    height: 70px;
 }
-.intro-banner img{
+.banner img{
+    width:100px;
+    height:70px;
+
+}
+
+.images{
+    grid-template-columns: 1fr 1fr 1fr  ;
+    grid-template-rows: 1fr 1fr 1fr ;
+    border:red solid 1px;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+    width: 100%;
+    height: 100px;
+}
+
+.intro-content1{
+    grid-column-start:1;
+    grid-column-end:2;
+    grid-row-start:1;
+    grid-row-end:2;
+    width:200px;
+    height:100px;
+}
+
+.intro-content2{
+    grid-column-start:2;
+    grid-column-end:3;
+    grid-row-start:1;
+    grid-row-end:2;
     width:100px;
     height:100px;
-
 }
 
-
+.intro-content3{
+    grid-column-start:3;
+    grid-column-end:4;
+    grid-row-start:1;
+    grid-row-end:2;
+    width:100%;
+    height:100%;
 }
