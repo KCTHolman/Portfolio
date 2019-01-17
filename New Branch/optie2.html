@@ -17,23 +17,25 @@
 <body style="margin:0">
     <div class="nav-container">
         <div class="nav">
-            <div class="Home">Home</div>
-            <div class="about-me">About me</div>
-            <div class="Projects">Projects</div>
-            <div class="Contact">Contact</div>
+            <a class="home" href="#container1container1"> Home</a>
+            <a class="about-me" href="#container2">About me</a>
+            <a class="projects" href="#container3">Projects</a>
+            <a class="contact" href="#container4">Contact</a>
 
         </div>
     </div>
     <div class="wrapper">
 
-        <div class="container1 containers">
+        <div class="container1 containers" id="container1">
+            <a name="container1"></a>
             <div class="intro-center">
                 Hello, I'm <span>Koen Holman</span>.
                 <p>Full stack developer in training.
                 </p>
             </div>
         </div>
-        <div class="container2 containers">
+        <div class="container2 containers" id="container1">
+            <a name="container2"></a>
             <div class="box1 ">
 
             </div>
@@ -135,7 +137,8 @@
 
 
         </div>
-        <div class="container3 containers">
+        <div class="container3 containers" id="container1">
+            <a name="container3"></a>
             <div class="box1">
 
             </div>
@@ -162,16 +165,52 @@
             <div class="box3">
             </div>
         </div>
-        <div class="container4 containers debug">
-            <div class="box1-footer debug">
-                <div class="item1-footer debug"></div>
-                <div class="item2-footer debug"></div>
-                <div class="item3-footer debug"></div>
+        <div class="container4 containers " id="container1">
+                <a name="container4"></a>
+            <div class="box1-footer ">
+                <div class="item1-footer "></div>
+                <div class="item2-footer ">
+                    <div class="contact-footer ">
+                        <div class="contact-footer2">Contact</div></div>
+                    <div class="form-footer ">
+                        <div class="background-container">
+                            <div class="shadow">
+
+                            </div>
+
+                            <div class="form">
+                                <h2>Have a question or want to work together?</h2>
+
+
+                                <label for="name"></label>
+                                <input class="info" type="text" style="height:38" style="width:500"name="fullname" placeholder="Your name"> <br />
+
+                                <label for="Email"></label>
+                                <input class="info" type="text" style="height:38" style="width:500"name="email" placeholder="Your e-mail"> <br />
+
+                                <label for=""></label>
+
+
+                                <label for="subject"></label>
+                                <textarea class="fill" name="subject" placeholder="Write something"></textarea>
+                                <br />
+                                <button id="send">Send</button>
+                                </option>
+                            </div>
+
+
+                        </div>
+                    </div>
+                    <div class="button-footer "></div>
+                </div>
+                <div class="item3-footer ">
+
+                </div>
             </div>
             <div class="box2-footer"></div>
         </div>
 
-
+        <script src="optie2.js" type="text/javascript"></script>
 </body>
 
 </html>

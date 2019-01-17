@@ -1,4 +1,4 @@
-//window.onload = function () {
+/* //window.onload = function () {
     window.addEventListener('click', buttonChanger);
     window.addEventListener('MSPointerDown', buttonChanger)
   
@@ -45,4 +45,4 @@
   
         });
   
-      };
+      }; */
