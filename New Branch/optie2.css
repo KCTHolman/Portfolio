@@ -157,9 +157,10 @@ span{
     height:70%;
     display: flex;
     justify-content: space-around;
-    flex-direction: row;
+    flex-direction: column;
     width: 100%;
     height: 200px;
+    justify-self: center;
 }
 
 .content-about-icons-box{
@@ -168,12 +169,15 @@ span{
 
 .container-about{
     display: flex;
-    flex-direction: row;
+    flex-direction:row;
+    justify-content: center;
 }
 
 .skills-about-container{
     width: 100%;
     height:500px;
+    display: flex;
+    flex-direction: column;
 }
 
 .fas{
@@ -193,6 +197,193 @@ span{
     width:100%;
     height: 100%;
 }
+
+.skills-about-container{
+    display: flex;
+    flex-direction: row;
+    height: 500px;
+    width:100%;
+}
+
+.softskills{
+    width: 50%;
+    height: 500px;
+
+}
+
+.softskill-titel{
+
+}
+
+.hardskill{
+    width: 50%;
+    height: 500px
+}
+
+.hardskill-titel{
+    width: 100%
+
+}
+
+.hardskill-html{
+display:flex;
+justify-content: row;
+width:400px;
+height:30px;
+align-items: center;
+margin: 10px;
+background-color:gray;
+
+}
+.hardskill-html-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+.hardskill-html-bar{
+    height:30px;
+    width: 60%;
+    background-color: aquamarine
+
+}
+.hardskill-css{
+    display:flex;
+    justify-content: row;
+    width:400px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+.hardskill-css-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+.hardskill-css-bar{
+    height:30px;
+    width: 45%;
+    background-color: aquamarine
+}
+
+.hardskill-javascript{
+    display:flex;
+    justify-content: row;
+    width:400px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+
+.hardskill-javascript-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+
+.hardskill-javascript-bar{
+    height:30px;
+    width: 25%;
+    background-color: aquamarine
+}
+
+
+
+.hardskill-php{
+
+}
+
+.softskill-teamwork{
+    display:flex;
+    justify-content: row;
+    width:400px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+
+.softskill-teamwork-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+
+.softskill-teamwork-bar{
+    height:30px;
+    width: 25%;
+    background-color: aquamarine;
+}
+
+.softskill-problem-solving{
+    display:flex;
+    justify-content: row;
+    width:400px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+
+.softskill-problem-solving-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+
+.softskill-problem-solving-bar{
+    height:30px;
+    width: 25%;
+    background-color: aquamarine;
+}
+
+.softskill-time-management{
+    display:flex;
+    justify-content: row;
+    width:400px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+.softskill-time-management-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+.softskill-time-management-bar{
+    height:30px;
+    width: 25%;
+    background-color: aquamarine;
+}
+.softskill-flexibility{
+    display:flex;
+    justify-content: row;
+    width:600px;
+    height:30px;
+    align-items: center;
+    margin: 10px;
+    background-color:gray;
+}
+.softskill-flexibility-text{
+    height:30px;
+    width:200px;
+    align-self: center;
+    background-color: aqua;
+}
+.softskill-flexibility-bar{
+    height:30px;
+    width: 25%;
+    background-color: aquamarine;
+}
+
 
 .empty-about{
     width: 100%;
