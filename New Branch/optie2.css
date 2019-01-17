@@ -19,7 +19,7 @@ span{
     display: flex;
     flex-direction: column;
     width: 100%;
-    height:325vh;
+    height:100%;
 }
 
 .nav-container{
@@ -225,17 +225,17 @@ span{
 
 }
 
-.hardskill-html{
+.progressbar{
 display:flex;
 justify-content: row;
-width:400px;
+width:600px;
 height:30px;
 align-items: center;
 margin: 10px;
 background-color:gray;
 
 }
-.hardskill-html-text{
+.progressbar-text{
     height:30px;
     width:200px;
     align-self: center;
@@ -247,42 +247,10 @@ background-color:gray;
     background-color: aquamarine
 
 }
-.hardskill-css{
-    display:flex;
-    justify-content: row;
-    width:400px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-.hardskill-css-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
-}
 .hardskill-css-bar{
     height:30px;
-    width: 45%;
+    width: 55%;
     background-color: aquamarine
-}
-
-.hardskill-javascript{
-    display:flex;
-    justify-content: row;
-    width:400px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-
-.hardskill-javascript-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
 }
 
 .hardskill-javascript-bar{
@@ -291,99 +259,30 @@ background-color:gray;
     background-color: aquamarine
 }
 
-
-
-.hardskill-php{
-
-}
-
-.softskill-teamwork{
-    display:flex;
-    justify-content: row;
-    width:400px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-
-.softskill-teamwork-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
-}
-
 .softskill-teamwork-bar{
     height:30px;
-    width: 25%;
+    width: 60%;
     background-color: aquamarine;
-}
-
-.softskill-problem-solving{
-    display:flex;
-    justify-content: row;
-    width:400px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-
-.softskill-problem-solving-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
 }
 
 .softskill-problem-solving-bar{
     height:30px;
-    width: 25%;
+    width: 55%;
     background-color: aquamarine;
-}
 
-.softskill-time-management{
-    display:flex;
-    justify-content: row;
-    width:400px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-.softskill-time-management-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
 }
 .softskill-time-management-bar{
     height:30px;
-    width: 25%;
-    background-color: aquamarine;
-}
-.softskill-flexibility{
-    display:flex;
-    justify-content: row;
-    width:600px;
-    height:30px;
-    align-items: center;
-    margin: 10px;
-    background-color:gray;
-}
-.softskill-flexibility-text{
-    height:30px;
-    width:200px;
-    align-self: center;
-    background-color: aqua;
-}
-.softskill-flexibility-bar{
-    height:30px;
-    width: 25%;
+    width: 45%;
     background-color: aquamarine;
 }
 
+.softskill-flexibility-bar{
+
+    height:30px;
+    width: 65%;
+    background-color: aquamarine;
+}
 
 .empty-about{
     width: 100%;
@@ -395,13 +294,13 @@ background-color:gray;
 }
 .content-grid{
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr  ;
-    grid-template-rows: 1fr 1fr  ;
-    border:white solid 1px;
+    grid-template-columns: 400px 400px 400px  ;
+    grid-template-rows: 266px 266px;
 /*     grid-column-gap: 10px;
     grid-row-gap: 15px; */
     width: 100%;
     height: 100%;
+    justify-content: center;
 
 }
 
@@ -410,15 +309,20 @@ background-color:gray;
     grid-column-end:2;
     grid-row-start:1;
     grid-row-end:2;
-    border:5px blue solid;
+
+
 }
 
+.content-img{
+    width:400px;
+    height:266px;
+}
 .content2{
     grid-column-start:2;
     grid-column-end:3;
     grid-row-start:1;
     grid-row-end:2;
-    border:5px purple solid;
+
 }
 
 .content3{
@@ -426,7 +330,7 @@ background-color:gray;
     grid-column-end:4;
     grid-row-start:1;
     grid-row-end:2;
-    border:5px green solid;
+
 }
 
 .content4{
@@ -434,7 +338,7 @@ background-color:gray;
     grid-column-end:2;
     grid-row-start:2;
     grid-row-end:3;
-    border:5px palegreen solid;
+
 }
 
 .content5{
@@ -442,7 +346,7 @@ background-color:gray;
     grid-column-end:3;
     grid-row-start:2;
     grid-row-end:3;
-    border:5px darkturquoise solid;
+
 }
 
 .content6{
@@ -450,7 +354,7 @@ background-color:gray;
     grid-column-end:4;
     grid-row-start:2;
     grid-row-end:3;
-    border:5px firebrick solid;
+
 }
 
 
@@ -480,10 +384,34 @@ background-color:gray;
     width: 100%;
     height: 100vh;
 }
-.footer{
-background-color:darkblue;
-width:100%;
-height:25vh;
-position: bottom;
+.container4{
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(37,41,52);
+    
 }
-
+.box1-footer{
+    width: 100%;
+    height: 80vh;
+    display: flex;
+    flex-direction: row;
+}
+.item1-footer{
+    width: 20%;
+    height: 80vh;
+}
+.item2-footer{
+    width: 60%;
+    height: 80vh;
+}
+.item3-footer{
+    width: 20%;
+    height: 80vh;
+}
+.box2-footer{
+    width: 100%;
+    height: 20vh;
+    background-color: rgb(27,36,47);
+}
