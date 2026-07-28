@@ -1,0 +1,475 @@
+/* ==========================================================================
+   Koen Holman — portfolio
+   Shared shell: colour, type, header, nav, footer, cards.
+   Page-specific styling lives in the .kh-main--* modifiers near the bottom.
+   ========================================================================== */
+
+@import url('fonts.css');
+
+:root {
+  /* Fixed brand palette. */
+  --kh-bg: #010309;
+  --kh-ink: #eaf4ff;
+  --kh-ink-bright: #f4f7ff;
+  --kh-teal: #7de0d2;
+  --kh-teal-soft: #9ff0e2;
+  --kh-line: rgba(255, 255, 255, 0.07);
+  --kh-surface-line: rgba(255, 255, 255, 0.08);
+  --kh-measure: 1140px;
+
+  /* Live aurora variables. assets/aurora.js rewrites these every frame while
+     auto-evolve is on; the values here are the t=0 state of that animation so
+     the backdrop and the wordmark gradient look right before (or without) JS. */
+  --c1: hsla(168, 72%, 46%, 0.44);
+  --c2: hsla(228, 70%, 42%, 0.42);
+  --c3: hsla(318, 68%, 44%, 0.36);
+  --c4: hsla(38, 72%, 46%, 0.36);
+  --c5: hsla(273, 70%, 44%, 0.38);
+  --t1: hsla(168, 92%, 74%, 1);
+  --t2: hsla(228, 88%, 64%, 1);
+  --t3: hsla(298, 90%, 76%, 1);
+  --soft: 1.3;
+  --speed: 0.5;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--kh-bg);
+  color: var(--kh-ink);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+body { -webkit-font-smoothing: antialiased; }
+
+a { color: var(--kh-teal-soft); }
+a:hover { color: #c9fbf1; }
+
+/* Keyboard focus needs to stay visible on a dark, low-contrast surface. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--kh-teal-soft);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@keyframes khRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Skip link — the aurora panel and sticky nav sit ahead of the content. */
+.kh-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 12px 18px;
+  border-radius: 0 0 10px 0;
+  background: #071322;
+  color: var(--kh-teal-soft);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.kh-skip:focus { left: 0; }
+
+/* ---------- Shell ---------------------------------------------------- */
+
+.kh-shell {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: radial-gradient(125% 105% at 50% 0%, #050c1a 0%, #02060f 30%, #010309 54%, #000000 78%);
+}
+
+/* ---------- Header + nav --------------------------------------------- */
+
+.kh-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(3, 7, 16, 0.62);
+  border-bottom: 1px solid var(--kh-line);
+}
+
+.kh-header-inner {
+  max-width: var(--kh-measure);
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kh-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 244, 255, 0.86);
+}
+.kh-brand:hover { color: var(--kh-ink-bright); }
+
+.kh-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t1, #7de0d2);
+  box-shadow: 0 0 9px var(--t1, #7de0d2);
+}
+
+.kh-nav {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+a.khnav {
+  text-decoration: none;
+  padding: 8px 13px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(206, 222, 238, 0.6);
+  transition: color .25s, background .25s, border-color .25s;
+}
+a.khnav:hover {
+  color: var(--kh-teal-soft);
+  background: rgba(125, 224, 210, 0.07);
+}
+a.khnav[aria-current="page"] {
+  color: var(--kh-teal-soft);
+  background: rgba(125, 224, 210, 0.1);
+  border-color: rgba(125, 224, 210, 0.35);
+}
+
+/* ---------- Main + footer -------------------------------------------- */
+
+.kh-main {
+  position: relative;
+  z-index: 1;
+  max-width: var(--kh-measure);
+  margin: 0 auto;
+}
+
+.kh-main--home    { padding: 0 20px; }
+.kh-main--werk    { padding: 0 20px 96px; }
+.kh-main--over    { padding: 56px 20px 110px; }
+.kh-main--contact { padding: 56px 20px 130px; }
+.kh-main--error   { padding: 56px 20px 130px; }
+
+.kh-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--kh-line);
+}
+
+.kh-footer-inner {
+  max-width: var(--kh-measure);
+  margin: 0 auto;
+  padding: 22px 20px 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(190, 212, 232, 0.42);
+}
+
+/* ---------- Type ------------------------------------------------------ */
+
+.kh-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgba(180, 206, 228, 0.6);
+}
+.kh-eyebrow--hero { letter-spacing: 0.42em; }
+
+.kh-page-title {
+  margin: 18px 0 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: clamp(36px, 5.4vw, 64px);
+  line-height: 1.02;
+  color: var(--kh-ink-bright);
+}
+
+.kh-accent {
+  font-style: italic;
+  color: var(--kh-teal);
+}
+
+.kh-lead {
+  margin: 20px 0 0;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.6;
+  color: rgba(222, 234, 247, 0.74);
+  text-wrap: pretty;
+}
+
+/* Small uppercase section heading, e.g. "Waar ik nu aan bouw". */
+.kh-section-label {
+  margin: 0 0 18px;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: rgba(180, 206, 228, 0.55);
+}
+
+.kh-link {
+  color: rgba(222, 234, 247, 0.82);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(125, 224, 210, 0.35);
+  padding-bottom: 2px;
+  transition: color .2s, border-color .2s;
+}
+.kh-link:hover {
+  color: var(--kh-teal-soft);
+  border-color: var(--kh-teal);
+}
+
+/* ---------- Home hero ------------------------------------------------- */
+
+.kh-hero {
+  min-height: 66vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 0 32px;
+  animation: khRise 1s ease both;
+}
+
+.kh-hero-title {
+  margin: 20px 0 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: clamp(48px, 9vw, 118px);
+  line-height: 0.94;
+  color: var(--kh-ink-bright);
+  text-shadow: 0 2px 44px rgba(45, 212, 191, 0.28);
+}
+
+/* Wordmark gradient rides the live aurora colours. */
+.kh-hero-accent {
+  font-style: italic;
+  background: linear-gradient(100deg, var(--t1, #fde047), var(--t2, #2dd4bf) 55%, var(--t3, #7de0d2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.kh-hero-lead {
+  margin: 26px 0 0;
+  max-width: 600px;
+  font-weight: 300;
+  font-size: clamp(16px, 1.8vw, 20px);
+  line-height: 1.55;
+  color: rgba(222, 234, 247, 0.78);
+  text-wrap: pretty;
+}
+
+.kh-cta-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 34px;
+}
+
+a.khcta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 11.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: background .25s, border-color .25s, color .25s;
+}
+a.khcta--primary {
+  border: 1px solid rgba(125, 224, 210, 0.4);
+  background: rgba(125, 224, 210, 0.1);
+  color: var(--kh-teal-soft);
+}
+a.khcta--primary:hover { background: rgba(125, 224, 210, 0.18); }
+a.khcta--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(226, 238, 250, 0.78);
+}
+a.khcta--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+  color: var(--kh-ink-bright);
+}
+
+/* ---------- Surfaces -------------------------------------------------- */
+
+.kh-panel,
+a.khcard {
+  border-radius: 18px;
+  border: 1px solid var(--kh-surface-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  padding: 26px 28px;
+}
+
+a.khcard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .25s, transform .25s;
+}
+a.khcard:hover {
+  border-color: rgba(125, 224, 210, 0.35);
+  transform: translateY(-2px);
+}
+
+.kh-card-kicker {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(180, 206, 228, 0.55);
+}
+
+.kh-card-title {
+  display: block;
+  margin-top: 12px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--kh-ink-bright);
+}
+
+.kh-card-body {
+  display: block;
+  margin-top: 11px;
+  font-weight: 300;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(214, 230, 245, 0.68);
+  text-wrap: pretty;
+}
+
+/* ---------- Over: numbered panels ------------------------------------- */
+
+.kh-panel-grid {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.kh-panel-num {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  color: var(--kh-teal);
+}
+
+.kh-panel-title {
+  margin: 14px 0 12px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--kh-ink-bright);
+}
+
+.kh-panel-body {
+  margin: 0;
+  font-weight: 300;
+  font-size: 16px;
+  line-height: 1.62;
+  color: rgba(228, 238, 250, 0.82);
+  text-wrap: pretty;
+}
+.kh-panel-body strong {
+  font-weight: 400;
+  color: var(--kh-ink-bright);
+}
+
+/* ---------- Werk: section rule + badge --------------------------------- */
+
+.kh-rule-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kh-rule-head .kh-section-label { margin: 0; }
+
+.kh-rule {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.kh-badge {
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1px solid rgba(125, 224, 210, 0.3);
+  background: rgba(125, 224, 210, 0.07);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--kh-teal-soft);
+  white-space: nowrap;
+}
+
+/* ---------- Contact ---------------------------------------------------- */
+
+.kh-contact-lead {
+  margin: 22px 0 30px;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.6;
+  color: rgba(228, 238, 250, 0.82);
+  text-wrap: pretty;
+}
+
+.kh-link-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+
+/* ---------- Motion preferences ---------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  a.khcard:hover { transform: none; }
+}

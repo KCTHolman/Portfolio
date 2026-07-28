@@ -1,0 +1,7 @@
+# De oude site blijft in git staan, maar hoeft niet mee de wereld in.
+archief/
+
+# Onderhoudsscripts en projectdocumentatie horen niet op het web.
+tools/
+README.md
+.nojekyll
