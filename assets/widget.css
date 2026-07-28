@@ -24,7 +24,11 @@
   padding: 34px 38px 30px;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  background: radial-gradient(120% 130% at 18% 0%, #0a1428 0%, #050b1a 46%, #01030a 100%);
+  /* Lightly translucent so the aurora drifts through, but the same blue tone
+     as before; the blur keeps the copy on top readable. */
+  background: radial-gradient(120% 130% at 18% 0%, rgba(10, 20, 40, 0.78) 0%, rgba(5, 11, 26, 0.84) 46%, rgba(1, 3, 10, 0.88) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   font-family: 'Space Grotesk', sans-serif;
   color: #eaf4ff;
@@ -452,7 +456,22 @@
   list-style: none;
   max-height: 392px;
   overflow: hidden auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125, 224, 210, 0.45) rgba(255, 255, 255, 0.05);
 }
+
+/* WebKit ignores scrollbar-color, and its default bar is a white slab on a
+   panel this dark. */
+.dsv-log::-webkit-scrollbar { width: 8px; }
+.dsv-log::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.dsv-log::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: rgba(125, 224, 210, 0.4);
+}
+.dsv-log::-webkit-scrollbar-thumb:hover { background: rgba(125, 224, 210, 0.62); }
 
 .dsv-entry {
   padding: 13px 15px;

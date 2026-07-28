@@ -38,9 +38,12 @@
   height: 0;
 }
 
+/* Clips the wash itself, so the page never needs an overflow rule that would
+   break the sticky header. .aur-paint sits at inset:-12% inside this. */
 .aur-stage {
   position: fixed;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
   z-index: 0;
   animation: khFadeIn .5s ease both;
@@ -262,6 +265,8 @@
   max-height: 0;
   opacity: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125, 224, 210, 0.45) rgba(255, 255, 255, 0.05);
   padding: 0 16px;
   display: flex;
   flex-direction: column;
@@ -276,6 +281,17 @@
 @media (max-width: 699px) {
   .aur-body.is-open { max-height: 58vh; }
 }
+
+.aur-body::-webkit-scrollbar { width: 8px; }
+.aur-body::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.aur-body::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: rgba(125, 224, 210, 0.4);
+}
+.aur-body::-webkit-scrollbar-thumb:hover { background: rgba(125, 224, 210, 0.62); }
 
 .aur-row {
   display: flex;

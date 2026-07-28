@@ -85,7 +85,10 @@ button:focus-visible,
 .kh-shell {
   position: relative;
   min-height: 100dvh;
-  overflow-x: hidden;
+  /* clip, not hidden: overflow-x:hidden turns this into a scroll container,
+     and .kh-header's position:sticky would then stick to a scrollport that
+     never scrolls — i.e. the menu would scroll away with the page. */
+  overflow-x: clip;
   background: radial-gradient(125% 105% at 50% 0%, #050c1a 0%, #02060f 30%, #010309 54%, #000000 78%);
 }
 
@@ -170,6 +173,29 @@ a.khnav[aria-current="page"] {
 }
 
 .kh-main--home    { padding: 0 20px; }
+
+/* The home page is one screen: hero and project sit in the space between the
+   header and the footer. min-height, not height, so a short viewport can
+   still scroll instead of clipping. */
+.kh-home .kh-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.kh-home .kh-main--home {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 30px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.kh-home .kh-hero {
+  min-height: 0;
+  padding: 0;
+}
+.kh-now { padding: 0; }
 .kh-main--werk    { padding: 0 20px 96px; }
 .kh-main--over    { padding: 56px 20px 110px; }
 .kh-main--contact { padding: 56px 20px 130px; }
@@ -184,7 +210,7 @@ a.khnav[aria-current="page"] {
 .kh-footer-inner {
   max-width: var(--kh-measure);
   margin: 0 auto;
-  padding: 22px 20px 92px;
+  padding: 16px 20px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -194,6 +220,13 @@ a.khnav[aria-current="page"] {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(190, 212, 232, 0.42);
+}
+
+/* The play-pill is fixed in the bottom-right corner. Once the content column
+   is no longer wider than the viewport, the footer's right-hand line would
+   run underneath it. */
+@media (max-width: 1199px) {
+  .kh-footer-inner { padding-right: 58px; }
 }
 
 /* ---------- Type ------------------------------------------------------ */
