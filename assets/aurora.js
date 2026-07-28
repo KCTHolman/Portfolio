@@ -50,15 +50,15 @@
   // near-complement and a violet jump — so the wash keeps landing on
   // combinations you did not see coming instead of one analogous ramp.
   var HUE_STEPS = [0, 72, 186, 276, 138];
-  var SATS = [94, 92, 90, 94, 92];
-  var LIGHTS = [54, 52, 52, 54, 52];
-  var ALPHAS = [0.58, 0.54, 0.48, 0.48, 0.50];
+  var SATS = [96, 94, 92, 96, 94];
+  var LIGHTS = [58, 56, 56, 58, 56];
+  var ALPHAS = [0.72, 0.68, 0.62, 0.62, 0.64];
 
   // The intro: the page opens near-black and blue — every blob on one hue, low
   // and dim — then over RAMP_SEC the hues fan apart and the colour comes up.
   var RAMP_SEC = 16;
   var DIM = { sat: 38, light: 24, alpha: 0.16, paint: 0.34 };
-  var FULL_PAINT = 0.5;
+  var FULL_PAINT = 0.62;
 
   var SLIDERS = [
     { key: 'scale', label: 'Swirl strength',     min: 0,  max: 70,  toRaw: function (v) { return Math.round(v); },        fromRaw: function (v) { return v; } },
