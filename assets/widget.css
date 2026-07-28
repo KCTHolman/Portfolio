@@ -227,11 +227,15 @@
   flex-wrap: wrap;
 }
 
+/* Either a button (switches view in place) or a link (the logboek has its own
+   page), so both need the same reset. */
 .dsv-choice {
   position: relative;
+  display: block;
   overflow: hidden;
   flex: 1 1 320px;
   min-width: 270px;
+  text-decoration: none;
   padding: 28px 26px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.09);
