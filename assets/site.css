@@ -217,6 +217,16 @@ a.khnav[aria-current="page"] {
 }
 .kh-now { padding: 0; }
 .kh-now-card { max-width: 560px; }
+
+/* Op een telefoon is de kaart hoger (ticker van drie regels), dus de ruimte
+   eromheen krimpt mee — anders past het scherm net niet meer. */
+@media (max-width: 699px) {
+  .kh-home .kh-main--home {
+    gap: 16px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+}
 .kh-main--werk    { padding: 0 20px 96px; }
 .kh-main--over    { padding: 56px 20px 110px; }
 .kh-main--contact { padding: 56px 20px 130px; }
@@ -663,6 +673,22 @@ a.khcta--ghost {
 a.khcta--ghost:hover {
   border-color: rgba(255, 255, 255, 0.26);
   color: var(--kh-ink-bright);
+}
+
+/* Naast elkaar houden op een telefoon: gestapeld kost het vijftig pixels en
+   twee schermbrede knoppen lezen bovendien als een formulier. */
+@media (max-width: 699px) {
+  .kh-cta-row {
+    gap: 8px;
+    margin-top: 22px;
+    flex-wrap: nowrap;
+  }
+  a.khcta {
+    padding: 12px 15px;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+  }
 }
 
 /* ---------- Surfaces -------------------------------------------------- */
