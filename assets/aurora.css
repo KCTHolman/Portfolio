@@ -1,0 +1,374 @@
+/* ==========================================================================
+   Aurora backdrop — the drifting painterly wash behind every page, plus the
+   "Come play…" panel that exposes its parameters.
+
+   Colour comes from --c1..--c5 (blobs) and --t1..--t3 (accents), which
+   assets/aurora.js rewrites while auto-evolve is on. Geometry comes from
+   --soft (blur multiplier) and --speed (animation divisor). Defaults for all
+   of these live in site.css so the wash renders before/without JS.
+   ========================================================================== */
+
+@keyframes khDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(5%, -4%) scale(1.16); }
+}
+@keyframes khDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1.08); }
+  50%      { transform: translate(-6%, 4%) scale(1); }
+}
+@keyframes khSpin    { to { transform: rotate(360deg); } }
+@keyframes khSpinRev { to { transform: rotate(-360deg); } }
+@keyframes khGrain {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-2%, 1%); }
+  50%      { transform: translate(1%, -2%); }
+  75%      { transform: translate(2%, 2%); }
+}
+@keyframes khPanelIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes khFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- Backdrop --------------------------------------------------- */
+
+.aur-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.aur-stage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: khFadeIn .5s ease both;
+}
+
+.aur-paint {
+  position: absolute;
+  inset: -12%;
+  filter: url(#kh-paint);
+  opacity: 0.42;
+}
+
+.aur-blob {
+  position: absolute;
+  mix-blend-mode: screen;
+}
+
+/* The two conic blobs each declare a spin and a drift. Both animate
+   transform, so the drift (declared last) is the one that takes effect —
+   matching how the design renders. */
+.aur-blob--1 {
+  top: 6%;
+  left: 12%;
+  width: 46vw;
+  height: 46vw;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 40deg, var(--c5) 130deg, var(--c4) 220deg, transparent 320deg);
+  filter: blur(calc(var(--soft) * 26px));
+  animation: khSpin 44s linear infinite, khDrift 26s ease-in-out infinite;
+  animation-duration: calc(44s / var(--speed)), calc(26s / var(--speed));
+}
+.aur-blob--2 {
+  bottom: 0%;
+  right: 4%;
+  width: 54vw;
+  height: 54vw;
+  border-radius: 50%;
+  background: conic-gradient(from 120deg, transparent 0deg, var(--c2) 90deg, var(--c3) 220deg, transparent 340deg);
+  filter: blur(calc(var(--soft) * 34px));
+  animation: khSpinRev 62s linear infinite, khDrift2 30s ease-in-out infinite;
+  animation-duration: calc(62s / var(--speed)), calc(30s / var(--speed));
+}
+.aur-blob--3 {
+  top: -6%;
+  left: -8%;
+  width: 70vw;
+  height: 50vh;
+  background: radial-gradient(60% 55% at 40% 50%, var(--c1) 0%, transparent 72%);
+  filter: blur(calc(var(--soft) * 40px));
+  animation: khDrift 22s ease-in-out infinite;
+  animation-duration: calc(22s / var(--speed));
+}
+.aur-blob--4 {
+  top: 32%;
+  right: -12%;
+  width: 65vw;
+  height: 60vh;
+  background: radial-gradient(55% 50% at 60% 50%, var(--c2) 0%, transparent 70%);
+  filter: blur(calc(var(--soft) * 48px));
+  animation: khDrift2 28s ease-in-out infinite;
+  animation-duration: calc(28s / var(--speed));
+}
+.aur-blob--5 {
+  bottom: -12%;
+  left: 16%;
+  width: 60vw;
+  height: 55vh;
+  background: radial-gradient(55% 50% at 50% 50%, var(--c3) 0%, transparent 74%);
+  filter: blur(calc(var(--soft) * 52px));
+  animation: khDrift 34s ease-in-out infinite;
+  animation-duration: calc(34s / var(--speed));
+}
+.aur-blob--6 {
+  top: 10%;
+  left: 42%;
+  width: 42vw;
+  height: 48vh;
+  background: radial-gradient(50% 50% at 50% 50%, var(--c4) 0%, transparent 72%);
+  filter: blur(calc(var(--soft) * 44px));
+  animation: khDrift2 24s ease-in-out infinite;
+  animation-duration: calc(24s / var(--speed));
+}
+
+.aur-grain {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  animation: khGrain 7s steps(4) infinite;
+}
+.aur-grain[hidden] { display: none; }
+
+.aur-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(115% 85% at 50% 32%, transparent 28%, rgba(0, 0, 0, 0.72) 72%, #000000 100%);
+}
+
+/* ---------- Play panel -------------------------------------------------- */
+
+.aur-panel {
+  position: fixed;
+  z-index: 30;
+  right: 24px;
+  bottom: 24px;
+  width: 268px;
+  border-radius: 16px;
+  background: rgba(9, 15, 28, 0.66);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  color: #dce8f5;
+  overflow: hidden;
+  opacity: 0;
+  animation: khPanelIn .8s ease .6s both;
+}
+
+@media (max-width: 699px) {
+  .aur-panel {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    width: auto;
+  }
+}
+
+/* Shared reset for the panel's clickable rows. */
+.aur-panel button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.aur-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  text-align: left;
+}
+
+.aur-head-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kh-ink, #eaf4ff);
+}
+
+.aur-head-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t1);
+  box-shadow: 0 0 9px var(--t1);
+}
+
+.aur-chevron {
+  font-size: 14px;
+  color: rgba(220, 232, 245, 0.6);
+  transform: rotate(180deg);
+  transition: transform .25s;
+}
+.aur-head[aria-expanded="true"] .aur-chevron { transform: rotate(0deg); }
+
+.aur-body {
+  max-height: 0;
+  opacity: 0;
+  overflow-y: auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  transition: max-height .3s ease, opacity .25s ease, padding .3s ease;
+}
+.aur-body.is-open {
+  max-height: 640px;
+  opacity: 1;
+  padding: 16px;
+}
+@media (max-width: 699px) {
+  .aur-body.is-open { max-height: 58vh; }
+}
+
+.aur-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background .2s;
+}
+.aur-row[aria-pressed="true"] { background: rgba(45, 212, 191, 0.12); }
+
+.aur-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--kh-ink, #eaf4ff);
+}
+
+.aur-row-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(200, 218, 236, 0.4);
+  box-shadow: none;
+}
+.aur-row[aria-pressed="true"] .aur-row-dot {
+  background: var(--t1);
+  box-shadow: 0 0 8px var(--t1);
+}
+
+/* Toggle switch */
+.aur-switch {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 21px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background .2s;
+}
+[aria-pressed="true"] > .aur-switch { background: rgba(45, 212, 191, 0.55); }
+
+.aur-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: left .2s;
+}
+[aria-pressed="true"] > .aur-switch > .aur-knob { left: 19px; }
+
+/* Sliders */
+.aur-slider { display: flex; flex-direction: column; gap: 7px; }
+
+.aur-slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(220, 232, 245, 0.7);
+}
+.aur-slider-val { color: var(--t1); }
+
+.aur-panel input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+  outline: none;
+}
+.aur-panel input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #eaf4ff;
+  box-shadow: 0 0 10px rgba(125, 224, 210, 0.7);
+  cursor: pointer;
+}
+.aur-panel input[type=range]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: #eaf4ff;
+  box-shadow: 0 0 10px rgba(125, 224, 210, 0.7);
+  cursor: pointer;
+}
+
+/* Palette swatches */
+.aur-field { display: flex; flex-direction: column; gap: 9px; }
+.aur-field-label { font-size: 11px; color: rgba(220, 232, 245, 0.7); }
+
+.aur-swatches { display: flex; gap: 9px; flex-wrap: wrap; }
+
+.aur-swatch {
+  width: 42px;
+  height: 26px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  transition: transform .15s, box-shadow .2s, border-color .2s;
+}
+.aur-swatch[aria-pressed="true"] {
+  transform: scale(1.06);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+}
+
+.aur-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+}
+.aur-toggle-label { font-size: 11px; color: rgba(220, 232, 245, 0.7); }
+
+/* ---------- Motion preferences ------------------------------------------ */
+
+/* The wash still renders — it just holds still, and the hue stops travelling
+   (assets/aurora.js checks the same query before starting its loop). */
+@media (prefers-reduced-motion: reduce) {
+  .aur-blob,
+  .aur-grain,
+  .aur-stage { animation: none; }
+  .aur-panel { animation: none; opacity: 1; }
+}

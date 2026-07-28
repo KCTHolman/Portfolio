@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /archief/
+
+Sitemap: https://kctholman.github.io/portfolio/sitemap.xml
