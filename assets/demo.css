@@ -83,7 +83,7 @@
   color: #e8edf5;
   transform: translateY(101%);
   visibility: hidden;
-  transition: transform .42s cubic-bezier(.22, .61, .36, 1), visibility .42s;
+  transition: transform .72s cubic-bezier(.22, .61, .36, 1), visibility .72s;
 }
 .kh-sheet.is-open {
   transform: none;
@@ -279,7 +279,9 @@
   margin: 22px 0 0;
   padding: 18px 0 0;
   border-top: 1px solid var(--kh-line);
-  max-width: 460px;
+  /* Even breed als de tekst erboven, anders zweeft het totaal ergens
+     midden in de kolom. */
+  max-width: 620px;
 }
 
 .kh-today-head {
