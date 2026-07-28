@@ -364,7 +364,6 @@ a.khnav[aria-current="page"] {
     -webkit-backdrop-filter: none;
   }
 
-  .kh-ticker-items { min-height: 44px; }
 
   .kh-facts-list {
     margin-top: 16px;
@@ -591,6 +590,13 @@ a.khnav[aria-current="page"] {
   12.5%, 100%   { opacity: 0; transform: translateY(-5px); }
 }
 
+/* Absolutely positioned items cannot push their box open, so on a narrow card
+   it has to reserve room for the longest line — three of them. This has to sit
+   after the base rule: same specificity, so source order decides. */
+@media (max-width: 1023px) {
+  .kh-ticker-items { min-height: calc(1.5em * 3); }
+}
+
 /* The global reduced-motion rule kills the animation, which would leave every
    item at opacity 0 — so one line stays put instead. */
 @media (prefers-reduced-motion: reduce) {
@@ -603,6 +609,11 @@ a.khnav[aria-current="page"] {
 .kh-project-links {
   margin-top: 14px;
   font-size: 14px;
+}
+
+/* Meer lucht onder de ticker zodra die twee of drie regels beslaat. */
+@media (max-width: 1023px) {
+  .kh-project-links { margin-top: 20px; }
 }
 
 a.khcta {

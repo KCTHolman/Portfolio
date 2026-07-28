@@ -20,8 +20,10 @@
   var RUNNING_LABEL = 'de run loopt…';
   var WAITING_LABEL = 'wacht op jou…';
 
+  // The log lives on its own page, so /werk/ has the views but no run. Bailing
+  // out here would leave dsv-nojs in place and show every view at once.
   var entryEls = Array.prototype.slice.call(widget.querySelectorAll('.dsv-entry'));
-  if (!entryEls.length) return;
+  var hasRun = entryEls.length > 0;
 
   var DEFAULT_DWELL = 7000;
 
@@ -199,6 +201,7 @@
   }
 
   function play() {
+    if (!hasRun) return;
     stop();
     // Nothing has happened yet — the idea is still being typed.
     state.n = 0;
