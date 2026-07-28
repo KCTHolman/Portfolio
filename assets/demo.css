@@ -1,0 +1,303 @@
+/* ==========================================================================
+   Cafeïne-demo — een werkende namaak van het log-sheet uit BiohackOS.
+
+   Bewust in de kleuren van de app (blauw), niet die van de site: het moet
+   lezen als "dit is het scherm", niet als nog een sitecomponent. De logica
+   staat in assets/demo.js; hier alleen hoe het eruitziet.
+   ========================================================================== */
+
+.kh-demo {
+  margin-top: 46px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 34px;
+  align-items: start;
+}
+
+.kh-demo-intro { max-width: 520px; }
+
+.kh-demo-title {
+  margin: 14px 0 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.05;
+  color: var(--kh-ink-bright);
+}
+
+.kh-demo-lead {
+  margin: 16px 0 0;
+  font-weight: 300;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: rgba(222, 234, 247, 0.74);
+  text-wrap: pretty;
+}
+
+.kh-demo-note {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--kh-line);
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(200, 220, 238, 0.6);
+  text-wrap: pretty;
+}
+
+/* ---------- Het sheet ---------------------------------------------------- */
+
+.kh-sheet {
+  --sheet-blue: #4f8cff;
+  --sheet-line: rgba(255, 255, 255, 0.1);
+
+  position: relative;
+  padding: 16px 18px 20px;
+  border-radius: 22px;
+  border: 1px solid var(--sheet-line);
+  background: #101319;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  color: #e8edf5;
+}
+
+.kh-sheet-grip {
+  width: 42px;
+  height: 4px;
+  margin: 0 auto 16px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.kh-sheet-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #f2f5fa;
+}
+
+.kh-sheet-sub {
+  margin: 6px 0 0;
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(200, 212, 228, 0.62);
+  text-wrap: pretty;
+}
+
+/* ---------- Tabs --------------------------------------------------------- */
+
+.kh-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--sheet-line);
+  overflow: hidden;
+}
+
+.kh-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  color: rgba(200, 212, 228, 0.7);
+  transition: background .2s, color .2s;
+}
+.kh-tab[aria-selected="true"] {
+  background: rgba(79, 140, 255, 0.16);
+  color: #9dc0ff;
+}
+
+/* ---------- De waarschuwing ---------------------------------------------- */
+
+.kh-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 16px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.09);
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(240, 226, 226, 0.9);
+  text-wrap: pretty;
+}
+/* Overdag gaat het over de hoeveelheid, 's avonds over slapen. */
+.kh-warn[data-level="dag"] {
+  border-color: rgba(251, 191, 36, 0.42);
+  background: rgba(251, 191, 36, 0.08);
+  color: rgba(244, 235, 214, 0.9);
+}
+.kh-warn[data-level="rustig"] {
+  border-color: rgba(125, 224, 210, 0.3);
+  background: rgba(125, 224, 210, 0.06);
+  color: rgba(216, 238, 236, 0.88);
+}
+
+.kh-warn-icon {
+  flex: none;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* ---------- Snelkeuze ----------------------------------------------------- */
+
+.kh-quick-label,
+.kh-manual-label {
+  margin: 18px 0 9px;
+  font-size: 13px;
+  color: rgba(200, 212, 228, 0.7);
+}
+
+.kh-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--sheet-line);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: #e2e8f2;
+  transition: border-color .18s, background .18s, transform .18s;
+}
+.kh-chip:hover {
+  border-color: rgba(79, 140, 255, 0.5);
+  background: rgba(79, 140, 255, 0.1);
+}
+.kh-chip:active { transform: scale(0.97); }
+.kh-chip-icon { opacity: 0.75; }
+
+/* ---------- Handmatig + loggen -------------------------------------------- */
+
+.kh-manual {
+  display: flex;
+  gap: 8px;
+}
+
+.kh-manual input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border: 1px solid var(--sheet-line);
+  background: rgba(255, 255, 255, 0.03);
+  font: inherit;
+  font-size: 14px;
+  color: #e8edf5;
+}
+.kh-manual input::placeholder { color: rgba(200, 212, 228, 0.4); }
+.kh-manual input:focus {
+  outline: none;
+  border-color: rgba(79, 140, 255, 0.55);
+}
+
+.kh-log {
+  width: 100%;
+  margin-top: 14px;
+  padding: 15px;
+  border: none;
+  border-radius: 13px;
+  background: var(--sheet-blue);
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #08101f;
+  transition: filter .18s;
+}
+.kh-log:hover { filter: brightness(1.08); }
+
+/* ---------- Dagoverzicht --------------------------------------------------- */
+
+.kh-today {
+  margin: 16px 0 0;
+  padding: 15px 0 0;
+  border-top: 1px solid var(--sheet-line);
+  list-style: none;
+}
+
+.kh-today-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: rgba(200, 212, 228, 0.7);
+}
+.kh-today-total { color: #9dc0ff; }
+
+.kh-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  color: rgba(226, 232, 242, 0.82);
+  animation: khEntry .3s ease both;
+}
+.kh-entry + .kh-entry { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.kh-entry-time {
+  font-variant-numeric: tabular-nums;
+  color: rgba(200, 212, 228, 0.45);
+}
+.kh-entry-mg { margin-left: auto; color: rgba(200, 212, 228, 0.6); }
+
+.kh-today-empty {
+  font-weight: 300;
+  font-size: 13px;
+  color: rgba(200, 212, 228, 0.45);
+}
+
+@keyframes khEntry {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.kh-reset {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: rgba(200, 212, 228, 0.45);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.kh-reset:hover { color: rgba(200, 212, 228, 0.8); }
+
+/* ---------- Narrow -------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .kh-demo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    margin-top: 38px;
+  }
+  .kh-demo-title { font-size: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-chip:active { transform: none; }
+}
