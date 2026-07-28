@@ -90,16 +90,9 @@
   visibility: visible;
 }
 
-/* Zonder JS is er niets om te openen, dus dan staat hij gewoon in de pagina. */
-.kh-demo:not([data-sheet]) .kh-sheet {
-  position: relative;
-  transform: none;
-  visibility: visible;
-  max-width: 420px;
-  border-radius: 22px;
-  border-bottom: 1px solid var(--sheet-line);
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
-}
+/* Zonder JS valt er niets te openen en zou het scherm permanent over de
+   pagina hangen; de uitleg eronder vertelt dan wat het doet. */
+body:not([data-sheet]) .kh-sheet { display: none; }
 
 .kh-sheet-grip {
   display: block;

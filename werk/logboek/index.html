@@ -25,10 +25,10 @@
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <link rel="manifest" href="../../site.webmanifest">
 
-<link rel="stylesheet" href="../../assets/site.css?v=45">
-<link rel="stylesheet" href="../../assets/aurora.css?v=45">
-<link rel="stylesheet" href="../../assets/widget.css?v=45">
-<link rel="stylesheet" href="../../assets/demo.css?v=45">
+<link rel="stylesheet" href="../../assets/site.css?v=46">
+<link rel="stylesheet" href="../../assets/aurora.css?v=46">
+<link rel="stylesheet" href="../../assets/widget.css?v=46">
+<link rel="stylesheet" href="../../assets/demo.css?v=46">
 </head>
 <body>
 <a class="kh-skip" href="#inhoud">Naar de inhoud</a>
@@ -339,50 +339,6 @@
     <!-- The thing the run above was about, as a working replica of the app's
          own sheet. The warning is driven by the visitor's clock. -->
     <section class="kh-demo" aria-labelledby="demo-titel">
-      <div class="kh-sheet">
-        <button type="button" class="kh-sheet-grip" aria-label="Sluit het scherm"></button>
-        <h3 class="kh-sheet-title">Cafe&iuml;ne &amp; water</h3>
-        <p class="kh-sheet-sub">Tik een snelkeuze om direct te loggen, of vul zelf een hoeveelheid in.</p>
-
-        <div class="kh-tabs" role="tablist" aria-label="Wat log je">
-          <button type="button" class="kh-tab" role="tab" data-tab="cafeine" aria-selected="true"><span aria-hidden="true">&#9749;</span> Cafe&iuml;ne</button>
-          <button type="button" class="kh-tab" role="tab" data-tab="water" aria-selected="false"><span aria-hidden="true">&#128167;</span> Water</button>
-        </div>
-
-        <p class="kh-warn" data-level="rustig">
-          <span class="kh-warn-icon" aria-hidden="true">&#9790;</span>
-          <span class="kh-warn-text">Nog niets gelogd vandaag.</span>
-        </p>
-
-        <div data-panel="cafeine">
-          <p class="kh-quick-label">Snelkeuze</p>
-          <div class="kh-quick">
-            <button type="button" class="kh-chip" data-name="Kopje koffie" data-mg="80"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Kopje koffie &middot; 80 mg</button>
-            <button type="button" class="kh-chip" data-name="Mok koffie" data-mg="200"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Mok koffie (300 ml) &middot; 200 mg</button>
-            <button type="button" class="kh-chip" data-name="Espresso" data-mg="63"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Espresso &middot; 63 mg</button>
-            <button type="button" class="kh-chip" data-name="Dubbele espresso" data-mg="126"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Dubbele espresso &middot; 126 mg</button>
-            <button type="button" class="kh-chip" data-name="Kopje thee" data-mg="40"><span class="kh-chip-icon" aria-hidden="true">&#127861;</span> Kopje thee &middot; 40 mg</button>
-            <button type="button" class="kh-chip" data-name="Energiedrank" data-mg="80"><span class="kh-chip-icon" aria-hidden="true">&#9889;</span> Energiedrank &middot; 80 mg</button>
-            <button type="button" class="kh-chip" data-name="Cola" data-mg="32"><span class="kh-chip-icon" aria-hidden="true">&#127870;</span> Cola &middot; 32 mg</button>
-          </div>
-        </div>
-
-        <div data-panel="water" hidden>
-          <p class="kh-quick-label">Snelkeuze</p>
-          <div class="kh-quick">
-            <button type="button" class="kh-chip" data-name="Glas water" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Glas &middot; 250 ml</button>
-            <button type="button" class="kh-chip" data-name="Fles water" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Fles &middot; 500 ml</button>
-            <button type="button" class="kh-chip" data-name="Bidon" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Bidon &middot; 750 ml</button>
-          </div>
-        </div>
-
-        <p class="kh-manual-label">Handmatig</p>
-        <div class="kh-manual">
-          <input type="number" inputmode="numeric" min="1" step="1" placeholder="Hoeveelheid" aria-label="Hoeveelheid in milligram">
-        </div>
-        <button type="button" class="kh-log">Loggen</button>
-      </div>
-
       <div class="kh-demo-intro">
         <p class="kh-eyebrow">Zojuist live</p>
         <h2 class="kh-demo-title" id="demo-titel">Probeer het zelf</h2>
@@ -418,10 +374,56 @@
       </div>
     </div>
   </footer>
+
+  <!-- Buiten <main>: die heeft z-index 1 en dus een eigen stacking context,
+       waardoor het sheet er nooit bovenuit kan komen. Hier telt het wel. -->
+    <div class="kh-sheet">
+      <button type="button" class="kh-sheet-grip" aria-label="Sluit het scherm"></button>
+      <h3 class="kh-sheet-title">Cafe&iuml;ne &amp; water</h3>
+      <p class="kh-sheet-sub">Tik een snelkeuze om direct te loggen, of vul zelf een hoeveelheid in.</p>
+
+      <div class="kh-tabs" role="tablist" aria-label="Wat log je">
+        <button type="button" class="kh-tab" role="tab" data-tab="cafeine" aria-selected="true"><span aria-hidden="true">&#9749;</span> Cafe&iuml;ne</button>
+        <button type="button" class="kh-tab" role="tab" data-tab="water" aria-selected="false"><span aria-hidden="true">&#128167;</span> Water</button>
+      </div>
+
+      <p class="kh-warn" data-level="rustig">
+        <span class="kh-warn-icon" aria-hidden="true">&#9790;</span>
+        <span class="kh-warn-text">Nog niets gelogd vandaag.</span>
+      </p>
+
+      <div data-panel="cafeine">
+        <p class="kh-quick-label">Snelkeuze</p>
+        <div class="kh-quick">
+          <button type="button" class="kh-chip" data-name="Kopje koffie" data-mg="80"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Kopje koffie &middot; 80 mg</button>
+          <button type="button" class="kh-chip" data-name="Mok koffie" data-mg="200"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Mok koffie (300 ml) &middot; 200 mg</button>
+          <button type="button" class="kh-chip" data-name="Espresso" data-mg="63"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Espresso &middot; 63 mg</button>
+          <button type="button" class="kh-chip" data-name="Dubbele espresso" data-mg="126"><span class="kh-chip-icon" aria-hidden="true">&#9749;</span> Dubbele espresso &middot; 126 mg</button>
+          <button type="button" class="kh-chip" data-name="Kopje thee" data-mg="40"><span class="kh-chip-icon" aria-hidden="true">&#127861;</span> Kopje thee &middot; 40 mg</button>
+          <button type="button" class="kh-chip" data-name="Energiedrank" data-mg="80"><span class="kh-chip-icon" aria-hidden="true">&#9889;</span> Energiedrank &middot; 80 mg</button>
+          <button type="button" class="kh-chip" data-name="Cola" data-mg="32"><span class="kh-chip-icon" aria-hidden="true">&#127870;</span> Cola &middot; 32 mg</button>
+        </div>
+      </div>
+
+      <div data-panel="water" hidden>
+        <p class="kh-quick-label">Snelkeuze</p>
+        <div class="kh-quick">
+          <button type="button" class="kh-chip" data-name="Glas water" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Glas &middot; 250 ml</button>
+          <button type="button" class="kh-chip" data-name="Fles water" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Fles &middot; 500 ml</button>
+          <button type="button" class="kh-chip" data-name="Bidon" data-mg="0"><span class="kh-chip-icon" aria-hidden="true">&#128167;</span> Bidon &middot; 750 ml</button>
+        </div>
+      </div>
+
+      <p class="kh-manual-label">Handmatig</p>
+      <div class="kh-manual">
+        <input type="number" inputmode="numeric" min="1" step="1" placeholder="Hoeveelheid" aria-label="Hoeveelheid in milligram">
+      </div>
+      <button type="button" class="kh-log">Loggen</button>
+    </div>
 </div>
 
-<script src="../../assets/aurora.js?v=45" defer></script>
-<script src="../../assets/widget.js?v=45" defer></script>
-<script src="../../assets/demo.js?v=45" defer></script>
+<script src="../../assets/aurora.js?v=46" defer></script>
+<script src="../../assets/widget.js?v=46" defer></script>
+<script src="../../assets/demo.js?v=46" defer></script>
 </body>
 </html>
