@@ -40,7 +40,7 @@
       demo.removeAttribute('data-locked');
       demo.classList.add('is-revealed');
       // Even wachten: de sectie eronder verschijnt ook nog.
-      setTimeout(openSheet, 320);
+      setTimeout(openSheet, 700);
     }, { once: true });
   } else {
     openSheet();
@@ -163,8 +163,9 @@
     if (!mg) return;
     entries.push({ name: name, mg: mg, at: nowHours() });
     render();
-    // Gelogd is klaar: het sheet schuift weg en laat zien wat het opleverde.
-    setTimeout(closeSheet, 420);
+    // Gelogd is klaar. Even laten staan: je wilt de regel nog zien landen en
+    // de melding zien bijstellen voor het scherm wegschuift.
+    setTimeout(closeSheet, 1400);
   }
 
   /* ---------- wiring -------------------------------------------------------- */
