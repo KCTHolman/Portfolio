@@ -142,6 +142,26 @@ button:focus-visible,
   flex-wrap: wrap;
 }
 
+/* Once the four items no longer fit next to the wordmark, the menu becomes a
+   strip you swipe rather than a second line — same treatment as the swatches.
+   The fade at the right edge is what says there is more. */
+@media (max-width: 859px) {
+  .kh-header-inner { flex-wrap: nowrap; }
+
+  .kh-nav {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+  }
+  .kh-nav::-webkit-scrollbar { display: none; }
+
+  a.khnav { flex: none; }
+}
+
 a.khnav {
   text-decoration: none;
   padding: 8px 13px;
@@ -202,10 +222,20 @@ a.khnav[aria-current="page"] {
 .kh-main--contact { padding: 56px 20px 130px; }
 .kh-main--error   { padding: 56px 20px 130px; }
 
+/* Sticky along the bottom, so the preset swatches stay within reach on a long
+   page. It needs its own backdrop for that: content now scrolls underneath. */
 .kh-footer {
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  /* Being sticky, it can never be allowed to outgrow the screen: past that it
+     would cover the page instead of sitting under it. */
+  max-height: 100dvh;
+  overflow-y: auto;
   border-top: 1px solid var(--kh-line);
+  background: rgba(3, 7, 16, 0.62);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .kh-footer-inner {
@@ -223,11 +253,13 @@ a.khnav[aria-current="page"] {
   color: rgba(190, 212, 232, 0.42);
 }
 
-/* The play-pill is fixed in the bottom-right corner. Once the content column
-   is no longer wider than the viewport, the footer's right-hand line would
-   run underneath it. */
-@media (max-width: 1199px) {
-  .kh-footer-inner { padding-right: 58px; }
+/* The swatch strip takes a row of its own here, so the rest has to give. */
+@media (max-width: 699px) {
+  .kh-footer-inner {
+    padding: 10px 16px 12px;
+    gap: 8px;
+    font-size: 9px;
+  }
 }
 
 /* ---------- Type ------------------------------------------------------ */
