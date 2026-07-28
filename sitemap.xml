@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://kctholman.github.io/portfolio/</loc>
+    <loc>https://koenholman.nl/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://kctholman.github.io/portfolio/werk/</loc>
+    <loc>https://koenholman.nl/werk/</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://kctholman.github.io/portfolio/over/</loc>
+    <loc>https://koenholman.nl/over/</loc>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://kctholman.github.io/portfolio/contact/</loc>
+    <loc>https://koenholman.nl/contact/</loc>
     <priority>0.6</priority>
   </url>
 </urlset>
