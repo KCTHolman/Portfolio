@@ -426,13 +426,34 @@ a.khnav[aria-current="page"] {
   color: rgba(190, 212, 232, 0.42);
 }
 
-/* The swatch strip takes a row of its own here, so the rest has to give. */
+/* display:contents keeps the two lines as direct flex items of the footer, so
+   a wide screen looks exactly as before: name left, role right. */
+.kh-footer-line { display: contents; }
+
+/* The swatch strip takes a row of its own here, so the rest has to give. And
+   the two lines become one strip you swipe rather than stacking. */
 @media (max-width: 699px) {
   .kh-footer-inner {
     padding: 10px 16px 12px;
     gap: 8px;
     font-size: 9px;
   }
+
+  .kh-footer-line {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent 100%);
+  }
+  .kh-footer-line::-webkit-scrollbar { display: none; }
+  .kh-footer-line span { flex: none; }
 }
 
 /* ---------- Type ------------------------------------------------------ */
