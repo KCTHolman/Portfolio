@@ -25,9 +25,9 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="stylesheet" href="../assets/site.css?v=14">
-<link rel="stylesheet" href="../assets/aurora.css?v=14">
-<link rel="stylesheet" href="../assets/widget.css?v=14">
+<link rel="stylesheet" href="../assets/site.css?v=16">
+<link rel="stylesheet" href="../assets/aurora.css?v=16">
+<link rel="stylesheet" href="../assets/widget.css?v=16">
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"deSchouwVloot","description":"AI-native CI/CD-pijplijn: agents voeren het werk uit, een mens beslist op drie poorten. 16 reusable workflows, nul eigen triggers.","codeRepository":"https://github.com/KCTHolman/deSchouwVloot","programmingLanguage":["YAML","Bash","Python"],"author":{"@type":"Person","name":"Koen Holman"}}
@@ -224,13 +224,33 @@
                   </div>
                   <p class="dsv-entry-detail">Het dagboek kent al favorieten, opgeslagen porties en een spraakknop die doorvraagt als iets onduidelijk is. Zeg je &ldquo;twee koffie&rdquo;, dan is &ldquo;klein of groot?&rdquo; precies de vraag die dat mechanisme al kan stellen. Er hoeft dus weinig bij: het bestaande moet alleen weten wat een kop koffie is.</p>
                 </li>
-                <li class="dsv-entry" data-p="58" data-who="agent" data-dwell="6000">
+                <li class="dsv-entry" data-p="58" data-who="agent" data-dwell="9000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">07</span>
                     <span class="dsv-entry-who">agent</span>
                     <span class="dsv-entry-title">Het wordt een epic</span>
                   </div>
-                  <p class="dsv-entry-detail">Te groot voor &eacute;&eacute;n keer, en de stukken zijn los al bruikbaar. Fase 1: klein en groot als vaste keuzes, zodat loggen &eacute;&eacute;n tik is. Fase 2: spraak die doorvraagt naar het formaat. Fase 3: terugkijken &mdash; een dagtotaal, en cafe&iuml;ne als veld zodat thee en cola meetellen.</p>
+                  <p class="dsv-entry-detail">Te groot voor &eacute;&eacute;n keer, en de stukken zijn los al bruikbaar. Elke fase krijgt er meteen bij wanneer hij af is &mdash; anders kan niemand achteraf vaststellen of het gelukt is.</p>
+                  <ol class="dsv-phases">
+                    <li class="dsv-phase">
+                      <span class="dsv-phase-n">Fase 1</span>
+                      <span class="dsv-phase-t">Klein en groot als vaste keuze</span>
+                      <span class="dsv-phase-b">Koffie komt als product in het dagboek, met twee opgeslagen porties: klein van 150 ml en groot van 250 ml. Die staan bovenaan bij je favorieten. Er komt geen nieuw scherm bij.</span>
+                      <span class="dsv-phase-d">Af als je met &eacute;&eacute;n tik een koffie logt en hij in je dagoverzicht staat.</span>
+                    </li>
+                    <li class="dsv-phase">
+                      <span class="dsv-phase-n">Fase 2</span>
+                      <span class="dsv-phase-t">Spraak die doorvraagt</span>
+                      <span class="dsv-phase-b">Spreek je &ldquo;twee koffie&rdquo; in, dan vraagt de app &ldquo;klein of groot?&rdquo; en slaat pas na je antwoord op. De doorvraag zelf bestaat al; koffie wordt eraan toegevoegd.</span>
+                      <span class="dsv-phase-d">Af als je zonder te typen twee kleine koffie kunt loggen.</span>
+                    </li>
+                    <li class="dsv-phase">
+                      <span class="dsv-phase-n">Fase 3</span>
+                      <span class="dsv-phase-t">Terugkijken, en verder dan koffie</span>
+                      <span class="dsv-phase-b">Een dagtotaal in koppen &eacute;n milliliters, plus een cafe&iuml;neveld op producten zodat thee, cola en energiedrank meetellen. Dit is de enige fase die aan het datamodel komt.</span>
+                      <span class="dsv-phase-d">Af als je van een dag ziet hoeveel cafe&iuml;ne erin ging, ook als het geen koffie was.</span>
+                    </li>
+                  </ol>
                 </li>
                 <li class="dsv-entry" data-p="68" data-who="agent" data-dwell="4500">
                   <div class="dsv-entry-head">
@@ -435,7 +455,7 @@
   </footer>
 </div>
 
-<script src="../assets/aurora.js?v=14" defer></script>
-<script src="../assets/widget.js?v=14" defer></script>
+<script src="../assets/aurora.js?v=16" defer></script>
+<script src="../assets/widget.js?v=16" defer></script>
 </body>
 </html>
