@@ -131,8 +131,18 @@
 
     if (nextButton) nextButton.disabled = state.waiting || n >= TOTAL;
 
-    // Keep the newest step in view; the log scrolls inside its own box.
-    if (log) log.scrollTop = log.scrollHeight;
+    // Keep the newest step in view; the log scrolls inside its own box. A step
+    // taller than the box gets its top lined up instead of its bottom —
+    // scrolling to the end of it would drop the reader past its opening.
+    if (log && last) {
+      var limit = log.scrollHeight - log.clientHeight;
+      if (last.el.offsetHeight > log.clientHeight) {
+        var delta = last.el.getBoundingClientRect().top - log.getBoundingClientRect().top;
+        log.scrollTop = Math.min(log.scrollTop + delta, limit);
+      } else {
+        log.scrollTop = limit;
+      }
+    }
   }
 
   /* ---------- run ---------------------------------------------------------- */
