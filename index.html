@@ -25,8 +25,8 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 
-<link rel="stylesheet" href="assets/site.css?v=2">
-<link rel="stylesheet" href="assets/aurora.css?v=2">
+<link rel="stylesheet" href="assets/site.css?v=3">
+<link rel="stylesheet" href="assets/aurora.css?v=3">
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Person","name":"Koen Holman","jobTitle":"Software engineer","address":{"@type":"PostalAddress","addressLocality":"Tilburg","addressCountry":"NL"},"description":"Software engineer, full stack en AI-native CI/CD.","sameAs":["https://github.com/KCTHolman","https://www.linkedin.com/in/koen-holman/"],"knowsAbout":["Software engineering","CI/CD","AI-agents","Flutter","Full stack development"],"worksFor":{"@type":"Organization","name":"Indicia"}}
@@ -64,24 +64,17 @@
 
     <section class="kh-now">
       <h2 class="kh-section-label">Waar ik nu aan bouw</h2>
-      <div class="kh-project-row">
-        <a class="khcard" href="werk/">
-          <span class="kh-card-kicker">Project 01 &middot; huidig</span>
-          <span class="kh-card-title">de Schouw<span class="kh-accent">vloot</span></span>
-          <span class="kh-card-body">Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Publiek te lezen.</span>
-        </a>
+      <!-- A panel, not a link: the two deep links live inside it, and an
+           anchor cannot be nested in an anchor. The title carries the link
+           to the project page itself. -->
+      <div class="kh-panel kh-now-card">
+        <span class="kh-card-kicker">Project 01 &middot; huidig</span>
+        <a class="kh-card-title" href="werk/">de Schouw<span class="kh-accent">vloot</span></a>
+        <span class="kh-card-body">Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Publiek te lezen.</span>
 
-        <!-- Straight into either side of the showcase; werk/ itself opens on
-             the keuzescherm, these two skip it. -->
-        <div class="kh-project-links">
-          <a class="khcta khcta--primary" href="werk/#verhalend">
-            <span>Verhalend &middot; niet-technische uitleg</span>
-            <span aria-hidden="true">&#8594;</span>
-          </a>
-          <a class="khcta khcta--ghost" href="werk/#technisch">
-            <span>Technisch &middot; wat het soepel houdt</span>
-            <span aria-hidden="true">&#8594;</span>
-          </a>
+        <div class="kh-link-row kh-project-links">
+          <a class="kh-link" href="werk/#verhalend">Verhalend &middot; niet-technische uitleg</a>
+          <a class="kh-link" href="werk/#technisch">Technisch &middot; wat het soepel houdt</a>
         </div>
       </div>
     </section>
@@ -95,6 +88,6 @@
   </footer>
 </div>
 
-<script src="assets/aurora.js?v=2" defer></script>
+<script src="assets/aurora.js?v=3" defer></script>
 </body>
 </html>

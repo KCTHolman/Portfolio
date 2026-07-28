@@ -196,6 +196,7 @@ a.khnav[aria-current="page"] {
   padding: 0;
 }
 .kh-now { padding: 0; }
+.kh-now-card { max-width: 560px; }
 .kh-main--werk    { padding: 0 20px 96px; }
 .kh-main--over    { padding: 56px 20px 110px; }
 .kh-main--contact { padding: 56px 20px 130px; }
@@ -333,75 +334,11 @@ a.khnav[aria-current="page"] {
   margin-top: 34px;
 }
 
-/* Project card with its two deep links alongside, splitting the card's
-   height between them. Both wrap under the card on a narrow screen. */
-.kh-project-row {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.kh-project-row .khcard {
-  flex: 1 1 380px;
-  max-width: 560px;
-}
-
+/* The two deep links under the project card, in the same underlined style
+   as the showcase's own footer links. */
 .kh-project-links {
-  flex: 1 1 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Each one reads as a single big button: filled, centred, and lifting on
-   hover — a label pinned to the far left of a 500px box read as a panel. */
-.kh-project-links .khcta {
-  flex: 1;
-  justify-content: center;
-  gap: 14px;
-  padding: 18px 26px;
-  border-radius: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  text-align: center;
-  transition: background .25s, border-color .25s, color .25s, transform .25s;
-}
-.kh-project-links .khcta:hover { transform: translateY(-2px); }
-
-.kh-project-links .khcta--primary {
-  border-color: rgba(125, 224, 210, 0.55);
-  background: rgba(125, 224, 210, 0.16);
-}
-.kh-project-links .khcta--primary:hover { background: rgba(125, 224, 210, 0.26); }
-
-.kh-project-links .khcta--ghost {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(234, 244, 255, 0.86);
-}
-.kh-project-links .khcta--ghost:hover {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-:root[data-theme="light"] .kh-project-links .khcta--primary {
-  border-color: rgba(15, 118, 110, 0.5);
-  background: rgba(15, 118, 110, 0.14);
-}
-:root[data-theme="light"] .kh-project-links .khcta--primary:hover { background: rgba(15, 118, 110, 0.22); }
-:root[data-theme="light"] .kh-project-links .khcta--ghost {
-  border-color: rgba(10, 25, 45, 0.22);
-  background: rgba(255, 255, 255, 0.8);
-  color: rgba(22, 40, 60, 0.86);
-}
-:root[data-theme="light"] .kh-project-links .khcta--ghost:hover {
-  border-color: rgba(10, 25, 45, 0.36);
-  background: #ffffff;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .kh-project-links .khcta:hover { transform: none; }
+  margin-top: 18px;
+  font-size: 14px;
 }
 
 a.khcta {
@@ -469,6 +406,15 @@ a.khcard:hover {
   line-height: 1;
   color: var(--kh-ink-bright);
 }
+
+/* On a panel the title is the link to the project, since the panel itself
+   can no longer be one. */
+a.kh-card-title {
+  width: fit-content;
+  text-decoration: none;
+  transition: color .2s;
+}
+a.kh-card-title:hover { color: var(--kh-teal-soft); }
 
 .kh-card-body {
   display: block;
