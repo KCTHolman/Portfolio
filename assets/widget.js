@@ -292,6 +292,20 @@
   var allButton = widget.querySelector('[data-action="all"]');
   if (allButton) allButton.addEventListener('click', all);
 
+  // Same run, one layer deeper: what the backend actually does per step, and
+  // what happens when that step fails.
+  var depthButton = widget.querySelector('[data-action="depth"]');
+  if (depthButton) {
+    depthButton.addEventListener('click', function () {
+      var deep = widget.getAttribute('data-depth') !== 'tech';
+      widget.setAttribute('data-depth', deep ? 'tech' : 'verhaal');
+      depthButton.setAttribute('aria-pressed', String(deep));
+      depthButton.textContent = deep ? 'Verhalende versie' : 'Technische versie';
+      // The step just grew or shrank; put it back in view.
+      render();
+    });
+  }
+
   // Leaving the page mid-run would otherwise keep the timer chain alive.
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden' && state.playing) {
