@@ -221,9 +221,9 @@
         'style="background:' + swatchBackground(p, i) + '"></button>';
     }).join('');
 
-    // Between the two footer lines, so it reads as part of the footer rather
-    // than as something bolted onto the end of it.
-    footer.insertBefore(row, footer.lastElementChild);
+    // After the footer's text line: on a narrow screen that line becomes its
+    // own swipeable row, and the swatches sit under it.
+    footer.appendChild(row);
     swatches = Array.prototype.slice.call(row.querySelectorAll('[data-preset]'));
   }
 

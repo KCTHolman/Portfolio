@@ -202,7 +202,6 @@
    It becomes one horizontal strip you swipe instead, without a visible bar. */
 @media (max-width: 699px) {
   .aur-presets {
-    order: 0;
     width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
