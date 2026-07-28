@@ -779,19 +779,30 @@
   animation: vwWait 1.2s ease-in-out infinite;
 }
 
+/* One strip you swipe, never a second row: wrapping made the whole block jump
+   every time a label changed length. Overflow is the escape valve instead. */
 .dsv-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin-top: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
 }
+.dsv-controls::-webkit-scrollbar { display: none; }
 
 .dsv-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex: none;
+  scroll-snap-align: start;
   height: 38px;
-  padding: 0 15px;
+  padding: 0 14px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
@@ -817,13 +828,17 @@
   color: rgba(226, 238, 250, 0.75);
 }
 
+/* Both labels swap while the run goes; a fixed width keeps the row still
+   instead of shuffling every button along. Sized for the longest string. */
 .dsv-btn--play {
-  padding: 0 17px;
+  min-width: 138px;
   border-color: rgba(125, 224, 210, 0.35);
   background: rgba(125, 224, 210, 0.1);
   color: var(--dsv-acc-soft);
 }
 .dsv-btn--play:hover { background: rgba(125, 224, 210, 0.18); }
+
+.dsv-btn--depth { min-width: 166px; }
 
 /* ---------- Technisch --------------------------------------------------- */
 
@@ -1124,6 +1139,24 @@
   }
   .dsv-rail { display: none; }
   .dsv-log { max-height: 360px; }
+
+  /* Narrower, not shorter: 38px stays a comfortable tap target, and the strip
+     sits at the bottom of the widget where a thumb already is. */
+  .dsv-controls {
+    gap: 7px;
+    margin-top: 14px;
+    /* Only here: on a wide screen the row fits and a fade would just dim the
+       last button for no reason. */
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+  }
+  .dsv-btn {
+    padding: 0 12px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+  .dsv-btn--play { min-width: 126px; }
+  .dsv-btn--depth { min-width: 148px; }
 
   .dsv-tech {
     margin-top: 22px;
