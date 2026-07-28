@@ -55,7 +55,9 @@
   position: absolute;
   inset: -12%;
   filter: url(#kh-paint);
-  opacity: var(--aur-paint-op, 0.5);
+  /* The boost is a stylesheet knob (see the narrow-screen block); the op comes
+     from JS as an inline style, so the two have to be separate properties. */
+  opacity: calc(var(--aur-paint-op, 0.62) * var(--aur-paint-boost, 1));
 }
 
 .aur-blob {
@@ -144,6 +146,27 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(115% 85% at 50% 32%, transparent 28%, rgba(0, 0, 0, 0.72) 72%, #000000 100%);
+}
+
+/* ---------- Narrow screens ---------------------------------------------- */
+
+/* Two things kill the wash on a phone. The blobs are sized in vw, so on a
+   narrow viewport they cover a fraction of a tall screen; and the vignette is
+   sized against the box, so on a portrait screen almost everything falls into
+   its dark half. Both get scaled up here, and the paint runs a touch hotter. */
+@media (max-width: 699px) {
+  :root { --aur-paint-boost: 1.3; }
+
+  .aur-vignette {
+    background: radial-gradient(150% 118% at 50% 30%, transparent 44%, rgba(0, 0, 0, 0.5) 84%, rgba(0, 0, 0, 0.92) 100%);
+  }
+
+  .aur-blob--1 { top: 2%;  left: 4%;    width: 92vw;  height: 92vw; }
+  .aur-blob--2 { bottom: 2%; right: -8%; width: 108vw; height: 108vw; }
+  .aur-blob--3 { top: -8%;  left: -20%;  width: 130vw; height: 55vh; }
+  .aur-blob--4 { top: 28%;  right: -25%; width: 125vw; height: 60vh; }
+  .aur-blob--5 { bottom: -10%; left: -10%; width: 120vw; height: 55vh; }
+  .aur-blob--6 { top: 8%;   left: 10%;   width: 100vw; height: 48vh; }
 }
 
 /* ---------- Play panel -------------------------------------------------- */
