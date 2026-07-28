@@ -257,13 +257,19 @@
 
       // Each blob sits a little further along the same sway, so the palette
       // breathes instead of sliding as one block.
+      var amp = d.amp * 1.8;
       cols = p.cols.map(function (c, i) {
         var local = phase + i * 0.6;
-        return hsla(c[0] + Math.sin(local) * d.amp, c[1], c[2] + Math.sin(local * 0.7) * 3, c[3]);
+        return hsla(
+          c[0] + Math.sin(local) * amp,
+          c[1],
+          c[2] + Math.sin(local * 0.7) * 5,
+          Math.max(0.2, Math.min(0.85, c[3] + Math.sin(local * 1.3) * 0.06))
+        );
       });
       tcols = p.tcols.map(function (c, i) {
         var local = phase + i * 0.9;
-        return hsla(c[0] + Math.sin(local) * d.amp * 0.6, c[1], c[2], 1);
+        return hsla(c[0] + Math.sin(local) * amp * 0.6, c[1], c[2], 1);
       });
       root.style.setProperty('--aur-paint-op', String(FULL_PAINT));
     }
@@ -272,13 +278,44 @@
     for (var j = 0; j < tcols.length; j++) root.style.setProperty('--t' + (j + 1), tcols[j]);
   }
 
-  // Geometry only changes when the preset changes.
+  // Geometry breathes too, not just colour: the swirl, the brushstroke and the
+  // softness each ride their own multiple of the preset's period, so they never
+  // move in lockstep and the wash keeps changing shape as well as hue.
+  var GEO_SWAY = { scale: 0.5, freq: 0.38, soft: 0.16 };
+  var lastGeo = { scale: null, freq: null, soft: null };
+
+  function geoNow() {
+    var p = current();
+    var base = p.geo || BASE;
+    var period = (p.drift && p.drift.period) || 60;
+    var t = elapsed();
+    var wave = function (mult, phase) { return Math.sin((2 * Math.PI * t) / (period * mult) + phase); };
+
+    return {
+      scale: Math.max(0, base.scale * (1 + GEO_SWAY.scale * wave(1.7, 0))),
+      freq: Math.max(0.001, base.freq * (1 + GEO_SWAY.freq * wave(2.3, 1.1))),
+      soft: Math.max(0.2, base.soft * (1 + GEO_SWAY.soft * wave(3.1, 2.2))),
+      speed: base.speed
+    };
+  }
+
   function paintGeometry() {
-    var geo = current().geo || BASE;
-    root.style.setProperty('--soft', geo.soft.toFixed(3));
+    var geo = reduceMotion.matches ? (current().geo || BASE) : geoNow();
+
+    var soft = geo.soft.toFixed(3);
+    var freq = geo.freq.toFixed(4);
+    var scale = geo.scale.toFixed(1);
+
+    // Rewriting a filter forces the whole wash to re-rasterise, so only touch
+    // it when the rounded value actually moved.
+    if (soft !== lastGeo.soft) { root.style.setProperty('--soft', soft); lastGeo.soft = soft; }
+    if (freq !== lastGeo.freq) {
+      turbulence.setAttribute('baseFrequency', freq + ' ' + (geo.freq * 1.35).toFixed(4));
+      lastGeo.freq = freq;
+    }
+    if (scale !== lastGeo.scale) { displacement.setAttribute('scale', scale); lastGeo.scale = scale; }
+
     root.style.setProperty('--speed', geo.speed.toFixed(3));
-    turbulence.setAttribute('baseFrequency', geo.freq.toFixed(4) + ' ' + (geo.freq * 1.35).toFixed(4));
-    displacement.setAttribute('scale', geo.scale.toFixed(1));
   }
 
   function syncSwatches() {
@@ -295,6 +332,8 @@
 
   /* ---------- animation loop ---------------------------------------------- */
 
+  var lastGeoPaint = 0;
+
   function loop(now) {
     // The living preset walks 9 deg/sec and wants ~30fps; a sway of a few
     // degrees a minute does not, so it repaints a third as often.
@@ -302,6 +341,11 @@
     if (now - lastPaint >= interval) {
       lastPaint = now;
       paintColors();
+    }
+    // Geometry runs far cooler: every write re-rasterises the filter.
+    if (now - lastGeoPaint >= 250) {
+      lastGeoPaint = now;
+      paintGeometry();
     }
     raf = requestAnimationFrame(loop);
   }
