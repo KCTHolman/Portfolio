@@ -18,6 +18,22 @@
   var sheet = document.querySelector('.kh-sheet');
   if (!sheet) return;
 
+  /* ---------- wachten op de release ---------------------------------------- */
+
+  // Staat er een run op deze pagina, dan is dit scherm de ontknoping ervan en
+  // hoort het er pas te zijn zodra die run z'n release gehaald heeft. Zonder
+  // run (of zonder JS) staat het er gewoon.
+  var demo = document.querySelector('.kh-demo');
+  var run = document.querySelector('.dsv .dsv-entry');
+
+  if (demo && run) {
+    demo.setAttribute('data-locked', '');
+    document.addEventListener('dsv:live', function () {
+      demo.removeAttribute('data-locked');
+      demo.classList.add('is-revealed');
+    }, { once: true });
+  }
+
   var HALF_LIFE = 5.5;   // uur
   var BEDTIME = 23;      // uur
   var LIMIT = 400;       // mg per dag, de gangbare richtlijn

@@ -6,6 +6,19 @@
    staat in assets/demo.js; hier alleen hoe het eruitziet.
    ========================================================================== */
 
+/* Verborgen tot de run z'n release gehaald heeft; assets/demo.js zet dat af
+   op het dsv:live-signaal en laat 'm dan binnenkomen. */
+.kh-demo[data-locked] { display: none; }
+
+.kh-demo.is-revealed {
+  animation: khDemoIn 900ms cubic-bezier(.16, .84, .34, 1) both;
+}
+
+@keyframes khDemoIn {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+
 .kh-demo {
   margin-top: 46px;
   display: grid;
@@ -300,4 +313,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .kh-chip:active { transform: none; }
+  /* Verschijnen mag, opvallen bewegen niet. */
+  .kh-demo.is-revealed { animation: none; }
 }
