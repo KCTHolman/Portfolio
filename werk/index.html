@@ -25,9 +25,9 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="stylesheet" href="../assets/site.css?v=4">
-<link rel="stylesheet" href="../assets/aurora.css?v=4">
-<link rel="stylesheet" href="../assets/widget.css?v=4">
+<link rel="stylesheet" href="../assets/site.css?v=5">
+<link rel="stylesheet" href="../assets/aurora.css?v=5">
+<link rel="stylesheet" href="../assets/widget.css?v=5">
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"deSchouwVloot","description":"AI-native CI/CD-pijplijn: agents voeren het werk uit, een mens beslist op drie poorten. 16 reusable workflows, nul eigen triggers.","codeRepository":"https://github.com/KCTHolman/deSchouwVloot","programmingLanguage":["YAML","Bash","Python"],"author":{"@type":"Person","name":"Koen Holman"}}
@@ -141,10 +141,10 @@
               <button type="button" class="dsv-back" data-goto="gate">&larr; Kies weergave</button>
               <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur &middot; Verhalend</p>
               <h3 class="dsv-title">Het <em>logboek</em></h3>
-              <p class="dsv-lead">E&eacute;n regel idee erin, een release eruit. Dit is elke stap die deSchouwVloot ertussen zet &mdash; en de vijf keer dat de pijplijn stilstaat tot een mens ja zegt.</p>
+              <p class="dsv-lead">E&eacute;n echt idee, van de inbox tot live. Elke stap die deSchouwVloot ertussen zet, met het waarom erbij &mdash; inclusief het moment waarop het idee tegen de richting van het project aan loopt en wordt herschreven.</p>
             </div>
             <ul class="dsv-stats">
-              <li class="dsv-stat"><span class="dsv-stat-n">9</span><span class="dsv-stat-l">stappen zonder jou</span></li>
+              <li class="dsv-stat"><span class="dsv-stat-n">17</span><span class="dsv-stat-l">stappen zonder jou</span></li>
               <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">5</span><span class="dsv-stat-l">keer jij</span></li>
             </ul>
           </header>
@@ -164,139 +164,235 @@
             </div>
 
             <div class="dsv-logwrap">
+              <!-- The idea as it is typed into the gate. widget.js empties this and
+                   retypes it; without JS it simply reads as the issue it is. -->
+              <div class="dsv-intake">
+                <div class="dsv-intake-head">
+                  <span class="dsv-intake-label">nieuw issue &middot; poort</span>
+                  <span class="dsv-intake-repo">deSchouwVloot &middot; intake</span>
+                </div>
+                <p class="dsv-intake-text"><span class="dsv-typed">Nieuwe module in de app, analyses en patronen herkennen van wat ik log</span><span class="dsv-caret" aria-hidden="true"></span></p>
+              </div>
+
               <div class="dsv-log-head">
                 <span class="dsv-log-title">Van idee naar release</span>
-                <span class="dsv-counter">14 / 14 stappen</span>
+                <span class="dsv-counter">22 / 22 stappen</span>
               </div>
 
               <ol class="dsv-log">
-                <li class="dsv-entry" data-p="0" data-who="jij" data-kind="invoer">
+                <li class="dsv-entry" data-p="0" data-who="jij" data-kind="invoer" data-dwell="6000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">01</span>
                     <span class="dsv-entry-who">jij</span>
                     <span class="dsv-entry-title">Idee in de inbox</span>
                   </div>
-                  <p class="dsv-entry-detail">&ldquo;Ranking negeert recency.&rdquo; E&eacute;n regel, geen template, geen labels &mdash; de poort maakt er de rest van.</p>
+                  <p class="dsv-entry-detail">E&eacute;n regel, geen template, geen labels: <em>&ldquo;Nieuwe module in de app, analyses en patronen herkennen van wat ik log.&rdquo;</em> Het gaat naar de poort van deSchouwVloot, niet naar een projectbord.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Er is precies &eacute;&eacute;n inbox. Moet jij zelf al kiezen in welke repo iets hoort, dan doe je het werk van de poort &mdash; en dat is nou net het werk dat een machine foutloos kan doen.</p>
                 </li>
-                <li class="dsv-entry" data-p="6" data-who="poort">
+                <li class="dsv-entry" data-p="5" data-who="poort" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">02</span>
                     <span class="dsv-entry-who">poort</span>
-                    <span class="dsv-entry-title">Doelproject gekozen</span>
+                    <span class="dsv-entry-title">Doelproject gekozen &mdash; BiohackOS</span>
                   </div>
-                  <p class="dsv-entry-detail">Een trefwoordtabel wijst naar core-ranking en transfereert het issue. Bij twijfel had de poort gevraagd, niet gegokt.</p>
+                  <p class="dsv-entry-detail"><code>routing.yml</code> telt hele woorden in titel en body. &ldquo;app&rdquo; scoort voor BiohackOS, niets scoort voor deFleet. Strikt de meeste punten wint, dus het issue wordt getransfereerd naar <code>KCTHolman/BiohackOS</code>.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>De poort is bewust een dom bestand: trefwoorden, geen model. Bij gelijkspel of nul punten valt hij terug op <code>needs-routing</code> en vraagt het gewoon. Verkeerd geplaatst kost meer dan een seconde extra van de eigenaar.</p>
                 </li>
-                <li class="dsv-entry" data-p="13" data-who="agent">
+                <li class="dsv-entry" data-p="10" data-who="agent" data-dwell="7000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">03</span>
                     <span class="dsv-entry-who">agent</span>
                     <span class="dsv-entry-title">Triage in de doelrepo</span>
                   </div>
-                  <p class="dsv-entry-detail">feature &middot; area:ranking. Labelen gebeurt waar de domeinkennis woont; geen duplicaat gevonden, dus geen wedervraag.</p>
+                  <p class="dsv-entry-detail">Labels <code>claude-task</code> en <code>area: app</code> &mdash; die laatste rolt uit de padentabel in <code>.fleet.yml</code>: alles onder <code>lib/</code>, <code>android/</code>, <code>test/</code> of met <code>.dart</code>. Turn-budget voor dit station: 30.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Labelen gebeurt p&aacute;s hier, want labels reizen niet mee bij een transfer &mdash; alleen namen die in de doelrepo bestaan overleven. En de domeinkennis woont toch in de doelrepo, niet in de poort.</p>
                 </li>
-                <li class="dsv-entry" data-p="20" data-who="agent">
+                <li class="dsv-entry" data-p="15" data-who="agent" data-dwell="9000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">04</span>
                     <span class="dsv-entry-who">agent</span>
-                    <span class="dsv-entry-title">Plan zegt: dit is een epic</span>
+                    <span class="dsv-entry-title">Eerst het kompas: doelen.md</span>
                   </div>
-                  <p class="dsv-entry-detail">Te groot voor &eacute;&eacute;n PR. Het plan knipt het in drie fase-issues met een vaste volgorde en opent alleen de eerste.</p>
+                  <p class="dsv-entry-detail">Voor er ook maar iets bedacht wordt, leest de agent de bronhi&euml;rarchie. <code>constitution.md</code> (privacy en ethiek, onwrikbaar) &gt; <code>doelen.md</code> (de richting) &gt; <code>spec.md</code> &gt; <code>AGENTS.md</code>.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Zonder die volgorde is &ldquo;beter&rdquo; een mening. Met die volgorde is het toetsbaar: bij conflict wint het hogere document, en dat hoeft niemand ter plekke te beslissen.</p>
                 </li>
-                <li class="dsv-entry" data-p="27" data-who="agent">
+                <li class="dsv-entry" data-p="20" data-who="agent" data-dwell="10000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">05</span>
                     <span class="dsv-entry-who">agent</span>
-                    <span class="dsv-entry-title">Build &mdash; fase 1</span>
+                    <span class="dsv-entry-title">Het idee botst met de richting</span>
                   </div>
-                  <p class="dsv-entry-detail">Ephemeral container zonder host-toegang, 18 van 24 turns gebruikt. Concurrency per issue: geen dubbele builds.</p>
+                  <p class="dsv-entry-detail">Twee treffers. Thema 2 van <code>doelen.md</code> zegt: <em>verdiep het bestaande advies in plaats van nieuwe modules te stapelen</em> &mdash; en dit idee vraagt om een nieuwe module. Patroonherkenning staat bovendien op de onderzoekslijst: <em>eerst begrijpen, nog niet bouwen</em>.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Dit is geen afwijzing. <code>constitution.md</code> is een grens, <code>doelen.md</code> is een richting &mdash; die stuurt bij. Het idee is goed, de vorm klopt nog niet met waar de app naartoe groeit.</p>
                 </li>
-                <li class="dsv-entry" data-p="33" data-who="checks">
+                <li class="dsv-entry" data-p="26" data-who="agent" data-dwell="9000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">06</span>
-                    <span class="dsv-entry-who">checks</span>
-                    <span class="dsv-entry-title">Groen, inclusief golden-set</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Plan herschreven binnen de grenzen</span>
                   </div>
-                  <p class="dsv-entry-detail">214 unit-tests, plus de randgevallen die met 2-1 moeten winnen. Configuratie die gedrag stuurt is code, dus krijgt tests.</p>
+                  <p class="dsv-entry-detail">Geen losse module. In plaats daarvan: de datakwaliteit waar advies op steunt eerst kloppend maken, de patroonvraag als onderzoek uitvoeren, en de uitkomst landen in het advies dat er al is.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Zo overleeft de bedoeling van het idee &mdash; inzicht uit wat je logt &mdash; zonder de richting te overtreden. Een plan dat de richting negeert, bouwt precies datgene wat je later weer moet afbreken.</p>
                 </li>
-                <li class="dsv-entry" data-p="40" data-who="review">
+                <li class="dsv-entry" data-p="31" data-who="critic" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">07</span>
-                    <span class="dsv-entry-who">review</span>
-                    <span class="dsv-entry-title">Review is advies, geen poort</span>
+                    <span class="dsv-entry-who">critic</span>
+                    <span class="dsv-entry-title">Plan-poort &mdash; de mechanische helft</span>
                   </div>
-                  <p class="dsv-entry-detail">Drie opmerkingen, &eacute;&eacute;n blocker. De pijplijn repareerde die zelf en draaide opnieuw &mdash; escalatie is de uitzondering.</p>
+                  <p class="dsv-entry-detail"><code>plan-critic.sh</code> toetst hard op twee dingen: staan er minstens twee concrete stappen in, en noemt het plan z&#39;n eigen verificatie. Daarnaast levert het bevindingen: genoemde paden die nog niet bestaan, en of er &uuml;berhaupt naar een brondocument verwezen wordt.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Sinds de auto-ontsteking verschoof de mens-poort van het plan naar de PR. Daarmee werd het plan het enige station zonder toets &mdash; terwijl een fout plan het duurste faalpad is: je betaalt een volledige build, review en herstelronde op het verkeerde fundament.</p>
                 </li>
-                <li class="dsv-entry" data-p="47" data-who="jij" data-kind="merge" data-gate>
+                <li class="dsv-entry" data-p="35" data-who="critic" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">08</span>
-                    <span class="dsv-entry-who">jij</span>
-                    <span class="dsv-entry-title">Merge &mdash; fase 1</span>
+                    <span class="dsv-entry-who">critic</span>
+                    <span class="dsv-entry-title">Bevindingen, geen afwijzingen</span>
                   </div>
-                  <p class="dsv-entry-detail">Alleen features wachten op jou. Fix, chore, docs en ci mergen door op groen; menselijke aandacht is de schaarste.</p>
-                  <div class="dsv-entry-act">
-                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
-                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
-                  </div>
+                  <p class="dsv-entry-detail">De niet-bestaande paden in het plan worden g&eacute;&eacute;n reden tot afwijzen &mdash; mechanisch is het verschil tussen een gehallucineerd pad en een nieuw bestand niet vast te stellen. Ze gaan als startpunt naar een tweede, adversari&euml;le lezing door een agent.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Een criticus die vals-positief afwijst, leert je de uitkomst te negeren. Dan is de poort erger dan geen poort. Alles waar twijfel mogelijk is, komt er daarom als bevinding uit.</p>
                 </li>
-                <li class="dsv-entry" data-p="54" data-who="agent">
+                <li class="dsv-entry" data-p="40" data-who="agent" data-dwell="9000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">09</span>
                     <span class="dsv-entry-who">agent</span>
-                    <span class="dsv-entry-title">Build &mdash; fase 2</span>
+                    <span class="dsv-entry-title">Dit wordt een epic</span>
                   </div>
-                  <p class="dsv-entry-detail">De agent leest eerst wat er &eacute;cht gemergd is, niet wat er bedoeld was. Daarna dezelfde volle set checks.</p>
+                  <p class="dsv-entry-detail">E&eacute;n issue is de default; epic alleen als het werk echt uiteenvalt in fasen die apart mergebaar zijn. Dat is hier zo, dus de body krijgt <code>## Doel</code>, <code>## Acceptatiecriteria</code>, <code>## Fasen</code> en <code>## Risico&#39;s en grenzen</code>.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Die laatste twee kopjes zijn het verschil tussen een epic en een wensenlijst. Zonder fasen weet de orchestrator niet wat hij mag vrijgeven; zonder grenzen weet de bouwer niet wanneer hij te ver gaat.</p>
                 </li>
-                <li class="dsv-entry" data-p="61" data-who="jij" data-kind="merge" data-gate>
+                <li class="dsv-entry" data-p="44" data-who="agent" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">10</span>
-                    <span class="dsv-entry-who">jij</span>
-                    <span class="dsv-entry-title">Merge &mdash; fase 2</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Fase 1 &mdash; de data eerst kloppend</span>
                   </div>
-                  <p class="dsv-entry-detail">Kleine brok, te overzien in &eacute;&eacute;n blik. Kleine PRs zijn niet het bijproduct van epics; ze zijn het doel.</p>
-                  <div class="dsv-entry-act">
-                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
-                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
-                  </div>
+                  <p class="dsv-entry-detail">Health-checks op wat er binnenkomt: implausibele waarden, NaN en Inf blijven vlaggen. Geen UI, geen advies, alleen de fundering. Apart mergebaar en op zichzelf al winst.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Advies dat op scheve data steunt, is overtuigend en fout &mdash; het duurste soort fout in een tool die je gedrag stuurt. Daarom eerst dit, ook al is het het minst spannende stuk.</p>
                 </li>
-                <li class="dsv-entry" data-p="68" data-who="agent">
+                <li class="dsv-entry" data-p="47" data-who="agent" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">11</span>
                     <span class="dsv-entry-who">agent</span>
-                    <span class="dsv-entry-title">Build &amp; checks &mdash; fase 3</span>
+                    <span class="dsv-entry-title">Fase 2 &mdash; patronen als onderzoek</span>
                   </div>
-                  <p class="dsv-entry-detail">Laatste fase. Was deze rood geworden, dan had de reeks stilgestaan in plaats van doorgebouwd op scheef fundament.</p>
+                  <p class="dsv-entry-detail">Trainingsbelasting en herstel staan op de onderzoekslijst. Deze fase levert dus geen code maar een bevinding, als issue met label <code>onderzoek</code>: wat is er te zien in de data, en wat zou het betekenen.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Een model bouwen dat je nog niet begrijpt, levert getallen op die niemand kan weerleggen. Eerst begrijpen, dan pas bouwen &mdash; en de tussenstap expliciet opleveren zodat je hem kunt beoordelen.</p>
                 </li>
-                <li class="dsv-entry" data-p="78" data-who="jij" data-kind="merge" data-gate>
+                <li class="dsv-entry" data-p="50" data-who="agent" data-dwell="8000">
                   <div class="dsv-entry-head">
                     <span class="dsv-entry-t">12</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Fase 3 &mdash; landen in het bestaande advies</span>
+                  </div>
+                  <p class="dsv-entry-detail">Wat fase 2 oplevert, verdiept het advies dat er al is: onderbouwd met de berekening erbij, en de aanname zichtbaar in beeld. Geen nieuw scherm, geen nieuwe module.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Precies wat thema 2 vroeg. De volgorde is ook geen toeval: fase 3 kan niet slagen zonder de fundering van 1 en het inzicht van 2, dus de reeks schuift nooit vooruit over een gat.</p>
+                </li>
+                <li class="dsv-entry" data-p="55" data-who="agent" data-dwell="7000">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">13</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Build &mdash; fase 1</span>
+                  </div>
+                  <p class="dsv-entry-detail">De orchestrator geeft alleen fase 1 vrij. De agent bouwt op lane <code>biohack-agent</code> in een ephemeral container, met een turn-budget van 80 en <code>claude-sonnet-5</code> als standaardmodel; escalatie gaat naar <code>claude-opus-5</code>.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Een turn-budget is geen bezuiniging maar een noodrem: een agent die vastloopt, loopt anders eindeloos door. Concurrency per issue zorgt dat dezelfde fase nooit twee keer tegelijk gebouwd wordt.</p>
+                </li>
+                <li class="dsv-entry" data-p="59" data-who="checks" data-dwell="10000">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">14</span>
+                    <span class="dsv-entry-who">checks</span>
+                    <span class="dsv-entry-title">PR-checks draaien</span>
+                  </div>
+                  <p class="dsv-entry-detail">Zes jobs uit <code>pr-check.yml</code>: de diff wordt geclassificeerd, de PR-titel moet conventional-commit zijn (en wordt anders hersteld uit de branch-commits), <code>flutter analyze</code> en <code>flutter test</code> zijn blokkerend, coverage rapporteert wel maar blokkeert nog niet, er rolt een preview-APK uit als artifact, en eslint bewaakt de webkant.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Coverage die blokkeert v&oacute;&oacute;r je weet waar je staat, levert testjes op om het cijfer te halen. Rapporteren eerst, blokkeren als de bodem bekend is &mdash; dat is een bewuste volgorde, geen uitstel.</p>
+                </li>
+                <li class="dsv-entry" data-p="63" data-who="review" data-dwell="7000">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">15</span>
+                    <span class="dsv-entry-who">review</span>
+                    <span class="dsv-entry-title">Review is advies, geen poort</span>
+                  </div>
+                  <p class="dsv-entry-detail">Een reviewagent leest de PR en laat opmerkingen achter. Faalt de build of ontstaat er een conflict, dan repareert de pijplijn zichzelf en draait opnieuw.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Als review een poort was, stond alles stil op een mening. Nu blokkeren alleen de checks &mdash; die zijn machinaal te weerleggen. Escalatie naar <code>needs-human</code> is de uitzondering, niet de route.</p>
+                </li>
+                <li class="dsv-entry" data-p="67" data-who="jij" data-kind="merge" data-dwell="7000" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">16</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Merge &mdash; fase 1</span>
+                  </div>
+                  <p class="dsv-entry-detail">In <code>.fleet.yml</code> van BiohackOS staat <code>feature_approval: true</code>, dus deze wacht op jou. Fix, chore, docs en ci mergen door op groen via auto-merge.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Menselijke aandacht is de schaarste in deze opstelling. Die zet je in op features, niet op een typefout in een README.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="72" data-who="agent" data-dwell="7000">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">17</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Fase 2 levert een bevinding</span>
+                  </div>
+                  <p class="dsv-entry-detail">De orchestrator opent fase 2 zodra 1 gemergd is. De agent leest eerst wat er &eacute;cht geland is &mdash; niet wat er bedoeld was &mdash; en levert het onderzoek op als issue, geen code.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Lezen wat er staat in plaats van wat het plan beloofde, is het verschil tussen een reeks die klopt en een reeks die op papier klopt.</p>
+                </li>
+                <li class="dsv-entry" data-p="76" data-who="jij" data-kind="merge" data-dwell="6000" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">18</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Merge &mdash; fase 2</span>
+                  </div>
+                  <p class="dsv-entry-detail">Kleine brok, te overzien in &eacute;&eacute;n blik: een bevinding en de onderbouwing.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Kleine PR&#39;s zijn niet het bijproduct van epics, ze zijn het doel. Een review die je niet meer kunt overzien, is een review die je niet meer doet.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="82" data-who="agent" data-dwell="7000">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">19</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Build &amp; checks &mdash; fase 3</span>
+                  </div>
+                  <p class="dsv-entry-detail">Laatste fase, dezelfde volle set checks. Was deze rood geworden, dan had de reeks stilgestaan in plaats van doorgebouwd op scheef fundament.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Een fase die niet groen wordt, blokkeert de fases erna. Dat is de hele reden om te faseren: elke stap staat op een bewezen vorige.</p>
+                </li>
+                <li class="dsv-entry" data-p="88" data-who="jij" data-kind="merge" data-dwell="6000" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">20</span>
                     <span class="dsv-entry-who">jij</span>
                     <span class="dsv-entry-title">Merge &mdash; fase 3</span>
                   </div>
-                  <p class="dsv-entry-detail">Epic sluit. Alle drie de fases gemergd, in precies de volgorde die het plan vastlegde.</p>
+                  <p class="dsv-entry-detail">De epic sluit. Alle drie de fases gemergd, in precies de volgorde die het plan vastlegde.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Het plan was geen intentieverklaring: de orchestrator heeft de volgorde afgedwongen, niet gehoopt.</p>
                   <div class="dsv-entry-act">
                     <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
                     <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
                   </div>
                 </li>
-                <li class="dsv-entry" data-p="90" data-who="jij" data-kind="release" data-gate>
+                <li class="dsv-entry" data-p="94" data-who="jij" data-kind="release" data-dwell="7000" data-gate>
                   <div class="dsv-entry-head">
-                    <span class="dsv-entry-t">13</span>
+                    <span class="dsv-entry-t">21</span>
                     <span class="dsv-entry-who">jij</span>
                     <span class="dsv-entry-title">Release</span>
                   </div>
-                  <p class="dsv-entry-detail">Production-environment met required reviewer. De derde poort &mdash; needs-human-escalatie &mdash; bleef in deze run dicht.</p>
+                  <p class="dsv-entry-detail"><code>release_environment: production</code> in <code>.fleet.yml</code> betekent een GitHub-omgeving met required reviewer. Dit is mens-poort 2 van 3.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>De derde poort is <code>needs-human</code>: de escalatie waarin de pijplijn toegeeft dat hij eruit is. Die bleef in deze run dicht &mdash; en dat is de bedoeling.</p>
                   <div class="dsv-entry-act">
                     <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
                     <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
                   </div>
                 </li>
-                <li class="dsv-entry" data-p="100" data-who="levering">
+                <li class="dsv-entry" data-p="100" data-who="levering" data-dwell="6000">
                   <div class="dsv-entry-head">
-                    <span class="dsv-entry-t">14</span>
+                    <span class="dsv-entry-t">22</span>
                     <span class="dsv-entry-who">levering</span>
-                    <span class="dsv-entry-title">v1.14.0 staat live</span>
+                    <span class="dsv-entry-title">Live</span>
                   </div>
-                  <p class="dsv-entry-detail">E&eacute;n release voor de hele epic, niet drie losse leveringen.</p>
+                  <p class="dsv-entry-detail">E&eacute;n release voor de hele epic. Betere datakwaliteit, een onderzochte hypothese, en advies dat z&#39;n eigen berekening laat zien.</p>
+                  <p class="dsv-entry-why"><span class="dsv-why-label">waarom</span>Wat er live staat is niet het idee zoals het binnenkwam. Het is het idee zoals het door de richting heen kwam &mdash; en dat is precies wat de poorten ervoor moeten doen.</p>
                 </li>
               </ol>
 
@@ -468,7 +564,7 @@
   </footer>
 </div>
 
-<script src="../assets/aurora.js?v=4" defer></script>
-<script src="../assets/widget.js?v=4" defer></script>
+<script src="../assets/aurora.js?v=5" defer></script>
+<script src="../assets/widget.js?v=5" defer></script>
 </body>
 </html>

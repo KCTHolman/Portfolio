@@ -23,14 +23,20 @@
   var entryEls = Array.prototype.slice.call(widget.querySelectorAll('.dsv-entry'));
   if (!entryEls.length) return;
 
-  // Single source of truth: read the run back out of the markup.
+  var DEFAULT_DWELL = 7000;
+
+  // Single source of truth: read the run back out of the markup. Each step
+  // carries its own dwell, so a dense step can hold the screen longer than a
+  // short one without any of that pacing living in here.
   var steps = entryEls.map(function (el) {
+    var dwell = parseInt(el.getAttribute('data-dwell'), 10);
     return {
       el: el,
       p: el.getAttribute('data-p'),
       who: el.getAttribute('data-who'),
       kind: el.getAttribute('data-kind') || '',
       gate: el.hasAttribute('data-gate'),
+      dwell: isFinite(dwell) && dwell > 0 ? dwell : DEFAULT_DWELL,
       t: el.querySelector('.dsv-entry-t').textContent.trim(),
       title: el.querySelector('.dsv-entry-title').textContent.trim()
     };
@@ -41,6 +47,8 @@
   var state = { n: 1, waiting: false, playing: false };
   var timer = null;
   var gateTimer = null;
+  var typeTimer = null;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   /* ---------- element handles --------------------------------------------- */
 
@@ -129,6 +137,34 @@
   function stop() {
     clearTimeout(timer);
     clearTimeout(gateTimer);
+    clearTimeout(typeTimer);
+  }
+
+  /* ---------- the idea being typed in --------------------------------------- */
+
+  var typed = widget.querySelector('.dsv-typed');
+  var ideaText = typed ? typed.textContent : '';
+
+  function typeIdea(done) {
+    if (!typed) { done(); return; }
+    if (reduceMotion.matches) {
+      typed.textContent = ideaText;
+      done();
+      return;
+    }
+    typed.textContent = '';
+    widget.setAttribute('data-typing', '');
+    var i = 0;
+    (function next() {
+      typed.textContent = ideaText.slice(0, ++i);
+      if (i < ideaText.length) {
+        // A hair of variation per character reads as typing rather than a ticker.
+        typeTimer = setTimeout(next, 30 + (i % 5) * 9);
+        return;
+      }
+      widget.removeAttribute('data-typing');
+      typeTimer = setTimeout(done, 1100);
+    })();
   }
 
   function tick() {
@@ -146,20 +182,27 @@
     // A gate holds the run until the visitor clicks Goedkeuren.
     if (next.gate) return;
 
-    timer = setTimeout(tick, 900);
+    timer = setTimeout(tick, next.dwell);
   }
 
   function play() {
     stop();
-    state.n = 1;
+    // Nothing has happened yet — the idea is still being typed.
+    state.n = 0;
     state.waiting = false;
     state.playing = true;
     render();
-    timer = setTimeout(tick, 700);
+    typeIdea(function () {
+      state.n = 1;
+      render();
+      timer = setTimeout(tick, steps[0].dwell);
+    });
   }
 
   function all() {
     stop();
+    widget.removeAttribute('data-typing');
+    if (typed) typed.textContent = ideaText;
     state.n = TOTAL;
     state.waiting = false;
     state.playing = false;
@@ -172,7 +215,7 @@
     state.waiting = false;
     state.playing = true;
     render();
-    timer = setTimeout(tick, 650);
+    timer = setTimeout(tick, 1200);
   }
 
   /* ---------- views -------------------------------------------------------- */
