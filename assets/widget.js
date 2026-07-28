@@ -56,6 +56,7 @@
   var log = widget.querySelector('.dsv-log');
   var counter = widget.querySelector('.dsv-counter');
   var playButton = widget.querySelector('[data-action="play"]');
+  var nextButton = widget.querySelector('[data-action="next"]');
 
   /* ---------- derived furniture ------------------------------------------- */
 
@@ -128,6 +129,8 @@
         : PLAY_LABEL;
     }
 
+    if (nextButton) nextButton.disabled = state.waiting || n >= TOTAL;
+
     // Keep the newest step in view; the log scrolls inside its own box.
     if (log) log.scrollTop = log.scrollHeight;
   }
@@ -199,6 +202,16 @@
     });
   }
 
+  // For anyone reading faster than the run: jump straight to the next step and
+  // restart the dwell from there. A gate is not skippable — Goedkeuren is the
+  // only way past it, which is the whole point of the gate.
+  function next() {
+    if (state.waiting || state.n >= TOTAL) return;
+    stop();
+    state.playing = true;
+    tick();
+  }
+
   function all() {
     stop();
     widget.removeAttribute('data-typing');
@@ -264,6 +277,7 @@
   });
 
   if (playButton) playButton.addEventListener('click', play);
+  if (nextButton) nextButton.addEventListener('click', next);
 
   var allButton = widget.querySelector('[data-action="all"]');
   if (allButton) allButton.addEventListener('click', all);

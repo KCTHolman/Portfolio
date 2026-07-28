@@ -697,6 +697,14 @@
   border-color: rgba(125, 224, 210, 0.4);
   color: var(--dsv-acc-soft);
 }
+.dsv-btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.dsv-btn[disabled]:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(226, 238, 250, 0.75);
+}
 
 .dsv-btn--play {
   padding: 0 17px;

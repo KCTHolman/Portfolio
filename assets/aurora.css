@@ -198,15 +198,29 @@
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
 }
 
+/* On a phone the row would wrap into three stacked lines and eat the footer.
+   It becomes one horizontal strip you swipe instead, without a visible bar. */
 @media (max-width: 699px) {
   .aur-presets {
     order: 0;
     width: 100%;
-    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    /* Fades at both ends, so a half-visible swatch reads as "there is more". */
+    mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
   }
+  .aur-presets::-webkit-scrollbar { display: none; }
+
   .aur-preset {
-    width: 34px;
-    height: 20px;
+    flex: none;
+    width: 38px;
+    height: 22px;
+    scroll-snap-align: center;
   }
 }
 
