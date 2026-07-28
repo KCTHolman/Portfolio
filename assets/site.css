@@ -142,6 +142,26 @@ button:focus-visible,
   flex-wrap: wrap;
 }
 
+/* Once the four items no longer fit next to the wordmark, the menu becomes a
+   strip you swipe rather than a second line — same treatment as the swatches.
+   The fade at the right edge is what says there is more. */
+@media (max-width: 859px) {
+  .kh-header-inner { flex-wrap: nowrap; }
+
+  .kh-nav {
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+  }
+  .kh-nav::-webkit-scrollbar { display: none; }
+
+  a.khnav { flex: none; }
+}
+
 a.khnav {
   text-decoration: none;
   padding: 8px 13px;
@@ -208,6 +228,10 @@ a.khnav[aria-current="page"] {
   position: sticky;
   bottom: 0;
   z-index: 10;
+  /* Being sticky, it can never be allowed to outgrow the screen: past that it
+     would cover the page instead of sitting under it. */
+  max-height: 100dvh;
+  overflow-y: auto;
   border-top: 1px solid var(--kh-line);
   background: rgba(3, 7, 16, 0.62);
   backdrop-filter: blur(16px);
