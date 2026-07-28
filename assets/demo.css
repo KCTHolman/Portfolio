@@ -19,15 +19,17 @@
   to   { opacity: 1; transform: none; }
 }
 
+/* Het scherm eerst, vlak onder de run waar het uit voortkomt; de uitleg
+   staat eronder voor wie wil weten wat er precies gebeurt. */
 .kh-demo {
-  margin-top: 46px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 34px;
-  align-items: start;
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  scroll-margin-top: 76px;
 }
 
-.kh-demo-intro { max-width: 520px; }
+.kh-demo-intro { max-width: 620px; }
 
 .kh-demo-title {
   margin: 14px 0 0;
@@ -62,6 +64,9 @@
 
 .kh-sheet {
   --sheet-blue: #4f8cff;
+
+  width: 100%;
+  max-width: 420px;
   --sheet-line: rgba(255, 255, 255, 0.1);
 
   position: relative;
@@ -304,11 +309,11 @@
 
 @media (max-width: 1023px) {
   .kh-demo {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    margin-top: 38px;
+    gap: 22px;
+    margin-top: 34px;
   }
   .kh-demo-title { font-size: 32px; }
+  .kh-sheet { max-width: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
