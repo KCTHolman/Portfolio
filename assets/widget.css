@@ -631,6 +631,61 @@
 }
 .dsv-entry[data-gate] .dsv-why-label { color: rgba(251, 213, 112, 0.7); }
 
+/* ---------- The technical layer ------------------------------------------ */
+
+/* Same run, one layer deeper. Off by default; the depth button sets
+   data-depth="tech" on the root. */
+.dsv-entry-tech,
+.dsv-entry-fail { display: none; }
+.dsv[data-depth="tech"] .dsv-entry-tech,
+.dsv[data-depth="tech"] .dsv-entry-fail { display: block; }
+
+.dsv-entry-tech,
+.dsv-entry-fail {
+  margin: 9px 0 0;
+  padding-left: 12px;
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.dsv-entry-tech {
+  border-left: 1px solid rgba(125, 224, 210, 0.32);
+  color: rgba(200, 220, 238, 0.7);
+}
+
+.dsv-entry-fail {
+  border-left: 1px solid rgba(251, 213, 112, 0.32);
+  color: rgba(226, 238, 250, 0.62);
+}
+
+.dsv-tech-label,
+.dsv-fail-label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--dsv-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.dsv-tech-label { color: rgba(159, 240, 226, 0.62); }
+.dsv-fail-label { color: rgba(251, 213, 112, 0.68); }
+
+.dsv-entry-tech code,
+.dsv-entry-fail code {
+  font-family: var(--dsv-mono);
+  font-size: 0.9em;
+  color: var(--dsv-acc-soft);
+}
+.dsv-entry-fail code { color: rgba(251, 213, 112, 0.9); }
+
+.dsv-btn--depth[aria-pressed="true"] {
+  border-color: rgba(125, 224, 210, 0.45);
+  background: rgba(125, 224, 210, 0.12);
+  color: var(--dsv-acc-soft);
+}
+
 /* The three phases of the epic, spelled out inside the step that decides on
    them: what gets built, and what "done" means for each. */
 .dsv-phases {

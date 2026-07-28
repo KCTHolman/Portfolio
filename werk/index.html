@@ -25,9 +25,9 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="stylesheet" href="../assets/site.css?v=16">
-<link rel="stylesheet" href="../assets/aurora.css?v=16">
-<link rel="stylesheet" href="../assets/widget.css?v=16">
+<link rel="stylesheet" href="../assets/site.css?v=17">
+<link rel="stylesheet" href="../assets/aurora.css?v=17">
+<link rel="stylesheet" href="../assets/widget.css?v=17">
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"deSchouwVloot","description":"AI-native CI/CD-pijplijn: agents voeren het werk uit, een mens beslist op drie poorten. 16 reusable workflows, nul eigen triggers.","codeRepository":"https://github.com/KCTHolman/deSchouwVloot","programmingLanguage":["YAML","Bash","Python"],"author":{"@type":"Person","name":"Koen Holman"}}
@@ -183,6 +183,8 @@
                     <span class="dsv-entry-title">Idee in de inbox</span>
                   </div>
                   <p class="dsv-entry-detail">E&eacute;n zin, zoals ik hem bedenk. Geen lijstje eisen, geen plek uitgekozen &mdash; alles gaat naar dezelfde inbox.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>Het issue komt binnen in de fleet-repo en raakt daar niets aan: <code>intake.yml</code> is workflow_call-only, net als alle zestien workflows. Een guard-script bewijst dat bij elke PR, zodat een reusable workflow nooit vanzelf kan starten.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Valt de poort uit, dan verdwijnen idee&euml;n stil. Daarom staat <code>intake.yml</code> in de spine-lijst: uitval daarvan wordt actief gemeld in plaats van afgewacht.</p>
                 </li>
                 <li class="dsv-entry" data-p="9" data-who="poort" data-dwell="4000">
                   <div class="dsv-entry-head">
@@ -191,6 +193,8 @@
                     <span class="dsv-entry-title">Naar het juiste project</span>
                   </div>
                   <p class="dsv-entry-detail">Het woord &ldquo;app&rdquo; is genoeg om het naar BiohackOS te sturen. Weet de poort het niet zeker, dan kiest hij niet maar vraagt hij het.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>intake-decide.sh</code> telt hele woorden uit <code>routing.yml</code> per consument. Strikt de meeste punten wint; de winnaar krijgt het issue via een transfer, niet via een kopie.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Gelijkspel of nul punten &rarr; label <code>needs-routing</code> en het issue blijft staan met een vraag. Die grensgevallen liggen vast in de golden-set: <code>08-grensgeval-domein-wint</code>, <code>09-grensgeval-infra-wint</code>, <code>10-gelijkspel-blijft-routing</code>.</p>
                 </li>
                 <li class="dsv-entry" data-p="18" data-who="agent" data-dwell="4500">
                   <div class="dsv-entry-head">
@@ -199,6 +203,8 @@
                     <span class="dsv-entry-title">Triage</span>
                   </div>
                   <p class="dsv-entry-detail">Wat voor werk is dit, en welk deel van de app raakt het? Het voedingsdagboek, waar eten en drinken al in gaan.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>issue-triage.yml</code> draait op lane <code>biohack-agent</code> met een turn-budget van 30. Labels komen uit <code>.fleet.yml</code>: <code>claude-task</code> plus de area die volgt uit de padentabel &mdash; <code>^(lib|android|test)/</code> en <code>.dart</code> geven <code>area: app</code>.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Te vaag om te routeren? Dan stuitert het terug met &eacute;&eacute;n concrete wedervraag in plaats van een gok. Ook dat staat in de golden-set: <code>03-te-vaag</code>, <code>04-geen-criteria</code>, <code>05-ambigu</code>.</p>
                 </li>
                 <li class="dsv-entry" data-p="28" data-who="agent" data-dwell="5500">
                   <div class="dsv-entry-head">
@@ -207,6 +213,8 @@
                     <span class="dsv-entry-title">Plan langs het kompas</span>
                   </div>
                   <p class="dsv-entry-detail">Eerst kijkt de agent waar het project naartoe wil. Bovenaan staat &ldquo;loggen moet minder moeite kosten&rdquo;, met een regel eronder: vaste keuzes en &eacute;&eacute;n tik gaan v&oacute;&oacute;r handmatig typen. Dit idee past er precies in &mdash; het moet alleen op die manier gebouwd worden.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>De agent leest de bronhi&euml;rarchie voor hij plant: <code>constitution.md</code> &gt; <code>doelen.md</code> &gt; <code>spec.md</code> &gt; <code>AGENTS.md</code>. <code>constitution.md</code> is een harde grens, <code>doelen.md</code> stuurt binnen die grens.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Botst een plan met <code>constitution.md</code>, dan is er geen afweging: het gaat niet door. Bij <code>doelen.md</code> wel &mdash; die stuurt bij, en dat is precies wat hier gebeurt.</p>
                 </li>
                 <li class="dsv-entry" data-p="38" data-who="agent" data-dwell="6000">
                   <div class="dsv-entry-head">
@@ -215,6 +223,8 @@
                     <span class="dsv-entry-title">Een kop is geen maat</span>
                   </div>
                   <p class="dsv-entry-detail">Hier begint het meedenken. De app rekent in milliliters: een espresso van 40 ml en een mok van 250 ml zijn allebei &ldquo;een koffie&rdquo;, dus zonder formaat is het dagtotaal een getal waar je niets aan hebt. En thee, cola en energiedrank stellen exact dezelfde vraag. Dus geen koffiescherm, maar &eacute;&eacute;n manier om drankjes te loggen &mdash; met klein en groot als vaste keuzes.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>Het datamodel bepaalt de vorm, niet de wens: <code>FoodUnit</code> kent gram, milliliter en stuk, en macro&#39;s staan per 100 daarvan. &ldquo;Een kop&rdquo; bestaat niet als eenheid, dus een formaat is geen extraatje maar een voorwaarde.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Zou je het toch als los aantal opslaan, dan drift dat weg van de rest van het dagboek &mdash; twee bronnen voor hetzelfde getal. Dat patroon is precies wat de consistency-checks moeten vangen.</p>
                 </li>
                 <li class="dsv-entry" data-p="48" data-who="agent" data-dwell="6000">
                   <div class="dsv-entry-head">
@@ -223,6 +233,8 @@
                     <span class="dsv-entry-title">Aanhaken op wat er al is</span>
                   </div>
                   <p class="dsv-entry-detail">Het dagboek kent al favorieten, opgeslagen porties en een spraakknop die doorvraagt als iets onduidelijk is. Zeg je &ldquo;twee koffie&rdquo;, dan is &ldquo;klein of groot?&rdquo; precies de vraag die dat mechanisme al kan stellen. Er hoeft dus weinig bij: het bestaande moet alleen weten wat een kop koffie is.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>De doorvraag bestaat al in de code: <code>FoodCapture</code> heeft een <code>followupQuestion</code>, en de invoerwegen (barcode, foto, spraak/chat, handmatig) delen dezelfde domeinlaag zonder Flutter-afhankelijkheden.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Zou spraak een eigen opslagpad krijgen, dan heb je twee wegen naar hetzelfde dagboek. E&eacute;n bron van waarheid is een invariant, geen voorkeur.</p>
                 </li>
                 <li class="dsv-entry" data-p="58" data-who="agent" data-dwell="9000">
                   <div class="dsv-entry-head">
@@ -251,6 +263,8 @@
                       <span class="dsv-phase-d">Af als je van een dag ziet hoeveel cafe&iuml;ne erin ging, ook als het geen koffie was.</span>
                     </li>
                   </ol>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>epic-orchestrator.yml</code> houdt de reeks vast: fase-issues met een vaste volgorde, en alleen de eerste staat open. <code>plan-critic.sh</code> heeft het plan al mechanisch getoetst op concrete stappen en op een genoemde verificatie.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Verwerpt de criticus het plan, dan wordt er niets gebouwd &mdash; een fout plan is het duurste faalpad, want je betaalt build, review en herstel op het verkeerde fundament. Twijfelgevallen komen er als bevinding uit, niet als afwijzing.</p>
                 </li>
                 <li class="dsv-entry" data-p="68" data-who="agent" data-dwell="4500">
                   <div class="dsv-entry-head">
@@ -259,6 +273,8 @@
                     <span class="dsv-entry-title">Build</span>
                   </div>
                   <p class="dsv-entry-detail">Alleen fase 1 gaat open. Een agent bouwt het, op een eigen machine en met een limiet &mdash; loopt hij vast, dan stopt hij vanzelf.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>De build draait op de self-hosted lane <code>biohack-agent</code> in een ephemeral container zonder docker-daemon, met een turn-budget van 80 en <code>claude-sonnet-5</code> als model; escalatie gaat naar <code>claude-opus-5</code>. Concurrency-groepen staan op het issue.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Runner offline? De lane valt terug op <code>ubuntu-latest</code>, en <code>runner-fleet-assert.yml</code> meldt het. Turn-budget op? De agent stopt en escaleert naar <code>needs-human</code> in plaats van door te blijven draaien.</p>
                 </li>
                 <li class="dsv-entry" data-p="77" data-who="checks" data-dwell="5500">
                   <div class="dsv-entry-head">
@@ -267,6 +283,8 @@
                     <span class="dsv-entry-title">Werkt de rest nog?</span>
                   </div>
                   <p class="dsv-entry-detail">Dit zit aan de rekenkern van het dagboek, dus draaien de tests over alles wat je logt en niet alleen over koffie. Een tweede agent leest het werk na; die review is advies, alleen de tests kunnen tegenhouden.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>pr-check.yml</code> draait zes jobs met concurrency op het PR-nummer: diff-classificatie, conventional-commit-titel, <code>flutter analyze</code> en <code>flutter test</code> (beide blokkerend), coverage (rapporteert), preview-APK, en eslint op de webkant. <code>doctor.yml</code> en <code>gitflow-doctor.yml</code> bewaken de invarianten; de doctor rapporteert hard en muteert nooit.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Rood? De PR blokkeert, de pijplijn repareert zichzelf en draait opnieuw; blijft het rood, dan escaleert het. Loopt <code>cockpit/project-digest.md</code> uit de pas met de registry, dan blokkeert de digest-guard &mdash; die plattegrond werd handmatig bijgehouden tot hij drift ging vertonen, en is nu gegenereerd en CI-bewaakt.</p>
                 </li>
                 <li class="dsv-entry" data-p="86" data-who="jij" data-kind="merge" data-dwell="4500" data-gate>
                   <div class="dsv-entry-head">
@@ -275,6 +293,8 @@
                     <span class="dsv-entry-title">Merge</span>
                   </div>
                   <p class="dsv-entry-detail">Hier wacht het op mij, &eacute;&eacute;n keer per fase. Kleine dingen gaan vanzelf door; zeg ik ja, dan begint de volgende fase.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>auto-merge.yml</code> kijkt naar <code>gates.feature_approval</code> in <code>.fleet.yml</code>: op <code>true</code> wacht een feature op approval, de rest mergt door op groen. <code>branch-protection-assert.yml</code> controleert dat de beveiliging op de branch ook echt aanstaat.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Ontstaat er een merge-conflict, dan lost de pijplijn dat zelf op en draait opnieuw. Lukt dat niet, dan is <code>needs-human</code> de derde en laatste poort.</p>
                   <div class="dsv-entry-act">
                     <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
                     <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
@@ -287,6 +307,8 @@
                     <span class="dsv-entry-title">Release</span>
                   </div>
                   <p class="dsv-entry-detail">Pas als alle drie de fases binnen zijn, gaat het als geheel naar buiten. Ook daar zet ik zelf de knop om.</p>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span><code>issue-release.yml</code> en <code>promote-release.yml</code> leveren pas als alle fase-issues gesloten zijn. <code>release_environment: production</code> betekent een GitHub-omgeving met required reviewer, dus de knop zit in het platform en niet in een script.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Faalt een release halverwege, dan blijft de epic open en gaat er niets half naar buiten. E&eacute;n release voor het geheel, of geen.</p>
                   <div class="dsv-entry-act">
                     <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
                     <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
@@ -306,6 +328,7 @@
                 <button type="button" class="dsv-btn dsv-btn--play" data-action="play">Speel de run</button>
                 <button type="button" class="dsv-btn" data-action="next">Volgende &rarr;</button>
                 <button type="button" class="dsv-btn" data-action="all">Alles in &eacute;&eacute;n keer</button>
+                <button type="button" class="dsv-btn dsv-btn--depth" data-action="depth" aria-pressed="false">Technische versie</button>
               </div>
             </div>
 
@@ -332,7 +355,10 @@
             </div>
             <ul class="dsv-stats">
               <li class="dsv-stat"><span class="dsv-stat-n">6</span><span class="dsv-stat-l">consistency-checks</span></li>
-              <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">16</span><span class="dsv-stat-l">workflows, nul triggers</span></li>
+              <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">16</span><span class="dsv-stat-l">workflows, nul triggers</span>
+                  <p class="dsv-entry-tech"><span class="dsv-tech-label">backend</span>Wat er live staat is te herleiden: elke fase heeft z&#39;n eigen PR, z&#39;n eigen groene checks en &eacute;&eacute;n approval. De keten van issue naar release is machinaal na te lopen.</p>
+                  <p class="dsv-entry-fail"><span class="dsv-fail-label">als het misgaat</span>Precies dat is het verschil tussen een pijplijn die soepel liep en een die dat leek te doen: bij een probleem kun je terugzien welke poort open stond en wat er toen groen was.</p>
+                </li>
             </ul>
           </header>
 
@@ -455,7 +481,7 @@
   </footer>
 </div>
 
-<script src="../assets/aurora.js?v=16" defer></script>
-<script src="../assets/widget.js?v=16" defer></script>
+<script src="../assets/aurora.js?v=17" defer></script>
+<script src="../assets/widget.js?v=17" defer></script>
 </body>
 </html>
