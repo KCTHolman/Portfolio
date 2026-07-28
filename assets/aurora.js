@@ -16,8 +16,6 @@
   var root = document.documentElement;
   var mount = document.querySelector('.kh-shell') || document.body;
 
-  // A palette marked light flips the whole page to the light theme; see the
-  // [data-theme="light"] blocks in site.css and aurora.css.
   var PALETTES = [
     { name: 'Aurora',
       cols: ['rgba(45,212,191,0.55)', 'rgba(52,211,153,0.50)', 'rgba(124,58,237,0.42)', 'rgba(96,165,250,0.42)', 'rgba(56,189,170,0.46)'],
@@ -39,10 +37,7 @@
       tcols: ['#bae6fd', '#7dd3fc', '#c7d2fe'] },
     { name: 'Citrus',
       cols: ['rgba(250,204,21,0.54)', 'rgba(163,230,53,0.46)', 'rgba(20,184,166,0.42)', 'rgba(251,146,60,0.42)', 'rgba(190,242,100,0.44)'],
-      tcols: ['#fde047', '#a3e635', '#5eead4'] },
-    { name: 'Daglicht', light: true,
-      cols: ['rgba(56,189,248,0.42)', 'rgba(129,140,248,0.38)', 'rgba(244,114,182,0.32)', 'rgba(251,191,36,0.34)', 'rgba(45,212,191,0.36)'],
-      tcols: ['#0e7490', '#4338ca', '#be185d'] }
+      tcols: ['#fde047', '#a3e635', '#5eead4'] }
   ];
 
   // Values auto-evolve holds steady. Only the hue travels, and it travels
@@ -87,6 +82,51 @@
   var raf = null;
   var lastPaint = 0;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ---------- session ----------------------------------------------------- */
+
+  // The backdrop carries over between pages: same palette, same sliders, and
+  // — because t0 travels along — the same point in the hue walk and the same
+  // bloom. Without t0 every navigation would snap back to the dark blue open.
+  var STORE_KEY = 'kh-aurora';
+
+  function saveSession() {
+    try {
+      sessionStorage.setItem(STORE_KEY, JSON.stringify({
+        auto: state.auto,
+        scale: state.scale, freq: state.freq, soft: state.soft, speed: state.speed,
+        palette: state.palette, grain: state.grain, collapsed: state.collapsed,
+        t0: t0
+      }));
+    } catch (e) {
+      // Private mode or a full quota: the backdrop just starts fresh.
+    }
+  }
+
+  function restoreSession() {
+    var saved;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(STORE_KEY));
+    } catch (e) {
+      return;
+    }
+    if (!saved || typeof saved !== 'object') return;
+
+    var num = function (v, fallback) { return typeof v === 'number' && isFinite(v) ? v : fallback; };
+
+    state.auto = saved.auto !== false;
+    state.scale = num(saved.scale, BASE.scale);
+    state.freq = num(saved.freq, BASE.freq);
+    state.soft = num(saved.soft, BASE.soft);
+    state.speed = num(saved.speed, BASE.speed);
+    state.grain = saved.grain !== false;
+    state.collapsed = saved.collapsed !== false;
+    // Clamped: a stored index outlives a palette being removed.
+    state.palette = Math.min(PALETTES.length - 1, Math.max(0, num(saved.palette, 0) | 0));
+
+    var when = num(saved.t0, 0);
+    if (when > 0 && when <= Date.now()) t0 = when;
+  }
 
   function hsla(h, s, l, a) {
     // One decimal is well below what the eye resolves, and keeps the string
@@ -261,17 +301,9 @@
     });
   }
 
-  // Only a hand-picked palette can turn the page light; auto-evolve never does.
-  function applyTheme() {
-    var light = !state.auto && !!PALETTES[state.palette].light;
-    if (light) root.setAttribute('data-theme', 'light');
-    else root.removeAttribute('data-theme');
-  }
-
   function render() {
     paintColors();
     paintGeometry();
-    applyTheme();
     syncPanel();
   }
 
@@ -305,11 +337,16 @@
     state.speed = BASE.speed;
   }
 
-  head.addEventListener('click', function () {
-    state.collapsed = !state.collapsed;
+  function applyCollapsed() {
     head.setAttribute('aria-expanded', String(!state.collapsed));
     body.classList.toggle('is-open', !state.collapsed);
     panel.classList.toggle('is-open', !state.collapsed);
+  }
+
+  head.addEventListener('click', function () {
+    state.collapsed = !state.collapsed;
+    applyCollapsed();
+    saveSession();
   });
 
   autoBtn.addEventListener('click', function () {
@@ -317,11 +354,13 @@
     state.auto = !state.auto;
     render();
     syncLoop();
+    saveSession();
   });
 
   grainBtn.addEventListener('click', function () {
     state.grain = !state.grain;
     syncPanel();
+    saveSession();
   });
 
   sliderInputs.forEach(function (input, i) {
@@ -331,6 +370,7 @@
       state[s.key] = s.fromRaw(parseFloat(input.value));
       render();
       syncLoop();
+      saveSession();
     });
   });
 
@@ -341,6 +381,7 @@
       state.palette = i;
       render();
       syncLoop();
+      saveSession();
     });
   });
 
@@ -350,6 +391,9 @@
   if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', onMotionChange);
   else if (reduceMotion.addListener) reduceMotion.addListener(onMotionChange);
 
+  restoreSession();
+  applyCollapsed();
   render();
   syncLoop();
+  saveSession();
 })();

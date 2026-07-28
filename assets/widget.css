@@ -1042,17 +1042,6 @@
   }
 }
 
-/* ---------- Light theme -------------------------------------------------- */
-
-/* The showcase stays a dark console when the page goes light, so its links
-   have to keep their light-on-dark colours instead of inheriting site.css's
-   light-theme .kh-link. */
-:root[data-theme="light"] .dsv .kh-link { color: rgba(222, 234, 247, 0.82); }
-:root[data-theme="light"] .dsv .kh-link:hover {
-  color: var(--dsv-acc-soft);
-  border-color: var(--dsv-acc);
-}
-
 /* ---------- No JS -------------------------------------------------------- */
 
 /* Nothing can switch views or drive the run, so show all three views and
