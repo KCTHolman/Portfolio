@@ -26,23 +26,24 @@
   var demo = document.querySelector('.kh-demo');
   var run = document.querySelector('.dsv .dsv-entry');
 
+  // Met JS gedraagt het scherm zich als een bottom sheet: het komt op wanneer
+  // er iets te loggen valt en verdwijnt zodra dat gebeurd is. Zonder JS staat
+  // het gewoon in de pagina, vandaar dat deze vlag hier wordt gezet.
+  if (demo) demo.setAttribute('data-sheet', '');
+
+  function openSheet() { sheet.classList.add('is-open'); }
+  function closeSheet() { sheet.classList.remove('is-open'); }
+
   if (demo && run) {
     demo.setAttribute('data-locked', '');
     document.addEventListener('dsv:live', function () {
       demo.removeAttribute('data-locked');
       demo.classList.add('is-revealed');
-
-      // Rustig meebewegen naar wat er zojuist verscheen. Even wachten: het
-      // scherm schuift zelf ook nog omhoog, en samen zou dat schokken.
-      var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      setTimeout(function () {
-        // Alleen als de run zelf nog in beeld staat. Is de bezoeker intussen
-        // ergens anders gaan lezen, dan is meeslepen niet behulpzaam.
-        var box = run.closest('.dsv').getBoundingClientRect();
-        if (box.bottom < 0 || box.top > window.innerHeight) return;
-        demo.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
-      }, still ? 0 : 260);
+      // Even wachten: de sectie eronder verschijnt ook nog.
+      setTimeout(openSheet, 320);
     }, { once: true });
+  } else {
+    openSheet();
   }
 
   var HALF_LIFE = 5.5;   // uur
@@ -52,10 +53,10 @@
 
   var entries = [];
 
-  var warn = sheet.querySelector('.kh-warn');
-  var warnText = sheet.querySelector('.kh-warn-text');
-  var list = sheet.querySelector('.kh-today-list');
-  var totalEl = sheet.querySelector('.kh-today-total');
+  var warns = Array.prototype.slice.call(document.querySelectorAll('.kh-warn'));
+  
+  var list = document.querySelector('.kh-today-list');
+  var totalEl = document.querySelector('.kh-today-total');
   var amount = sheet.querySelector('.kh-manual input');
   var tabs = Array.prototype.slice.call(sheet.querySelectorAll('.kh-tab'));
 
@@ -87,6 +88,13 @@
 
   /* ---------- de melding --------------------------------------------------- */
 
+  function setWarn(level, text) {
+    warns.forEach(function (el) {
+      el.setAttribute('data-level', level);
+      el.querySelector('.kh-warn-text').textContent = text;
+    });
+  }
+
   function renderWarning() {
     var total = totalMg();
     var hour = nowHours();
@@ -94,10 +102,9 @@
     var rest = Math.round(atBedtime());
 
     if (!total) {
-      warn.setAttribute('data-level', 'rustig');
-      warnText.textContent = evening
+      setWarn('rustig', evening
         ? 'Nog niets gelogd. Wat je nu nog drinkt, zit rond bedtijd voor het grootste deel nog in je systeem — de halfwaardetijd is ongeveer 5,5 uur.'
-        : 'Nog niets gelogd vandaag. Vanaf ' + LIMIT + ' mg wordt het merkbaar, en alles van na een uur of vijf telt vanavond nog mee.';
+        : 'Nog niets gelogd vandaag. Vanaf ' + LIMIT + ' mg wordt het merkbaar, en alles van na een uur of vijf telt vanavond nog mee.');
       return;
     }
 
@@ -105,25 +112,22 @@
 
     if (evening) {
       var pct = Math.round((rest / total) * 100);
-      warn.setAttribute('data-level', 'avond');
-      warnText.textContent =
+      setWarn('avond',
         'Laatste cafeïne om ' + clock(last.at) + '. Bij een halfwaardetijd van ~5,5 uur zit er rond bedtijd nog zo\'n ' +
-        pct + '% in je systeem — ' + rest + ' mg. Dat kan je slaap verstoren.';
+        pct + '% in je systeem — ' + rest + ' mg. Dat kan je slaap verstoren.');
       return;
     }
 
     if (total >= LIMIT) {
-      warn.setAttribute('data-level', 'avond');
-      warnText.textContent =
+      setWarn('avond',
         'Je zit op ' + total + ' mg, boven de richtlijn van ' + LIMIT + ' mg. Rond bedtijd is daar nog ' +
-        rest + ' mg van over — dat is genoeg om je slaap ondieper te maken.';
+        rest + ' mg van over — dat is genoeg om je slaap ondieper te maken.');
       return;
     }
 
-    warn.setAttribute('data-level', 'dag');
-    warnText.textContent =
+    setWarn('dag',
       'Je zit op ' + total + ' mg van de ' + LIMIT + ' mg. Het stapelt door: rond bedtijd zit er hiervan nog ' +
-      rest + ' mg in je systeem.';
+      rest + ' mg in je systeem.');
   }
 
   /* ---------- het dagoverzicht --------------------------------------------- */
@@ -159,6 +163,8 @@
     if (!mg) return;
     entries.push({ name: name, mg: mg, at: nowHours() });
     render();
+    // Gelogd is klaar: het sheet schuift weg en laat zien wat het opleverde.
+    setTimeout(closeSheet, 420);
   }
 
   /* ---------- wiring -------------------------------------------------------- */
@@ -183,9 +189,16 @@
     if (e.key === 'Enter') sheet.querySelector('.kh-log').click();
   });
 
-  sheet.querySelector('.kh-reset').addEventListener('click', function () {
+  document.querySelector('.kh-reset').addEventListener('click', function () {
     entries = [];
     render();
+  });
+
+  document.querySelector('.kh-open').addEventListener('click', openSheet);
+  sheet.querySelector('.kh-sheet-grip').addEventListener('click', closeSheet);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSheet();
   });
 
   // De watertab is er om te laten zien dat het sheet meer doet dan koffie;
@@ -199,7 +212,7 @@
       Array.prototype.forEach.call(sheet.querySelectorAll('[data-panel]'), function (panel) {
         panel.hidden = panel.getAttribute('data-panel') !== which;
       });
-      warn.hidden = which !== 'cafeine';
+      warns.forEach(function (el) { el.hidden = which !== 'cafeine'; });
     });
   });
 

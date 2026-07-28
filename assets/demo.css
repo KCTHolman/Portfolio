@@ -14,18 +14,18 @@
   animation: khDemoIn 900ms cubic-bezier(.16, .84, .34, 1) both;
 }
 
+/* Alleen opacity, geen transform: een element met een transform-animatie
+   wordt het containing block voor position:fixed, en dan hangt het sheet niet
+   meer aan de onderkant van het scherm maar aan deze sectie. */
 @keyframes khDemoIn {
-  from { opacity: 0; transform: translateY(26px); }
-  to   { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* Het scherm eerst, vlak onder de run waar het uit voortkomt; de uitleg
-   staat eronder voor wie wil weten wat er precies gebeurt. */
+/* Het scherm is geen blok in de pagina meer maar een sheet die van onderen
+   opkomt, net als in de app zelf. Wat je logt blijft hier staan. */
 .kh-demo {
   margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
   scroll-margin-top: 76px;
 }
 
@@ -64,27 +64,56 @@
 
 .kh-sheet {
   --sheet-blue: #4f8cff;
-
-  width: 100%;
-  max-width: 420px;
   --sheet-line: rgba(255, 255, 255, 0.1);
 
-  position: relative;
-  padding: 16px 18px 20px;
-  border-radius: 22px;
+  position: fixed;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 12px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
   border: 1px solid var(--sheet-line);
+  border-bottom: none;
   background: #101319;
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.55);
   color: #e8edf5;
+  transform: translateY(101%);
+  visibility: hidden;
+  transition: transform .42s cubic-bezier(.22, .61, .36, 1), visibility .42s;
+}
+.kh-sheet.is-open {
+  transform: none;
+  visibility: visible;
+}
+
+/* Zonder JS is er niets om te openen, dus dan staat hij gewoon in de pagina. */
+.kh-demo:not([data-sheet]) .kh-sheet {
+  position: relative;
+  transform: none;
+  visibility: visible;
+  max-width: 420px;
+  border-radius: 22px;
+  border-bottom: 1px solid var(--sheet-line);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9);
 }
 
 .kh-sheet-grip {
-  width: 42px;
-  height: 4px;
-  margin: 0 auto 16px;
+  display: block;
+  width: 46px;
+  height: 5px;
+  margin: 0 auto 14px;
+  padding: 0;
+  border: none;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: background .2s;
 }
+.kh-sheet-grip:hover { background: rgba(255, 255, 255, 0.4); }
 
 .kh-sheet-title {
   margin: 0;
@@ -247,10 +276,10 @@
 /* ---------- Dagoverzicht --------------------------------------------------- */
 
 .kh-today {
-  margin: 16px 0 0;
-  padding: 15px 0 0;
-  border-top: 1px solid var(--sheet-line);
-  list-style: none;
+  margin: 22px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--kh-line);
+  max-width: 460px;
 }
 
 .kh-today-head {
@@ -260,9 +289,45 @@
   gap: 12px;
   margin-bottom: 10px;
   font-size: 13px;
-  color: rgba(200, 212, 228, 0.7);
+  letter-spacing: 0.02em;
+  color: rgba(200, 220, 238, 0.7);
 }
-.kh-today-total { color: #9dc0ff; }
+.kh-today-total {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--kh-teal);
+}
+
+.kh-today-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kh-warn--page { margin-top: 14px; }
+
+.kh-today-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.kh-open {
+  padding: 11px 18px;
+  border-radius: 11px;
+  border: 1px solid rgba(125, 224, 210, 0.4);
+  background: rgba(125, 224, 210, 0.1);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kh-teal-soft);
+  transition: background .2s;
+}
+.kh-open:hover { background: rgba(125, 224, 210, 0.18); }
 
 .kh-entry {
   display: flex;
@@ -292,7 +357,6 @@
 }
 
 .kh-reset {
-  margin-top: 12px;
   padding: 0;
   border: none;
   background: none;
@@ -307,13 +371,55 @@
 
 /* ---------- Narrow -------------------------------------------------------- */
 
+/* Smal: uitleg onder het scherm, en het scherm zelf een stuk compacter —
+   op een telefoon hoeft die niet dezelfde maten te houden als op een
+   monitor waar hij naast een kolom tekst staat. */
 @media (max-width: 1023px) {
-  .kh-demo {
-    gap: 22px;
-    margin-top: 34px;
-  }
+  .kh-demo { margin-top: 34px; }
   .kh-demo-title { font-size: 32px; }
   .kh-sheet { max-width: none; }
+}
+
+@media (max-width: 699px) {
+  .kh-sheet {
+    padding: 12px 14px 15px;
+    border-radius: 18px;
+  }
+  .kh-sheet-grip { margin-bottom: 12px; }
+  .kh-sheet-title { font-size: 17px; }
+  .kh-sheet-sub { font-size: 11.5px; }
+
+  .kh-tabs { margin-top: 12px; }
+  .kh-tab { padding: 9px 6px; font-size: 12.5px; }
+
+  .kh-warn {
+    margin-top: 12px;
+    padding: 10px 12px;
+    font-size: 11.5px;
+  }
+
+  .kh-quick-label,
+  .kh-manual-label { margin: 13px 0 7px; font-size: 11.5px; }
+  .kh-quick { gap: 6px; }
+  .kh-chip {
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    font-size: 11.5px;
+  }
+
+  .kh-manual input { padding: 10px 12px; font-size: 12.5px; }
+  .kh-log {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 11px;
+    font-size: 13.5px;
+  }
+
+  .kh-today { margin-top: 12px; padding-top: 12px; }
+  .kh-today-head { font-size: 11.5px; }
+  .kh-entry { padding: 5px 0; font-size: 11.5px; }
+  .kh-today-empty { font-size: 11.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
