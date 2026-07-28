@@ -16,6 +16,8 @@
   var root = document.documentElement;
   var mount = document.querySelector('.kh-shell') || document.body;
 
+  // A palette marked light flips the whole page to the light theme; see the
+  // [data-theme="light"] blocks in site.css and aurora.css.
   var PALETTES = [
     { name: 'Aurora',
       cols: ['rgba(45,212,191,0.55)', 'rgba(52,211,153,0.50)', 'rgba(124,58,237,0.42)', 'rgba(96,165,250,0.42)', 'rgba(56,189,170,0.46)'],
@@ -28,13 +30,40 @@
       tcols: ['#a78bfa', '#60a5fa', '#f0abfc'] },
     { name: 'Verdant',
       cols: ['rgba(16,185,129,0.54)', 'rgba(45,212,191,0.48)', 'rgba(132,204,22,0.42)', 'rgba(253,224,71,0.40)', 'rgba(52,211,153,0.46)'],
-      tcols: ['#fde047', '#34d399', '#a3e635'] }
+      tcols: ['#fde047', '#34d399', '#a3e635'] },
+    { name: 'Ember',
+      cols: ['rgba(249,115,22,0.56)', 'rgba(220,38,38,0.48)', 'rgba(217,70,239,0.36)', 'rgba(253,186,116,0.42)', 'rgba(234,88,12,0.48)'],
+      tcols: ['#fdba74', '#fb923c', '#f43f5e'] },
+    { name: 'Ijs',
+      cols: ['rgba(56,189,248,0.52)', 'rgba(129,140,248,0.46)', 'rgba(224,242,254,0.34)', 'rgba(14,165,233,0.44)', 'rgba(147,197,253,0.44)'],
+      tcols: ['#bae6fd', '#7dd3fc', '#c7d2fe'] },
+    { name: 'Citrus',
+      cols: ['rgba(250,204,21,0.54)', 'rgba(163,230,53,0.46)', 'rgba(20,184,166,0.42)', 'rgba(251,146,60,0.42)', 'rgba(190,242,100,0.44)'],
+      tcols: ['#fde047', '#a3e635', '#5eead4'] },
+    { name: 'Daglicht', light: true,
+      cols: ['rgba(56,189,248,0.42)', 'rgba(129,140,248,0.38)', 'rgba(244,114,182,0.32)', 'rgba(251,191,36,0.34)', 'rgba(45,212,191,0.36)'],
+      tcols: ['#0e7490', '#4338ca', '#be185d'] }
   ];
 
-  // Values auto-evolve holds steady. Only the hue travels.
+  // Values auto-evolve holds steady. Only the hue travels, and it travels
+  // slowly on purpose: the motion stays calm, the colour does the work.
   var BASE = { scale: 20, freq: 0.014, soft: 1.3, speed: 0.5 };
-  var HUE_START = 168;
-  var HUE_PER_SEC = 16;
+  var HUE_START = 222;
+  var HUE_PER_SEC = 9;
+
+  // Hue offsets per blob at full bloom. Wide, deliberately uneven steps — a
+  // near-complement and a violet jump — so the wash keeps landing on
+  // combinations you did not see coming instead of one analogous ramp.
+  var HUE_STEPS = [0, 72, 186, 276, 138];
+  var SATS = [94, 92, 90, 94, 92];
+  var LIGHTS = [54, 52, 52, 54, 52];
+  var ALPHAS = [0.58, 0.54, 0.48, 0.48, 0.50];
+
+  // The intro: the page opens near-black and blue — every blob on one hue, low
+  // and dim — then over RAMP_SEC the hues fan apart and the colour comes up.
+  var RAMP_SEC = 16;
+  var DIM = { sat: 38, light: 24, alpha: 0.16, paint: 0.34 };
+  var FULL_PAINT = 0.5;
 
   var SLIDERS = [
     { key: 'scale', label: 'Swirl strength',     min: 0,  max: 70,  toRaw: function (v) { return Math.round(v); },        fromRaw: function (v) { return v; } },
@@ -69,6 +98,15 @@
   function elapsed() { return (Date.now() - t0) / 1000; }
 
   function hueNow() { return (HUE_START + elapsed() * HUE_PER_SEC) % 360; }
+
+  // 0 at load, 1 once the wash has fully bloomed. Reduced motion never sees
+  // the loop, so it gets the finished state straight away rather than being
+  // left on the opening frame forever.
+  function bloom() {
+    if (reduceMotion.matches) return 1;
+    var t = Math.min(1, elapsed() / RAMP_SEC);
+    return t * t * (3 - 2 * t);
+  }
 
   /* ---------- markup ---------------------------------------------------- */
 
@@ -107,8 +145,12 @@
   panel.className = 'aur-panel';
   panel.setAttribute('aria-label', 'Achtergrond bijstellen');
   panel.innerHTML =
-    '<button type="button" class="aur-head" aria-expanded="false" aria-controls="aur-body">' +
-      '<span class="aur-head-title"><span class="aur-head-dot"></span>Come play&#8230;</span>' +
+    // Collapsed, this is just the glowing dot in the corner; the label and
+    // chevron only appear once it is open.
+    '<button type="button" class="aur-head" aria-expanded="false" aria-controls="aur-body" ' +
+        'title="Come play&#8230;" aria-label="Achtergrond bijstellen">' +
+      '<span class="aur-head-title"><span class="aur-head-dot"></span>' +
+        '<span class="aur-head-text">Come play&#8230;</span></span>' +
       '<span class="aur-chevron" aria-hidden="true">&#8964;</span>' +
     '</button>' +
     '<div class="aur-body" id="aur-body">' +
@@ -164,17 +206,24 @@
     var cols, tcols;
     if (state.auto) {
       var h = hueNow();
-      cols = [
-        hsla(h, 72, 46, 0.44),
-        hsla(h + 60, 70, 42, 0.42),
-        hsla(h + 150, 68, 44, 0.36),
-        hsla(h + 230, 72, 46, 0.36),
-        hsla(h + 105, 70, 44, 0.38)
+      var b = bloom();
+      var mix = function (from, to) { return from + (to - from) * b; };
+
+      // Hue offsets scale with the bloom too, so the blobs start stacked on
+      // one blue and only drift apart as the colour comes up.
+      cols = HUE_STEPS.map(function (step, i) {
+        return hsla(h + step * b, mix(DIM.sat, SATS[i]), mix(DIM.light, LIGHTS[i]), mix(DIM.alpha, ALPHAS[i]));
+      });
+      tcols = [
+        hsla(h, mix(70, 96), mix(62, 76), 1),
+        hsla(h + 72 * b, mix(66, 92), mix(56, 68), 1),
+        hsla(h + 186 * b, mix(68, 94), mix(64, 76), 1)
       ];
-      tcols = [hsla(h, 92, 74, 1), hsla(h + 60, 88, 64, 1), hsla(h + 130, 90, 76, 1)];
+      root.style.setProperty('--aur-paint-op', mix(DIM.paint, FULL_PAINT).toFixed(3));
     } else {
       cols = PALETTES[state.palette].cols;
       tcols = PALETTES[state.palette].tcols;
+      root.style.setProperty('--aur-paint-op', String(FULL_PAINT));
     }
     for (var i = 0; i < cols.length; i++) root.style.setProperty('--c' + (i + 1), cols[i]);
     for (var j = 0; j < tcols.length; j++) root.style.setProperty('--t' + (j + 1), tcols[j]);
@@ -212,9 +261,17 @@
     });
   }
 
+  // Only a hand-picked palette can turn the page light; auto-evolve never does.
+  function applyTheme() {
+    var light = !state.auto && !!PALETTES[state.palette].light;
+    if (light) root.setAttribute('data-theme', 'light');
+    else root.removeAttribute('data-theme');
+  }
+
   function render() {
     paintColors();
     paintGeometry();
+    applyTheme();
     syncPanel();
   }
 
@@ -252,6 +309,7 @@
     state.collapsed = !state.collapsed;
     head.setAttribute('aria-expanded', String(!state.collapsed));
     body.classList.toggle('is-open', !state.collapsed);
+    panel.classList.toggle('is-open', !state.collapsed);
   });
 
   autoBtn.addEventListener('click', function () {
