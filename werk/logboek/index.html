@@ -25,10 +25,10 @@
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <link rel="manifest" href="../../site.webmanifest">
 
-<link rel="stylesheet" href="../../assets/site.css?v=39">
-<link rel="stylesheet" href="../../assets/aurora.css?v=39">
-<link rel="stylesheet" href="../../assets/widget.css?v=39">
-<link rel="stylesheet" href="../../assets/demo.css?v=39">
+<link rel="stylesheet" href="../../assets/site.css?v=44">
+<link rel="stylesheet" href="../../assets/aurora.css?v=44">
+<link rel="stylesheet" href="../../assets/widget.css?v=44">
+<link rel="stylesheet" href="../../assets/demo.css?v=44">
 </head>
 <body>
 <a class="kh-skip" href="#inhoud">Naar de inhoud</a>
@@ -340,7 +340,7 @@
          own sheet. The warning is driven by the visitor's clock. -->
     <section class="kh-demo" aria-labelledby="demo-titel">
       <div class="kh-sheet">
-        <div class="kh-sheet-grip" aria-hidden="true"></div>
+        <button type="button" class="kh-sheet-grip" aria-label="Sluit het scherm"></button>
         <h3 class="kh-sheet-title">Cafe&iuml;ne &amp; water</h3>
         <p class="kh-sheet-sub">Tik een snelkeuze om direct te loggen, of vul zelf een hoeveelheid in.</p>
 
@@ -382,11 +382,6 @@
         </div>
         <button type="button" class="kh-log">Loggen</button>
 
-        <div class="kh-today">
-          <div class="kh-today-head">
-            <span>Vandaag</span>
-            <span class="kh-today-total">0 mg</span>
-          </div>
           <ol class="kh-today-list">
             <li class="kh-today-empty">Nog niets gelogd.</li>
           </ol>
@@ -399,6 +394,24 @@
         <h2 class="kh-demo-title" id="demo-titel">Probeer het zelf</h2>
         <p class="kh-demo-lead">Dit is het scherm zoals het in de app zit: tik een snelkeuze en het staat er. Geen kopjes maar milligrammen, koffie naast thee en cola, en boven alles een melding die meerekent.</p>
         <p class="kh-demo-note">De melding is de reden dat dit meer is dan een teller. Cafe&iuml;ne heeft een halfwaardetijd van ongeveer 5,5 uur, dus wat je om negen uur &#39;s avonds drinkt zit om elf uur nog voor bijna 80% in je systeem. Overdag gaat de melding daarom over de hoeveelheid, later op de avond over je slaap &mdash; die tekst hangt aan de klok van je eigen apparaat.</p>
+
+        <div class="kh-today">
+          <div class="kh-today-head">
+            <span>Vandaag</span>
+            <span class="kh-today-total">0 mg</span>
+          </div>
+          <ol class="kh-today-list">
+            <li class="kh-today-empty">Nog niets gelogd.</li>
+          </ol>
+          <p class="kh-warn kh-warn--page" data-level="rustig">
+            <span class="kh-warn-icon" aria-hidden="true">&#9790;</span>
+            <span class="kh-warn-text"></span>
+          </p>
+          <div class="kh-today-actions">
+            <button type="button" class="kh-open">Open het scherm</button>
+            <button type="button" class="kh-reset">Begin opnieuw</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -413,8 +426,8 @@
   </footer>
 </div>
 
-<script src="../../assets/aurora.js?v=39" defer></script>
-<script src="../../assets/widget.js?v=39" defer></script>
-<script src="../../assets/demo.js?v=39" defer></script>
+<script src="../../assets/aurora.js?v=44" defer></script>
+<script src="../../assets/widget.js?v=44" defer></script>
+<script src="../../assets/demo.js?v=44" defer></script>
 </body>
 </html>
