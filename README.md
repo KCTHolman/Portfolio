@@ -50,6 +50,34 @@ python3 tools/set-site-url.py https://jouw-domein.nl
 
 Dat is het enige wat je hoeft aan te passen.
 
+### Vercel
+
+`vercel.json` staat klaar. Die zet drie dingen goed:
+
+- **`trailingSlash: true`** — niet cosmetisch. De pagina's linken relatief, dus
+  op `/werk` (zonder slash) zou de zelf-link in het menu naar de homepage
+  wijzen in plaats van naar `/werk/`. Met deze instelling stuurt Vercel altijd
+  door naar de variant mét slash.
+- **Cache-headers** — de lettertypen een jaar (die veranderen nooit), CSS en JS
+  altijd hervalideren. De bestandsnamen bevatten geen hash, dus langer cachen
+  zou betekenen dat je een wijziging niet ziet landen.
+- **Een Content-Security-Policy** die alles op `'self'` houdt. Dat kan omdat de
+  site geen enkel extern verzoek doet. Haal je later wél iets van buiten
+  binnen — een analytics-script, een embed — dan moet die regel mee.
+
+Koppel de repo in het Vercel-dashboard (**Add New → Project → importeer
+`KCTHolman/Portfolio`**). Framework op *Other*, build-command leeg, output
+directory leeg: het is platte HTML, er valt niets te bouwen. Elke push naar
+`master` deployt daarna vanzelf, en elke PR krijgt een preview-URL.
+
+Zodra je het adres weet, één keer:
+
+```bash
+python3 tools/set-site-url.py https://<jouw-project>.vercel.app
+```
+
+`.vercelignore` houdt `archief/`, `tools/` en dit bestand buiten de deploy.
+
 > **Let op bij een submap-deploy:** `404.html` gebruikt absolute paden
 > (`/assets/...`), omdat een 404 wordt uitgeleverd op het adres dat de bezoeker
 > intikte — relatieve paden zijn daar niet te vertrouwen. De pagina heeft zijn
