@@ -207,9 +207,9 @@ a.khnav[aria-current="page"] {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 30px;
-  padding-top: 24px;
-  padding-bottom: 24px;
+  gap: 24px;
+  padding-top: 18px;
+  padding-bottom: 18px;
 }
 .kh-home .kh-hero {
   min-height: 0;
@@ -245,12 +245,23 @@ a.khnav[aria-current="page"] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 30px;
-  align-items: start;
+  /* Stretch, not start: with the list scrolling inside, the sidebar has no
+     intrinsic height of its own, so the row is as tall as the run and the
+     panel matches it exactly. */
+  align-items: stretch;
 }
 
+/* Absolutely filling its slot: a flex container reports its content height
+   when the grid asks how tall it wants to be, so nothing short of taking it
+   out of flow keeps it from dictating the row. */
+.kh-facts-slot { position: relative; }
+
 .kh-facts {
-  position: sticky;
-  top: 88px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding: 24px 26px;
   border-radius: 18px;
   border: 1px solid var(--kh-surface-line);
@@ -281,50 +292,37 @@ a.khnav[aria-current="page"] {
   margin: 20px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  /* Scrolls within the panel; the fade at the bottom is what says there is
+     more, since the bar itself is hidden. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 28px), transparent 100%);
 }
+.kh-facts-list::-webkit-scrollbar { display: none; }
 
 .kh-fact {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: baseline;
-}
-
-.kh-fact dt {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 26px;
-  line-height: 1;
-  white-space: nowrap;
-  color: var(--kh-teal);
-  text-shadow: 0 0 14px rgba(125, 224, 210, 0.35);
-}
-
-.kh-fact dd {
-  margin: 0;
-  font-weight: 300;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: rgba(214, 230, 245, 0.7);
-  text-wrap: pretty;
-}
-
-.kh-facts-block {
-  margin-top: 20px;
-  padding-top: 16px;
+  padding-top: 15px;
   border-top: 1px solid var(--kh-line);
 }
-
-.kh-facts-block h3 {
-  margin: 0 0 7px;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 400;
-  color: rgba(180, 206, 228, 0.6);
+.kh-fact:first-child {
+  padding-top: 0;
+  border-top: none;
 }
 
-.kh-facts-block p {
+.kh-fact h3 {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: rgba(180, 206, 228, 0.62);
+}
+
+.kh-fact p {
   margin: 0;
   font-weight: 300;
   font-size: 12.5px;
@@ -332,12 +330,13 @@ a.khnav[aria-current="page"] {
   color: rgba(214, 230, 245, 0.72);
   text-wrap: pretty;
 }
-.kh-facts-block strong {
+.kh-fact strong {
   font-weight: 400;
-  color: var(--kh-ink-bright);
+  color: var(--kh-teal-soft);
 }
 
 .kh-facts-links {
+  flex: none;
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--kh-line);
@@ -354,6 +353,8 @@ a.khnav[aria-current="page"] {
      its floor, and the column blows past the viewport. */
   .kh-logboek { grid-template-columns: minmax(0, 1fr); }
 
+  .kh-facts-slot { position: static; }
+
   .kh-facts {
     position: static;
     padding: 0;
@@ -363,11 +364,17 @@ a.khnav[aria-current="page"] {
     -webkit-backdrop-filter: none;
   }
 
+  .kh-ticker-items { min-height: 44px; }
+
   .kh-facts-list {
     margin-top: 16px;
+    flex: none;
     flex-direction: row;
     gap: 12px;
+    overflow-y: visible;
     overflow-x: auto;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -375,20 +382,18 @@ a.khnav[aria-current="page"] {
   }
   .kh-facts-list::-webkit-scrollbar { display: none; }
 
-  .kh-fact {
+  .kh-fact,
+  .kh-fact:first-child {
     flex: none;
-    width: min(76%, 290px);
+    width: min(78%, 300px);
     scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
     padding: 17px 19px;
-    border-radius: 15px;
     border: 1px solid var(--kh-surface-line);
+    border-top: 1px solid var(--kh-surface-line);
+    border-radius: 15px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
   }
-  .kh-fact dt { font-size: 32px; }
-  .kh-fact dd { font-size: 13px; }
+  .kh-fact p { font-size: 13px; }
 }
 
 /* Sticky along the bottom, so the preset swatches stay within reach on a long
@@ -467,7 +472,7 @@ a.khnav[aria-current="page"] {
 
 /* Small uppercase section heading, e.g. "Waar ik nu aan bouw". */
 .kh-section-label {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -519,7 +524,7 @@ a.khnav[aria-current="page"] {
 }
 
 .kh-hero-lead {
-  margin: 26px 0 0;
+  margin: 20px 0 0;
   max-width: 600px;
   font-weight: 300;
   font-size: clamp(16px, 1.8vw, 20px);
@@ -532,13 +537,71 @@ a.khnav[aria-current="page"] {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 34px;
+  margin-top: 28px;
+}
+
+/* ---------- Rotating facts on the project card ------------------------- */
+
+/* One shared 32s cycle; each item shows for its own 4s slice via --i. No JS:
+   the card is on a page that loads none of the widget's scripts. */
+.kh-ticker {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--kh-line);
+}
+
+.kh-ticker-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--t1, #7de0d2);
+  box-shadow: 0 0 9px var(--t1, #7de0d2);
+}
+
+.kh-ticker-items {
+  position: relative;
+  display: block;
+  flex: 1;
+  /* One line fits on the card's width; narrow screens wrap to two or three,
+     and the items are absolutely positioned so the box has to reserve it. */
+  min-height: 21px;
+}
+
+.kh-ticker-item {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  font-weight: 300;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(214, 230, 245, 0.72);
+  text-wrap: pretty;
+  animation: khTicker 32s linear infinite;
+  animation-delay: calc(var(--i) * 4s);
+}
+
+@keyframes khTicker {
+  0%            { opacity: 0; transform: translateY(5px); }
+  1%, 11.5%     { opacity: 1; transform: translateY(0); }
+  12.5%, 100%   { opacity: 0; transform: translateY(-5px); }
+}
+
+/* The global reduced-motion rule kills the animation, which would leave every
+   item at opacity 0 — so one line stays put instead. */
+@media (prefers-reduced-motion: reduce) {
+  .kh-ticker-item { animation: none; }
+  .kh-ticker-item:first-child { opacity: 1; transform: none; }
 }
 
 /* The two deep links under the project card, in the same underlined style
    as the showcase's own footer links. */
 .kh-project-links {
-  margin-top: 18px;
+  margin-top: 14px;
   font-size: 14px;
 }
 

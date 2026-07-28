@@ -25,9 +25,9 @@
 <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
 <link rel="manifest" href="../../site.webmanifest">
 
-<link rel="stylesheet" href="../../assets/site.css?v=19">
-<link rel="stylesheet" href="../../assets/aurora.css?v=19">
-<link rel="stylesheet" href="../../assets/widget.css?v=19">
+<link rel="stylesheet" href="../../assets/site.css?v=24">
+<link rel="stylesheet" href="../../assets/aurora.css?v=24">
+<link rel="stylesheet" href="../../assets/widget.css?v=24">
 </head>
 <body>
 <a class="kh-skip" href="#inhoud">Naar de inhoud</a>
@@ -273,45 +273,58 @@
         </section>
       </div>
 
+      <!-- The slot has no height of its own, so the row is as tall as the run
+           and the panel inside matches it exactly. -->
+      <div class="kh-facts-slot">
         <aside class="kh-facts" id="feiten">
-          <h2 class="kh-facts-title">De feiten op een rijtje</h2>
-          <p class="kh-facts-lead">Alles hieronder is na te lopen in de publieke repo &mdash; geen van deze getallen staat alleen in proza.</p>
+          <h2 class="kh-facts-title">De regels erachter</h2>
+          <p class="kh-facts-lead">Elke regel hieronder is terug te vinden in de publieke repo &mdash; geen ervan staat alleen in proza.</p>
 
-          <dl class="kh-facts-list">
-            <div class="kh-fact">
-              <dt>16</dt>
-              <dd>workflows, allemaal alleen aanroepbaar. Een guard-script bewijst bij elke PR dat er nul eigen triggers zijn.</dd>
-            </div>
-            <div class="kh-fact">
-              <dt>3</dt>
-              <dd>mens-poorten: merge, release en de escalatie. Meer plekken waar het op mij wacht zijn er niet.</dd>
-            </div>
-            <div class="kh-fact">
-              <dt>6</dt>
-              <dd>modules in de doctor die de invarianten bewaakt &mdash; runners, routing, governance, host, flow, consistentie.</dd>
-            </div>
-            <div class="kh-fact">
-              <dt>6</dt>
-              <dd>controles op elke PR: diff-classificatie, titel, analyse, tests, preview-app en de webkant.</dd>
-            </div>
-            <div class="kh-fact">
-              <dt>10</dt>
-              <dd>bevroren gevallen in de golden-set, inclusief de grensgevallen waar de routering met 2-1 moet winnen.</dd>
-            </div>
-            <div class="kh-fact">
-              <dt>30 &middot; 50 &middot; 80 &middot; 40</dt>
-              <dd>beurten die triage, plan, build en review maximaal krijgen voor ze stoppen en escaleren.</dd>
-            </div>
-          </dl>
+          <div class="kh-facts-list">
+            <article class="kh-fact">
+              <h3>Waar een agent zich aan houdt</h3>
+              <p>Bij tegenspraak wint het hogere document: <strong>constitution.md</strong> (grenzen) &rsaquo; <strong>doelen.md</strong> (richting) &rsaquo; <strong>spec.md</strong> &rsaquo; <strong>AGENTS.md</strong>. Dat hoeft niemand ter plekke te beslissen.</p>
+            </article>
 
-          <div class="kh-facts-block">
-            <h3>Waar een agent zich aan houdt</h3>
-            <p>Bij tegenspraak wint het hogere document: <strong>constitution.md</strong> (grenzen) &rsaquo; <strong>doelen.md</strong> (richting) &rsaquo; <strong>spec.md</strong> &rsaquo; <strong>AGENTS.md</strong>. Dat hoeft niemand ter plekke te beslissen.</p>
-          </div>
+            <article class="kh-fact">
+              <h3>Gemeten v&oacute;&oacute;r dit ontwerp</h3>
+              <p><strong>6,2</strong> geweigerde rechten per run, <strong>18,4%</strong> van de runs tegen het beurtenplafond, <strong>30,8%</strong> dubbele builds. Alle drie opgelost met een regel in plaats van een gewoonte.</p>
+            </article>
 
-          <div class="kh-facts-block">
-            <h3>Gemeten v&oacute;&oacute;r dit ontwerp</h3>
-            <p><strong>6,2</strong> geweigerde rechten per run, <strong>18,4%</strong> van de runs tegen het beurtenplafond, <strong>30,8%</strong> dubbele builds. Alle drie opgelost met een regel in plaats van een gewoonte.</p>
+            <article class="kh-fact">
+              <h3>Een poort die niet mag gokken</h3>
+              <p>Bij gelijkspel of nul treffers kiest de poort niet, maar vraagt hij het. Die grensgevallen liggen bevroren in de testset &mdash; inclusief eentje die met <strong>2-1</strong> moet winnen, want een set die alles met 3-0 wint bewaakt niets.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>De duurste fout is een fout plan</h3>
+              <p>Een plan wordt getoetst v&oacute;&oacute;r er gebouwd wordt: staan er concrete stappen in, en noemt het z&#39;n eigen verificatie. Anders betaal je een hele build, review en herstelronde op het verkeerde fundament.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Twijfel is een bevinding, geen afwijzing</h3>
+              <p>Alles waar de toets niet zeker over kan zijn, komt er als aandachtspunt uit in plaats van als blokkade. Een criticus die vals-positief afwijst, leert je de uitkomst te negeren &mdash; en dan is de poort erger dan geen poort.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>E&eacute;n bron van waarheid</h3>
+              <p>Bij een eerdere tweede consument groeiden <strong>vier</strong> uit elkaar gelopen kopie&euml;n van dezelfde logica. Dat kan nu niet meer: een consument krijgt een aanroep van vijftien regels, nooit een fork.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Een plattegrond die niet meer kan liegen</h3>
+              <p>De handmatig bijgehouden feature-lijst dreef stil uit de pas met de code. Die is vervangen door een gegenereerd overzicht met een blokkerende controle &mdash; documentatie die scheef staat, houdt de build tegen.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Wat een machine kan checken, mag nooit om mij vragen</h3>
+              <p>Anders is het geen poort. Er blijven drie plekken over waar het op mij wacht: de merge, de release, en de escalatie waarin de pijplijn toegeeft dat hij eruit is.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Een noodrem, geen bezuiniging</h3>
+              <p>Elk station heeft een maximum aantal beurten. Loopt een agent vast, dan stopt hij en vraagt om hulp &mdash; in plaats van eindeloos door te draaien op een probleem dat hij niet gaat oplossen.</p>
+            </article>
           </div>
 
           <div class="kh-facts-links">
@@ -319,6 +332,7 @@
             <a class="kh-link" href="../#technisch">De technische kant</a>
           </div>
         </aside>
+      </div>
     </div>
   </main>
 
@@ -330,7 +344,7 @@
   </footer>
 </div>
 
-<script src="../../assets/aurora.js?v=19" defer></script>
-<script src="../../assets/widget.js?v=19" defer></script>
+<script src="../../assets/aurora.js?v=24" defer></script>
+<script src="../../assets/widget.js?v=24" defer></script>
 </body>
 </html>

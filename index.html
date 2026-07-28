@@ -25,8 +25,8 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 
-<link rel="stylesheet" href="assets/site.css?v=19">
-<link rel="stylesheet" href="assets/aurora.css?v=19">
+<link rel="stylesheet" href="assets/site.css?v=24">
+<link rel="stylesheet" href="assets/aurora.css?v=24">
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Person","name":"Koen Holman","jobTitle":"Software engineer","address":{"@type":"PostalAddress","addressLocality":"Tilburg","addressCountry":"NL"},"description":"Software engineer, full stack en AI-native CI/CD.","sameAs":["https://github.com/KCTHolman","https://www.linkedin.com/in/koen-holman/"],"knowsAbout":["Software engineering","CI/CD","AI-agents","Flutter","Full stack development"],"worksFor":{"@type":"Organization","name":"Indicia"}}
@@ -72,6 +72,22 @@
         <a class="kh-card-title" href="werk/">de Schouw<span class="kh-accent">vloot</span></a>
         <span class="kh-card-body">Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Publiek te lezen.</span>
 
+        <!-- Cycles on CSS alone: each item has its own slice of one shared
+             animation. Reduced motion drops to the first line, standing still. -->
+        <p class="kh-ticker" aria-label="Feiten over deSchouwVloot">
+          <span class="kh-ticker-dot" aria-hidden="true"></span>
+          <span class="kh-ticker-items">
+            <span class="kh-ticker-item" style="--i:0">Zestien workflows, geen enkele die zichzelf kan starten.</span>
+            <span class="kh-ticker-item" style="--i:1">Bij twijfel gokt de poort niet, maar vraagt hij het.</span>
+            <span class="kh-ticker-item" style="--i:2">Een plan wordt getoetst v&oacute;&oacute;r er iets gebouwd wordt.</span>
+            <span class="kh-ticker-item" style="--i:3">Zes controles op elke wijziging, twee ervan blokkerend.</span>
+            <span class="kh-ticker-item" style="--i:4">Dubbele builds zaten op 30,8% &mdash; nu structureel onmogelijk.</span>
+            <span class="kh-ticker-item" style="--i:5">Documentatie die scheef staat, houdt de build tegen.</span>
+            <span class="kh-ticker-item" style="--i:6">Logica leeft precies &eacute;&eacute;n keer, nooit als fork.</span>
+            <span class="kh-ticker-item" style="--i:7">Drie plekken waar het op mij wacht. Verder niets.</span>
+          </span>
+        </p>
+
         <div class="kh-link-row kh-project-links">
           <a class="kh-link" href="werk/logboek/">Verhalend &middot; niet-technische uitleg</a>
           <a class="kh-link" href="werk/#technisch">Technisch &middot; wat het soepel houdt</a>
@@ -88,6 +104,6 @@
   </footer>
 </div>
 
-<script src="assets/aurora.js?v=19" defer></script>
+<script src="assets/aurora.js?v=24" defer></script>
 </body>
 </html>
