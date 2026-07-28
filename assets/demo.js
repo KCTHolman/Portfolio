@@ -27,9 +27,9 @@
   var run = document.querySelector('.dsv .dsv-entry');
 
   // Met JS gedraagt het scherm zich als een bottom sheet: het komt op wanneer
-  // er iets te loggen valt en verdwijnt zodra dat gebeurd is. Zonder JS staat
-  // het gewoon in de pagina, vandaar dat deze vlag hier wordt gezet.
-  if (demo) demo.setAttribute('data-sheet', '');
+  // er iets te loggen valt en verdwijnt zodra dat gebeurd is. Zonder JS is er
+  // niets om te openen, dus dan blijft het weg — vandaar deze vlag.
+  document.body.setAttribute('data-sheet', '');
 
   function openSheet() { sheet.classList.add('is-open'); }
   function closeSheet() { sheet.classList.remove('is-open'); }
