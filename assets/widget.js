@@ -320,4 +320,6 @@
 
   var landed = viewFromHash();
   if (landed) goTo(landed, false);
+  // On its own page there is nothing to choose, so the run just starts.
+  else if (widget.hasAttribute('data-autoplay')) play();
 })();

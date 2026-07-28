@@ -221,6 +221,175 @@ a.khnav[aria-current="page"] {
 .kh-main--over    { padding: 56px 20px 110px; }
 .kh-main--contact { padding: 56px 20px 130px; }
 .kh-main--error   { padding: 56px 20px 130px; }
+.kh-main--logboek { padding: 44px 20px 80px; }
+
+/* ---------- Logboek: run links, feiten rechts ------------------------- */
+
+.kh-logboek-head { max-width: 700px; }
+.kh-logboek-head .kh-lead { margin-bottom: 0; }
+
+.kh-back {
+  display: inline-block;
+  margin-bottom: 22px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: rgba(206, 222, 238, 0.6);
+  transition: color .2s;
+}
+.kh-back:hover { color: var(--kh-teal-soft); }
+
+.kh-logboek {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 30px;
+  align-items: start;
+}
+
+.kh-facts {
+  position: sticky;
+  top: 88px;
+  padding: 24px 26px;
+  border-radius: 18px;
+  border: 1px solid var(--kh-surface-line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.kh-facts-title {
+  margin: 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--kh-ink-bright);
+}
+
+.kh-facts-lead {
+  margin: 10px 0 0;
+  font-weight: 300;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(214, 230, 245, 0.66);
+  text-wrap: pretty;
+}
+
+.kh-facts-list {
+  margin: 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kh-fact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+
+.kh-fact dt {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--kh-teal);
+  text-shadow: 0 0 14px rgba(125, 224, 210, 0.35);
+}
+
+.kh-fact dd {
+  margin: 0;
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(214, 230, 245, 0.7);
+  text-wrap: pretty;
+}
+
+.kh-facts-block {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--kh-line);
+}
+
+.kh-facts-block h3 {
+  margin: 0 0 7px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: rgba(180, 206, 228, 0.6);
+}
+
+.kh-facts-block p {
+  margin: 0;
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(214, 230, 245, 0.72);
+  text-wrap: pretty;
+}
+.kh-facts-block strong {
+  font-weight: 400;
+  color: var(--kh-ink-bright);
+}
+
+.kh-facts-links {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--kh-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+}
+
+/* Below the run instead of beside it, and the numbers become a row of cards
+   you swipe — stacked they would be a wall of six blocks nobody scrolls past. */
+@media (max-width: 1023px) {
+  /* minmax(0,…), not 1fr: a bare 1fr takes the widest child's min-content as
+     its floor, and the column blows past the viewport. */
+  .kh-logboek { grid-template-columns: minmax(0, 1fr); }
+
+  .kh-facts {
+    position: static;
+    padding: 0;
+    border: none;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .kh-facts-list {
+    margin-top: 16px;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .kh-facts-list::-webkit-scrollbar { display: none; }
+
+  .kh-fact {
+    flex: none;
+    width: min(76%, 290px);
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 17px 19px;
+    border-radius: 15px;
+    border: 1px solid var(--kh-surface-line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  }
+  .kh-fact dt { font-size: 32px; }
+  .kh-fact dd { font-size: 13px; }
+}
 
 /* Sticky along the bottom, so the preset swatches stay within reach on a long
    page. It needs its own backdrop for that: content now scrolls underneath. */
