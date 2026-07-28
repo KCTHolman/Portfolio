@@ -24,7 +24,6 @@
   50%      { transform: translate(1%, -2%); }
   75%      { transform: translate(2%, 2%); }
 }
-}
 @keyframes khFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- Backdrop --------------------------------------------------- */
@@ -60,6 +59,9 @@
 .aur-blob {
   position: absolute;
   mix-blend-mode: screen;
+  /* Houdt de blobs op een eigen laag, zodat het driften en spinnen op de GPU
+     blijft in plaats van bij elke stap opnieuw geschilderd te worden. */
+  will-change: transform;
 }
 
 /* The two conic blobs each declare a spin and a drift. Both animate
