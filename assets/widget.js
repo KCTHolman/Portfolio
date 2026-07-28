@@ -47,6 +47,7 @@
   var TOTAL = steps.length;
 
   var state = { n: 1, waiting: false, playing: false };
+  var livePosted = false;
   var timer = null;
   var gateTimer = null;
   var typeTimer = null;
@@ -132,6 +133,12 @@
     }
 
     if (nextButton) nextButton.disabled = state.waiting || n >= TOTAL;
+
+    // De run is uit: alles wat op de release wachtte mag nu tevoorschijn komen.
+    if (hasRun && n >= TOTAL && !livePosted) {
+      livePosted = true;
+      document.dispatchEvent(new CustomEvent('dsv:live'));
+    }
 
     // Keep the newest step in view; the log scrolls inside its own box. A step
     // taller than the box gets its top lined up instead of its bottom —
