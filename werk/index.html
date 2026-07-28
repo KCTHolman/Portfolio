@@ -66,212 +66,400 @@
         <span class="kh-badge">Publieke repo</span>
       </div>
 
-      <!-- Showcase widget. The station copy below is the source of truth;
-           assets/widget.js builds the wide rail from it at runtime. -->
-      <section class="dsv dsv-nojs" aria-label="deSchouwVloot showcase">
+      <!-- Showcase widget. Three views behind one keuzescherm: the gate lets a
+           visitor pick verhalend (a run, logged step by step) or technisch (what
+           keeps it running). All copy lives here, so the page reads without JS;
+           assets/widget.js only switches views and drives the log playback. -->
+      <section class="dsv dsv-nojs" data-view="gate" aria-label="deSchouwVloot showcase">
         <div class="dsv-glow" aria-hidden="true"></div>
+        <div class="dsv-glow dsv-glow--b" aria-hidden="true"></div>
+        <div class="dsv-stars" aria-hidden="true">
+          <span style="--y:12%; --x:8%;  --s:3px; --o:.40"></span>
+          <span style="--y:6%;  --x:19%; --s:4px; --o:.45"></span>
+          <span style="--y:22%; --x:31%; --s:2px; --o:.30"></span>
+          <span style="--y:9%;  --x:47%; --s:5px; --o:.50"></span>
+          <span style="--y:17%; --x:63%; --s:3px; --o:.30"></span>
+          <span style="--y:5%;  --x:75%; --s:3px; --o:.40"></span>
+          <span style="--y:21%; --x:89%; --s:2px; --o:.30"></span>
+          <span style="--y:55%; --x:10%; --s:3px; --o:.30"></span>
+          <span style="--y:78%; --x:24%; --s:2px; --o:.32"></span>
+          <span style="--y:68%; --x:58%; --s:4px; --o:.40"></span>
+          <span style="--y:60%; --x:80%; --s:2px; --o:.30"></span>
+          <span style="--y:85%; --x:92%; --s:3px; --o:.35"></span>
+        </div>
 
-        <header class="dsv-header">
-          <div class="dsv-intro">
-            <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur</p>
-            <h3 class="dsv-title">de Schouw<em>vloot</em></h3>
-            <p class="dsv-lead">Een AI-native pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Kijk hoe één idee er doorheen reist.</p>
+        <!-- ---------- Keuzescherm ------------------------------------------- -->
+        <div class="dsv-view dsv-view--gate">
+          <header class="dsv-header">
+            <div class="dsv-intro">
+              <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur</p>
+              <h3 class="dsv-title">Kies je <em>kant</em> van het verhaal</h3>
+              <p class="dsv-lead">Dezelfde pijplijn, twee invalshoeken. Kies wat je wilt zien &mdash; wisselen kan altijd.</p>
+            </div>
+            <ul class="dsv-stats">
+              <li class="dsv-stat"><span class="dsv-stat-n">2</span><span class="dsv-stat-l">kanten van dit verhaal</span></li>
+              <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">1</span><span class="dsv-stat-l">pijplijn</span></li>
+            </ul>
+          </header>
+
+          <div class="dsv-choices">
+            <button type="button" class="dsv-choice" data-goto="verhalend">
+              <span class="dsv-choice-mark dsv-choice-mark--quote" aria-hidden="true">&rdquo;</span>
+              <span class="dsv-choice-kicker">01 &middot; Voor het gevoel</span>
+              <span class="dsv-choice-title">Verhalend</span>
+              <span class="dsv-choice-body">E&eacute;n run, op de voet gevolgd. Van los idee tot live release &mdash; en de momenten waarop een mens moest klikken.</span>
+              <span class="dsv-tags">
+                <span class="dsv-tag">&eacute;&eacute;n run</span>
+                <span class="dsv-tag">logboek</span>
+              </span>
+              <span class="dsv-choice-cta">Bekijk &rarr;</span>
+            </button>
+
+            <button type="button" class="dsv-choice" data-goto="technisch">
+              <span class="dsv-choice-mark dsv-choice-mark--braces" aria-hidden="true">{ }</span>
+              <span class="dsv-choice-kicker">02 &middot; Voor het snappen</span>
+              <span class="dsv-choice-title">Technisch</span>
+              <span class="dsv-choice-body">Wat er onder de motorkap voorkomt dat dit soepel blijft lopen &mdash; SHA-pinning, drift-detectie, en de machine die het draait.</span>
+              <span class="dsv-tags">
+                <span class="dsv-tag">consistency-checks</span>
+                <span class="dsv-tag">self-hosted</span>
+              </span>
+              <span class="dsv-choice-cta">Bekijk &rarr;</span>
+            </button>
           </div>
-          <ul class="dsv-stats">
-            <li class="dsv-stat"><span class="dsv-stat-n">16</span><span class="dsv-stat-l">workflows</span></li>
-            <li class="dsv-stat"><span class="dsv-stat-n">0</span><span class="dsv-stat-l">eigen triggers</span></li>
-            <li class="dsv-stat"><span class="dsv-stat-n">3</span><span class="dsv-stat-l">mens-poorten</span></li>
-            <li class="dsv-stat"><span class="dsv-stat-n">20</span><span class="dsv-stat-l">offline testbaar</span></li>
-          </ul>
-        </header>
 
-        <!-- Wide view: horizontal rail. Cells are injected into .dsv-cells. -->
-        <div class="dsv-wide">
-          <div class="dsv-rail-wrap">
-            <div class="dsv-lanes">
-              <span>deVloot levert de logica</span>
-              <span>de consument levert runners &amp; secrets</span>
+          <footer class="dsv-foot">
+            <div class="dsv-foot-links">
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot" target="_blank" rel="noopener">Bekijk de repo</a>
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Architectuur &amp; ontwerpkeuzes</a>
+              <a class="kh-link" href="https://www.linkedin.com/in/koen-holman/" target="_blank" rel="noopener">Praat met me erover</a>
+            </div>
+            <div class="dsv-foot-note">Twee kanten, dezelfde pijplijn &middot; publieke, gecureerde repo</div>
+          </footer>
+        </div>
+
+        <!-- ---------- Verhalend: het logboek -------------------------------- -->
+        <div class="dsv-view dsv-view--verhalend">
+          <header class="dsv-header">
+            <div class="dsv-intro">
+              <button type="button" class="dsv-back" data-goto="gate">&larr; Kies weergave</button>
+              <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur &middot; Verhalend</p>
+              <h3 class="dsv-title">Het <em>logboek</em></h3>
+              <p class="dsv-lead">E&eacute;n regel idee erin, een release eruit. Dit is elke stap die deSchouwVloot ertussen zet &mdash; en de vijf keer dat de pijplijn stilstaat tot een mens ja zegt.</p>
+            </div>
+            <ul class="dsv-stats">
+              <li class="dsv-stat"><span class="dsv-stat-n">9</span><span class="dsv-stat-l">stappen zonder jou</span></li>
+              <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">5</span><span class="dsv-stat-l">keer jij</span></li>
+            </ul>
+          </header>
+
+          <div class="dsv-body">
+            <!-- Vertical rail: the ticks are built from the gate entries below. -->
+            <div class="dsv-rail" aria-hidden="true">
+              <span class="dsv-rail-cap">idee</span>
+              <div class="dsv-rail-track">
+                <div class="dsv-rail-bar">
+                  <div class="dsv-rail-fill"></div>
+                  <div class="dsv-rail-dot"></div>
+                </div>
+              </div>
+              <span class="dsv-rail-cap">live</span>
+              <span class="dsv-rail-side">&mdash; mens</span>
             </div>
 
-            <div class="dsv-rail">
-              <div class="dsv-fill"></div>
-              <div class="dsv-token">
-                <div class="dsv-token-dot"></div>
-                <div class="dsv-token-label">idee</div>
+            <div class="dsv-logwrap">
+              <div class="dsv-log-head">
+                <span class="dsv-log-title">Van idee naar release</span>
+                <span class="dsv-counter">14 / 14 stappen</span>
+              </div>
+
+              <ol class="dsv-log">
+                <li class="dsv-entry" data-p="0" data-who="jij" data-kind="invoer">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">01</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Idee in de inbox</span>
+                  </div>
+                  <p class="dsv-entry-detail">&ldquo;Ranking negeert recency.&rdquo; E&eacute;n regel, geen template, geen labels &mdash; de poort maakt er de rest van.</p>
+                </li>
+                <li class="dsv-entry" data-p="6" data-who="poort">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">02</span>
+                    <span class="dsv-entry-who">poort</span>
+                    <span class="dsv-entry-title">Doelproject gekozen</span>
+                  </div>
+                  <p class="dsv-entry-detail">Een trefwoordtabel wijst naar core-ranking en transfereert het issue. Bij twijfel had de poort gevraagd, niet gegokt.</p>
+                </li>
+                <li class="dsv-entry" data-p="13" data-who="agent">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">03</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Triage in de doelrepo</span>
+                  </div>
+                  <p class="dsv-entry-detail">feature &middot; area:ranking. Labelen gebeurt waar de domeinkennis woont; geen duplicaat gevonden, dus geen wedervraag.</p>
+                </li>
+                <li class="dsv-entry" data-p="20" data-who="agent">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">04</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Plan zegt: dit is een epic</span>
+                  </div>
+                  <p class="dsv-entry-detail">Te groot voor &eacute;&eacute;n PR. Het plan knipt het in drie fase-issues met een vaste volgorde en opent alleen de eerste.</p>
+                </li>
+                <li class="dsv-entry" data-p="27" data-who="agent">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">05</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Build &mdash; fase 1</span>
+                  </div>
+                  <p class="dsv-entry-detail">Ephemeral container zonder host-toegang, 18 van 24 turns gebruikt. Concurrency per issue: geen dubbele builds.</p>
+                </li>
+                <li class="dsv-entry" data-p="33" data-who="checks">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">06</span>
+                    <span class="dsv-entry-who">checks</span>
+                    <span class="dsv-entry-title">Groen, inclusief golden-set</span>
+                  </div>
+                  <p class="dsv-entry-detail">214 unit-tests, plus de randgevallen die met 2-1 moeten winnen. Configuratie die gedrag stuurt is code, dus krijgt tests.</p>
+                </li>
+                <li class="dsv-entry" data-p="40" data-who="review">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">07</span>
+                    <span class="dsv-entry-who">review</span>
+                    <span class="dsv-entry-title">Review is advies, geen poort</span>
+                  </div>
+                  <p class="dsv-entry-detail">Drie opmerkingen, &eacute;&eacute;n blocker. De pijplijn repareerde die zelf en draaide opnieuw &mdash; escalatie is de uitzondering.</p>
+                </li>
+                <li class="dsv-entry" data-p="47" data-who="jij" data-kind="merge" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">08</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Merge &mdash; fase 1</span>
+                  </div>
+                  <p class="dsv-entry-detail">Alleen features wachten op jou. Fix, chore, docs en ci mergen door op groen; menselijke aandacht is de schaarste.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="54" data-who="agent">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">09</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Build &mdash; fase 2</span>
+                  </div>
+                  <p class="dsv-entry-detail">De agent leest eerst wat er &eacute;cht gemergd is, niet wat er bedoeld was. Daarna dezelfde volle set checks.</p>
+                </li>
+                <li class="dsv-entry" data-p="61" data-who="jij" data-kind="merge" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">10</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Merge &mdash; fase 2</span>
+                  </div>
+                  <p class="dsv-entry-detail">Kleine brok, te overzien in &eacute;&eacute;n blik. Kleine PRs zijn niet het bijproduct van epics; ze zijn het doel.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="68" data-who="agent">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">11</span>
+                    <span class="dsv-entry-who">agent</span>
+                    <span class="dsv-entry-title">Build &amp; checks &mdash; fase 3</span>
+                  </div>
+                  <p class="dsv-entry-detail">Laatste fase. Was deze rood geworden, dan had de reeks stilgestaan in plaats van doorgebouwd op scheef fundament.</p>
+                </li>
+                <li class="dsv-entry" data-p="78" data-who="jij" data-kind="merge" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">12</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Merge &mdash; fase 3</span>
+                  </div>
+                  <p class="dsv-entry-detail">Epic sluit. Alle drie de fases gemergd, in precies de volgorde die het plan vastlegde.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="90" data-who="jij" data-kind="release" data-gate>
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">13</span>
+                    <span class="dsv-entry-who">jij</span>
+                    <span class="dsv-entry-title">Release</span>
+                  </div>
+                  <p class="dsv-entry-detail">Production-environment met required reviewer. De derde poort &mdash; needs-human-escalatie &mdash; bleef in deze run dicht.</p>
+                  <div class="dsv-entry-act">
+                    <button type="button" class="dsv-approve" data-action="approve">Goedkeuren &rarr;</button>
+                    <span class="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
+                  </div>
+                </li>
+                <li class="dsv-entry" data-p="100" data-who="levering">
+                  <div class="dsv-entry-head">
+                    <span class="dsv-entry-t">14</span>
+                    <span class="dsv-entry-who">levering</span>
+                    <span class="dsv-entry-title">v1.14.0 staat live</span>
+                  </div>
+                  <p class="dsv-entry-detail">E&eacute;n release voor de hele epic, niet drie losse leveringen.</p>
+                </li>
+              </ol>
+
+              <div class="dsv-controls">
+                <button type="button" class="dsv-btn dsv-btn--play" data-action="play">Speel de run</button>
+                <button type="button" class="dsv-btn" data-action="all">Alles in &eacute;&eacute;n keer</button>
               </div>
             </div>
 
-            <div class="dsv-cells"></div>
-
-            <div class="dsv-loop">
-              <div class="dsv-loop-arc"></div>
-              <div class="dsv-loop-arrow" aria-hidden="true">&#9650;</div>
-              <div class="dsv-loop-label">lus per fase</div>
-            </div>
-          </div>
-
-          <div class="dsv-detail-row">
-            <div class="dsv-detail">
-              <div class="dsv-detail-head">
-                <span class="dsv-detail-title">01&nbsp; Poort</span>
-                <span class="dsv-detail-badge">doorstroom</span>
-                <span class="dsv-phases" hidden>
-                  <span class="dsv-phase">fase 1</span>
-                  <span class="dsv-phase">fase 2</span>
-                  <span class="dsv-phase">fase 3</span>
-                </span>
+            <aside class="dsv-aside">
+              <div class="dsv-aside-label">Jouw kant van het werk</div>
+              <!-- Built by widget.js from the "jij"-entries above. -->
+              <div class="dsv-aside-list"></div>
+              <p class="dsv-aside-note">Drie soorten poorten &mdash; merge, release, escalatie. Nooit meer dan een ja. Alles wat hier niet staat, deed de pijplijn zelf.</p>
+              <div class="dsv-aside-stats">
+                <div class="dsv-aside-stat">
+                  <div class="dsv-aside-stat-n">1 klik</div>
+                  <div class="dsv-aside-stat-l">per poort, niets meer</div>
+                </div>
+                <div class="dsv-aside-stat">
+                  <div class="dsv-aside-stat-n">0</div>
+                  <div class="dsv-aside-stat-l">escalaties in deze run</div>
+                </div>
               </div>
-              <p class="dsv-detail-text">Eén inbox voor alles. Een trefwoordtabel kiest het doelproject en transfereert het issue — bij twijfel gokt de poort niet, maar vraagt.</p>
-              <p class="dsv-detail-epic" hidden></p>
-            </div>
-            <div class="dsv-controls">
-              <button type="button" class="dsv-btn" data-action="prev" aria-label="Vorig station">&#8592;</button>
-              <button type="button" class="dsv-btn" data-action="next" aria-label="Volgend station">&#8594;</button>
-              <button type="button" class="dsv-btn dsv-btn--play" data-action="play">Speel de run</button>
-            </div>
+            </aside>
           </div>
+
+          <footer class="dsv-foot">
+            <div class="dsv-foot-links">
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot" target="_blank" rel="noopener">Bekijk de repo</a>
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Architectuur &amp; ontwerpkeuzes</a>
+              <a class="kh-link" href="https://www.linkedin.com/in/koen-holman/" target="_blank" rel="noopener">Praat met me erover</a>
+            </div>
+            <div class="dsv-foot-note">Logboek van &eacute;&eacute;n run &middot; publieke, gecureerde repo</div>
+          </footer>
         </div>
 
-        <!-- Narrow view, and the canonical copy for every station. -->
-        <div class="dsv-narrow">
-          <div class="dsv-narrow-head">
-            <span>de reis van één idee</span>
-            <span>3 mens-poorten</span>
+        <!-- ---------- Technisch: wat dit soepel houdt ----------------------- -->
+        <div class="dsv-view dsv-view--technisch">
+          <header class="dsv-header">
+            <div class="dsv-intro dsv-intro--wide">
+              <button type="button" class="dsv-back" data-goto="gate">&larr; Kies weergave</button>
+              <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur &middot; Technisch</p>
+              <h3 class="dsv-title">Wat dit <em>soepel</em> houdt</h3>
+              <p class="dsv-lead">Geen onderdeel vertrouwt blind op het vorige. Dit is de laag die drift, races en stille afwijkingen opvangt voordat jij ooit een melding ziet. Elke naam hieronder is een echt bestand of principe uit de publieke repo, niet gladgestreken voor de show.</p>
+            </div>
+            <ul class="dsv-stats">
+              <li class="dsv-stat"><span class="dsv-stat-n">6</span><span class="dsv-stat-l">consistency-checks</span></li>
+              <li class="dsv-stat dsv-stat--gate"><span class="dsv-stat-n">16</span><span class="dsv-stat-l">workflows, nul triggers</span></li>
+            </ul>
+          </header>
+
+          <div class="dsv-tech">
+            <div class="dsv-runner">
+              <p class="dsv-runner-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>runner &middot; actief</p>
+              <div>
+                <div class="dsv-runner-title">E&eacute;n Ubuntu Server, self-hosted</div>
+                <p class="dsv-runner-body">Geen cloud-runner: &eacute;&eacute;n eigen machine, altijd aan, draagt de self-hosted lanes &mdash; <code>agent</code> in een ephemeral container zonder docker-daemon, plus <code>heavy</code> en <code>light</code>. Diezelfde machine voert de agent-CLI uit en praat via een OAuth-verbinding met het model dat vandaag alle planning en code voor zijn rekening neemt.</p>
+              </div>
+              <div class="dsv-runner-stats">
+                <span class="dsv-chip">24/7 aan</span>
+                <span class="dsv-chip">0 open inbound poorten</span>
+                <span class="dsv-chip">auth via OAuth, geen API-key in repo</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="dsv-tech-label">Gemeten, niet verzonnen &mdash; nulmeting v&oacute;&oacute;r dit ontwerp</div>
+              <div class="dsv-metrics">
+                <div class="dsv-metric">
+                  <div class="dsv-metric-n">6,2</div>
+                  <div class="dsv-metric-l">permission-denials per run</div>
+                  <div class="dsv-metric-fix">&rarr; opgelost met allowlist-profielen per station</div>
+                </div>
+                <div class="dsv-metric">
+                  <div class="dsv-metric-n">18,4%</div>
+                  <div class="dsv-metric-l">runs tegen max-turns</div>
+                  <div class="dsv-metric-fix">&rarr; opgelost met turn-budget per taaktype</div>
+                </div>
+                <div class="dsv-metric">
+                  <div class="dsv-metric-n">30,8%</div>
+                  <div class="dsv-metric-l">dubbele builds</div>
+                  <div class="dsv-metric-fix">&rarr; opgelost met concurrency-groepen per subject</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="dsv-tech-head">
+                <div class="dsv-tech-label">6 controles die elke run bewaken</div>
+                <a class="kh-link dsv-tech-link" href="https://github.com/KCTHolman/deSchouwVloot/tree/main/.github/workflows" target="_blank" rel="noopener">Alle 16 workflows &rarr;</a>
+              </div>
+              <div class="dsv-checks">
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">trigger::none</span>
+                  <span class="dsv-check-title">Geen enkele eigen trigger</span>
+                  <p class="dsv-check-body">Alle 16 workflows zijn workflow_call-only, machinaal afgedwongen door een guard-script. Geen issues, geen push, geen schedule &mdash; een reusable workflow start nooit vanzelf.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/scripts/check-no-triggers.sh" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">doctor::invariant</span>
+                  <span class="dsv-check-title">fleet-doctor, zes modules</span>
+                  <p class="dsv-check-body">E&eacute;n samenhangende invariant-suite &mdash; runners, routing, governance, host, flow, consistentie. De doctor rapporteert hard en muteert nooit; mutatie is een bewust gescheiden bevoegdheid.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/scripts/fleet-doctor.sh" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">pin::sha</span>
+                  <span class="dsv-check-title">Gelaagd pin-beleid</span>
+                  <p class="dsv-check-body">Third-party actions op SHA, fleet-refs op @main zolang er &eacute;&eacute;n consument is en op SHA of tag zodra de tweede aanhaakt, GitHub-eigen actions op major-tag. Drie soorten vertrouwen, drie soorten pin.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">test::golden</span>
+                  <span class="dsv-check-title">Golden-set regressie</span>
+                  <p class="dsv-check-body">Bevroren echte gevallen naast de unit-tests, inclusief marge-gevallen die met 2-1 moeten winnen &mdash; precies de gevallen waar een testset die alles met 3-0 wint, overheen kijkt.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/tests/golden/README.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">drift::single-source</span>
+                  <span class="dsv-check-title">E&eacute;n bron van waarheid</span>
+                  <p class="dsv-check-body">Bij een eerdere tweede consument groeiden vier gedrifte kopie&euml;n &mdash; dat kan nu niet meer. Logica leeft precies &eacute;&eacute;n keer; een consument krijgt een caller van vijftien regels, nooit een fork.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+                <div class="dsv-check">
+                  <span class="dsv-check-tag">lock::subject</span>
+                  <span class="dsv-check-title">Concurrency op het onderwerp</span>
+                  <p class="dsv-check-body">Concurrency-groepen op issue of PR, gestandaardiseerd in de workflow-skeletten. Dubbele builds zaten ooit op 30,8% van de runs &mdash; dat patroon is nu structureel onmogelijk.</p>
+                  <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="dsv-tech-label">Vandaag &middot; morgen</div>
+              <div class="dsv-roadmap">
+                <div class="dsv-road dsv-road--now">
+                  <span class="dsv-road-tag">VANDAAG</span>
+                  <div class="dsv-road-title">E&eacute;n machine, &eacute;&eacute;n groot model</div>
+                  <p class="dsv-road-body">De Ubuntu-server praat via OAuth met &eacute;&eacute;n gehost model, en elke fleet-workflow wijst nog naar @main &mdash; dat mag ook, zolang deSchouwVloot &eacute;&eacute;n consument bedient.</p>
+                </div>
+                <div class="dsv-road-arrow" aria-hidden="true">&rarr;</div>
+                <div class="dsv-road dsv-road--next">
+                  <span class="dsv-road-tag">MORGEN</span>
+                  <div class="dsv-road-title">Kleine workers, klein lokaal model</div>
+                  <p class="dsv-road-body">Zodra een tweede consument aanhaakt, wijzen fleet-refs niet langer naar @main maar naar een SHA of tag &mdash; en verschuift terugkerend werk naar kleine, lokale workers per taaktype, met het grote model gereserveerd voor architectuur.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="dsv-phases" hidden>
-            <span class="dsv-phase">fase 1</span>
-            <span class="dsv-phase">fase 2</span>
-            <span class="dsv-phase">fase 3</span>
-          </div>
-
-          <ul class="dsv-list">
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="01" data-label="Poort" data-lane="ubuntu" data-tok="idee">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Poort</span>
-                  <span class="dsv-row-meta">01 &middot; ubuntu</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">Eén inbox voor alles. Een trefwoordtabel kiest het doelproject en transfereert het issue — bij twijfel gokt de poort niet, maar vraagt.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="02" data-label="Triage" data-lane="agent" data-tok="issue">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Triage</span>
-                  <span class="dsv-row-meta">02 &middot; agent</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">Labelen en dedupliceren gebeurt pas in de doelrepo, waar de domeinkennis woont. Vaag idee? Het stuitert terug met één concrete wedervraag.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="03" data-label="Plan" data-lane="agent" data-tok="plan">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Plan</span>
-                  <span class="dsv-row-meta">03 &middot; agent</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">Plannen in context, niet centraal — hier komt het zwaardere model uit de kast. Blijkt het te groot voor één PR, dan schrijft het plan zichzelf op als epic: een reeks fase-issues met een vaste volgorde.</span>
-                  <span class="dsv-row-epic">Dit idee is een epic. Het plan knipt het in drie fases; de rest van de pijplijn draait er straks drie keer over.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="04" data-label="Build" data-lane="agent" data-tok="issue">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Build</span>
-                  <span class="dsv-row-meta">04 &middot; agent</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">De agent bouwt met een turn-budget uit .fleet.yml, in een ephemeral container zonder host-toegang. Concurrency per issue: geen dubbele builds.</span>
-                  <span class="dsv-row-epic">De orchestrator geeft één fase vrij en houdt de rest dicht. De agent begint met lezen wat er al gemergd is — de vorige fase zoals hij echt geland is, niet zoals hij bedoeld was.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="05" data-label="Checks" data-lane="light" data-tok="PR">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Checks</span>
-                  <span class="dsv-row-meta">05 &middot; light</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">Configuratie die gedrag stuurt is code, dus krijgt tests. Naast unit-tests staat een golden-set met randgevallen die met 2-1 winnen — anders bewaakt de set niets.</span>
-                  <span class="dsv-row-epic">Elke fase krijgt de volle set. Een fase die niet groen wordt, blokkeert de fases erna: de reeks schuift nooit vooruit over een gebroken fundament.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="06" data-label="Review" data-lane="light" data-tok="PR">
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Review</span>
-                  <span class="dsv-row-meta">06 &middot; light</span>
-                  <span class="dsv-row-tag"></span>
-                  <span class="dsv-row-body">Review is advies, geen poort. Faalt de build of ontstaat een conflict, dan repareert de pijplijn zichzelf; escalatie is de uitzondering.</span>
-                  <span class="dsv-row-epic">Per fase een eigen PR, dus een review die nog te overzien is. Kleine brokken zijn geen bijproduct van epics — ze zijn het doel.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="07" data-label="Merge" data-lane="light" data-tok="PR" data-gate>
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Merge</span>
-                  <span class="dsv-row-meta">07 &middot; light</span>
-                  <span class="dsv-row-tag">mens-poort</span>
-                  <span class="dsv-row-body">Poort 1 van 3. Alleen features wachten op jouw approval; fix, chore, docs en ci mergen op groen. Menselijke aandacht is de schaarste.</span>
-                  <span class="dsv-row-epic">Ook hier: één approval per fase. Zeg je ja, dan opent de orchestrator de volgende fase en begint de lus opnieuw bij build.</span>
-                </span>
-              </button>
-            </li>
-            <li class="dsv-item">
-              <button type="button" class="dsv-row" data-num="08" data-label="Release" data-lane="light" data-tok="release" data-gate>
-                <span class="dsv-rail-cell"><span class="dsv-row-line"></span><span class="dsv-row-dot"></span></span>
-                <span>
-                  <span class="dsv-row-label">Release</span>
-                  <span class="dsv-row-meta">08 &middot; light</span>
-                  <span class="dsv-row-tag">mens-poort</span>
-                  <span class="dsv-row-body">Poort 2 van 3: een production-omgeving met required reviewer. Poort 3 is de needs-human-escalatie — de enige plek waar de pijplijn om hulp vraagt.</span>
-                  <span class="dsv-row-epic">Pas als alle fases gemergd zijn, sluit de epic en gaat het geheel als één release naar buiten.</span>
-                </span>
-              </button>
-            </li>
-          </ul>
-
-          <div class="dsv-m-controls">
-            <button type="button" class="dsv-btn" data-action="prev" aria-label="Vorig station">&#8592;</button>
-            <button type="button" class="dsv-btn" data-action="next" aria-label="Volgend station">&#8594;</button>
-            <button type="button" class="dsv-btn dsv-btn--play" data-action="play">Speel de run</button>
-          </div>
+          <footer class="dsv-foot">
+            <div class="dsv-foot-links">
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot" target="_blank" rel="noopener">Bekijk de repo</a>
+              <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Architectuur &amp; ontwerpkeuzes</a>
+              <a class="kh-link" href="https://www.linkedin.com/in/koen-holman/" target="_blank" rel="noopener">Praat met me erover</a>
+            </div>
+            <div class="dsv-foot-note">Architectuur van de pijplijn &middot; publieke, gecureerde repo</div>
+          </footer>
         </div>
-
-        <ul class="dsv-pillars">
-          <li class="dsv-pillar">
-            <div class="dsv-pillar-t">Elke poort is machine-checkbaar</div>
-            <div class="dsv-pillar-d">Of het is geen poort. Kan een controle zonder mens, dan mag hij er nooit een vragen.</div>
-          </li>
-          <li class="dsv-pillar">
-            <div class="dsv-pillar-t">Publiek, dus nul triggers</div>
-            <div class="dsv-pillar-d">Alle 16 workflows zijn workflow_call-only. Een guard-script bewijst dat bij elke PR — geen belofte in proza.</div>
-          </li>
-          <li class="dsv-pillar">
-            <div class="dsv-pillar-t">Logica hier, hardware daar</div>
-            <div class="dsv-pillar-d">Een reusable workflow draait in de context van de aanroeper: diens runners, diens secrets. Werkt zonder org.</div>
-          </li>
-        </ul>
-
-        <footer class="dsv-foot">
-          <div class="dsv-foot-links">
-            <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot" target="_blank" rel="noopener">Bekijk de repo</a>
-            <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Architectuur &amp; ontwerpkeuzes</a>
-            <a class="kh-link" href="https://www.linkedin.com/in/koen-holman/" target="_blank" rel="noopener">Praat met me erover</a>
-          </div>
-          <div class="dsv-foot-note">Publieke, gecureerde kopie van een productierepo</div>
-        </footer>
       </section>
     </section>
   </main>

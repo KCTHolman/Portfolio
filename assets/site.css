@@ -18,16 +18,18 @@
   --kh-measure: 1140px;
 
   /* Live aurora variables. assets/aurora.js rewrites these every frame while
-     auto-evolve is on; the values here are the t=0 state of that animation so
-     the backdrop and the wordmark gradient look right before (or without) JS. */
-  --c1: hsla(168, 72%, 46%, 0.44);
-  --c2: hsla(228, 70%, 42%, 0.42);
-  --c3: hsla(318, 68%, 44%, 0.36);
-  --c4: hsla(38, 72%, 46%, 0.36);
-  --c5: hsla(273, 70%, 44%, 0.38);
-  --t1: hsla(168, 92%, 74%, 1);
-  --t2: hsla(228, 88%, 64%, 1);
-  --t3: hsla(298, 90%, 76%, 1);
+     auto-evolve is on; the values here are the t=0 state of that animation —
+     the dim blue the page opens on, before it blooms into colour — so the
+     backdrop and the wordmark gradient look right before (or without) JS. */
+  --c1: hsla(222, 38%, 24%, 0.16);
+  --c2: hsla(222, 38%, 24%, 0.16);
+  --c3: hsla(222, 38%, 24%, 0.16);
+  --c4: hsla(222, 38%, 24%, 0.16);
+  --c5: hsla(222, 38%, 24%, 0.16);
+  --t1: hsla(222, 70%, 62%, 1);
+  --t2: hsla(222, 66%, 56%, 1);
+  --t3: hsla(222, 68%, 64%, 1);
+  --aur-paint-op: 0.34;
   --soft: 1.3;
   --speed: 0.5;
 }
@@ -298,6 +300,77 @@ a.khnav[aria-current="page"] {
   margin-top: 34px;
 }
 
+/* Project card with its two deep links alongside, splitting the card's
+   height between them. Both wrap under the card on a narrow screen. */
+.kh-project-row {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.kh-project-row .khcard {
+  flex: 1 1 380px;
+  max-width: 560px;
+}
+
+.kh-project-links {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Each one reads as a single big button: filled, centred, and lifting on
+   hover — a label pinned to the far left of a 500px box read as a panel. */
+.kh-project-links .khcta {
+  flex: 1;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 26px;
+  border-radius: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  transition: background .25s, border-color .25s, color .25s, transform .25s;
+}
+.kh-project-links .khcta:hover { transform: translateY(-2px); }
+
+.kh-project-links .khcta--primary {
+  border-color: rgba(125, 224, 210, 0.55);
+  background: rgba(125, 224, 210, 0.16);
+}
+.kh-project-links .khcta--primary:hover { background: rgba(125, 224, 210, 0.26); }
+
+.kh-project-links .khcta--ghost {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(234, 244, 255, 0.86);
+}
+.kh-project-links .khcta--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="light"] .kh-project-links .khcta--primary {
+  border-color: rgba(15, 118, 110, 0.5);
+  background: rgba(15, 118, 110, 0.14);
+}
+:root[data-theme="light"] .kh-project-links .khcta--primary:hover { background: rgba(15, 118, 110, 0.22); }
+:root[data-theme="light"] .kh-project-links .khcta--ghost {
+  border-color: rgba(10, 25, 45, 0.22);
+  background: rgba(255, 255, 255, 0.8);
+  color: rgba(22, 40, 60, 0.86);
+}
+:root[data-theme="light"] .kh-project-links .khcta--ghost:hover {
+  border-color: rgba(10, 25, 45, 0.36);
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-project-links .khcta:hover { transform: none; }
+}
+
 a.khcta {
   display: flex;
   align-items: center;
@@ -459,6 +532,88 @@ a.khcard:hover {
   flex-wrap: wrap;
   font-size: 15px;
 }
+
+/* ---------- Light theme ------------------------------------------------ */
+
+/* Set by assets/aurora.js when the Daglicht palette is picked. The tokens do
+   most of the work; what follows is the handful of surfaces that hard-code a
+   dark value. The deSchouwVloot showcase stays a dark console on purpose —
+   it reads as an instrument panel, not as page furniture. */
+:root[data-theme="light"] {
+  --kh-bg: #eef3f9;
+  --kh-ink: #16283c;
+  --kh-ink-bright: #08131f;
+  --kh-teal: #0f766e;
+  --kh-teal-soft: #0d5f59;
+  --kh-line: rgba(10, 25, 45, 0.10);
+  --kh-surface-line: rgba(10, 25, 45, 0.12);
+}
+
+:root[data-theme="light"] a:hover { color: #0a4f4a; }
+
+:root[data-theme="light"] .kh-shell {
+  background: radial-gradient(125% 105% at 50% 0%, #ffffff 0%, #f4f8fc 30%, #eef3f9 54%, #e4ecf5 78%);
+}
+
+:root[data-theme="light"] .kh-header { background: rgba(255, 255, 255, 0.72); }
+:root[data-theme="light"] .kh-brand { color: rgba(22, 40, 60, 0.9); }
+
+:root[data-theme="light"] a.khnav { color: rgba(22, 40, 60, 0.62); }
+:root[data-theme="light"] a.khnav:hover,
+:root[data-theme="light"] a.khnav[aria-current="page"] {
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.09);
+}
+:root[data-theme="light"] a.khnav[aria-current="page"] { border-color: rgba(15, 118, 110, 0.3); }
+
+:root[data-theme="light"] .kh-skip {
+  background: #ffffff;
+  color: #0f766e;
+}
+
+:root[data-theme="light"] .kh-eyebrow,
+:root[data-theme="light"] .kh-section-label,
+:root[data-theme="light"] .kh-card-kicker,
+:root[data-theme="light"] .kh-footer-inner { color: rgba(22, 40, 60, 0.58); }
+
+:root[data-theme="light"] .kh-lead,
+:root[data-theme="light"] .kh-hero-lead,
+:root[data-theme="light"] .kh-card-body,
+:root[data-theme="light"] .kh-panel-body,
+:root[data-theme="light"] .kh-contact-lead { color: rgba(22, 40, 60, 0.78); }
+
+:root[data-theme="light"] .kh-hero-title { text-shadow: none; }
+
+:root[data-theme="light"] .kh-panel,
+:root[data-theme="light"] a.khcard {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.62));
+}
+:root[data-theme="light"] a.khcard:hover { border-color: rgba(15, 118, 110, 0.4); }
+
+:root[data-theme="light"] a.khcta--primary {
+  border-color: rgba(15, 118, 110, 0.4);
+  background: rgba(15, 118, 110, 0.1);
+  color: #0d5f59;
+}
+:root[data-theme="light"] a.khcta--primary:hover { background: rgba(15, 118, 110, 0.18); }
+:root[data-theme="light"] a.khcta--ghost {
+  border-color: rgba(10, 25, 45, 0.16);
+  background: rgba(255, 255, 255, 0.66);
+  color: rgba(22, 40, 60, 0.82);
+}
+:root[data-theme="light"] a.khcta--ghost:hover {
+  border-color: rgba(10, 25, 45, 0.3);
+  color: var(--kh-ink-bright);
+}
+
+:root[data-theme="light"] .kh-rule { background: rgba(10, 25, 45, 0.12); }
+:root[data-theme="light"] .kh-badge {
+  border-color: rgba(15, 118, 110, 0.32);
+  background: rgba(15, 118, 110, 0.08);
+  color: #0d5f59;
+}
+:root[data-theme="light"] .kh-link { color: rgba(22, 40, 60, 0.85); }
+:root[data-theme="light"] .kh-link:hover { color: #0d5f59; }
 
 /* ---------- Motion preferences ---------------------------------------- */
 

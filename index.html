@@ -64,11 +64,26 @@
 
     <section style="padding:16px 0 88px;">
       <h2 class="kh-section-label">Waar ik nu aan bouw</h2>
-      <a class="khcard" href="werk/" style="max-width:560px;">
-        <span class="kh-card-kicker">Project 01 &middot; huidig</span>
-        <span class="kh-card-title">de Schouw<span class="kh-accent">vloot</span></span>
-        <span class="kh-card-body">Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Publiek te lezen.</span>
-      </a>
+      <div class="kh-project-row">
+        <a class="khcard" href="werk/">
+          <span class="kh-card-kicker">Project 01 &middot; huidig</span>
+          <span class="kh-card-title">de Schouw<span class="kh-accent">vloot</span></span>
+          <span class="kh-card-body">Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie plekken verschijnt. Publiek te lezen.</span>
+        </a>
+
+        <!-- Straight into either side of the showcase; werk/ itself opens on
+             the keuzescherm, these two skip it. -->
+        <div class="kh-project-links">
+          <a class="khcta khcta--primary" href="werk/#verhalend">
+            <span>Verhalend &middot; niet-technische uitleg</span>
+            <span aria-hidden="true">&#8594;</span>
+          </a>
+          <a class="khcta khcta--ghost" href="werk/#technisch">
+            <span>Technisch &middot; wat het soepel houdt</span>
+            <span aria-hidden="true">&#8594;</span>
+          </a>
+        </div>
+      </div>
     </section>
   </main>
 

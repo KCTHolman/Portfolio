@@ -46,11 +46,13 @@
   animation: khFadeIn .5s ease both;
 }
 
+/* Opacity ramps with the intro: the wash starts nearly black and grows in.
+   assets/aurora.js writes --aur-paint-op; site.css holds the t=0 value. */
 .aur-paint {
   position: absolute;
   inset: -12%;
   filter: url(#kh-paint);
-  opacity: 0.42;
+  opacity: var(--aur-paint-op, 0.5);
 }
 
 .aur-blob {
@@ -159,13 +161,52 @@
   overflow: hidden;
   opacity: 0;
   animation: khPanelIn .8s ease .6s both;
+  transition: width .3s ease;
 }
+
+/* Closed, the panel is only a small glowing dot in the corner — there if you
+   look for it, out of the way if you don't. Opening it restores the card. */
+/* Dimmed through its own colours, not opacity: khPanelIn fills forwards, and
+   a filled animation would outrank any opacity declared here. */
+.aur-panel:not(.is-open) {
+  /* Explicit, because the collapsed body still has an intrinsic width and
+     `auto` would size the pill to the sliders. Dot + head padding + borders. */
+  width: 25px;
+  border-radius: 999px;
+  background: rgba(9, 15, 28, 0.42);
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: background .25s, border-color .25s;
+}
+.aur-panel:not(.is-open):hover,
+.aur-panel:not(.is-open):focus-within {
+  background: rgba(9, 15, 28, 0.72);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.aur-panel:not(.is-open) .aur-head {
+  padding: 8px;
+  border-bottom: none;
+}
+
+.aur-panel:not(.is-open) .aur-head-dot {
+  opacity: 0.6;
+  transition: opacity .25s;
+}
+.aur-panel:not(.is-open):hover .aur-head-dot,
+.aur-panel:not(.is-open):focus-within .aur-head-dot { opacity: 1; }
+.aur-panel:not(.is-open) .aur-head-text,
+.aur-panel:not(.is-open) .aur-chevron { display: none; }
 
 @media (max-width: 699px) {
   .aur-panel {
     left: 14px;
     right: 14px;
     bottom: 14px;
+    width: auto;
+  }
+  .aur-panel:not(.is-open) {
+    left: auto;
     width: auto;
   }
 }
@@ -361,6 +402,58 @@
   padding: 0;
 }
 .aur-toggle-label { font-size: 11px; color: rgba(220, 232, 245, 0.7); }
+
+/* ---------- Light theme -------------------------------------------------- */
+
+/* Screen-blending onto a light page just blows out to white, so the blobs
+   darken instead, and the vignette lifts rather than sinks. */
+:root[data-theme="light"] .aur-blob { mix-blend-mode: multiply; }
+
+:root[data-theme="light"] .aur-vignette {
+  background: radial-gradient(115% 85% at 50% 32%, transparent 30%, rgba(255, 255, 255, 0.66) 74%, #ffffff 100%);
+}
+
+:root[data-theme="light"] .aur-grain {
+  mix-blend-mode: multiply;
+  opacity: 0.05;
+}
+
+:root[data-theme="light"] .aur-panel {
+  background: rgba(255, 255, 255, 0.74);
+  border-color: rgba(10, 25, 45, 0.14);
+  box-shadow: 0 18px 50px rgba(10, 25, 45, 0.16);
+  color: #16283c;
+}
+:root[data-theme="light"] .aur-panel:not(.is-open) {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(10, 25, 45, 0.1);
+}
+:root[data-theme="light"] .aur-panel:not(.is-open):hover,
+:root[data-theme="light"] .aur-panel:not(.is-open):focus-within {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(10, 25, 45, 0.2);
+}
+:root[data-theme="light"] .aur-head { border-bottom-color: rgba(10, 25, 45, 0.1); }
+:root[data-theme="light"] .aur-slider-head,
+:root[data-theme="light"] .aur-field-label,
+:root[data-theme="light"] .aur-toggle-label { color: rgba(22, 40, 60, 0.72); }
+:root[data-theme="light"] .aur-row { background: rgba(10, 25, 45, 0.05); }
+:root[data-theme="light"] .aur-row[aria-pressed="true"] { background: rgba(13, 148, 136, 0.16); }
+:root[data-theme="light"] .aur-switch { background: rgba(10, 25, 45, 0.2); }
+:root[data-theme="light"] .aur-panel input[type=range] { background: rgba(10, 25, 45, 0.16); }
+:root[data-theme="light"] .aur-panel input[type=range]::-webkit-slider-thumb {
+  background: #16283c;
+  box-shadow: 0 0 8px rgba(10, 25, 45, 0.35);
+}
+:root[data-theme="light"] .aur-panel input[type=range]::-moz-range-thumb {
+  background: #16283c;
+  box-shadow: 0 0 8px rgba(10, 25, 45, 0.35);
+}
+:root[data-theme="light"] .aur-swatch { border-color: rgba(10, 25, 45, 0.18); }
+:root[data-theme="light"] .aur-swatch[aria-pressed="true"] {
+  border-color: rgba(10, 25, 45, 0.75);
+  box-shadow: 0 0 12px rgba(10, 25, 45, 0.25);
+}
 
 /* ---------- Motion preferences ------------------------------------------ */
 
