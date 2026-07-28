@@ -31,6 +31,17 @@
     document.addEventListener('dsv:live', function () {
       demo.removeAttribute('data-locked');
       demo.classList.add('is-revealed');
+
+      // Rustig meebewegen naar wat er zojuist verscheen. Even wachten: het
+      // scherm schuift zelf ook nog omhoog, en samen zou dat schokken.
+      var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(function () {
+        // Alleen als de run zelf nog in beeld staat. Is de bezoeker intussen
+        // ergens anders gaan lezen, dan is meeslepen niet behulpzaam.
+        var box = run.closest('.dsv').getBoundingClientRect();
+        if (box.bottom < 0 || box.top > window.innerHeight) return;
+        demo.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+      }, still ? 0 : 260);
     }, { once: true });
   }
 
