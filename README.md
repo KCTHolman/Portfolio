@@ -1,6 +1,6 @@
 # Koen Holman — portfolio
 
-Statische site: vier pagina's, geen build-stap, geen dependencies. Je kunt elk
+Statische site: zes pagina's, geen build-stap, geen dependencies. Je kunt elk
 bestand openen, aanpassen en direct het resultaat zien.
 
 ## Structuur
@@ -8,6 +8,8 @@ bestand openen, aanpassen en direct het resultaat zien.
 ```
 index.html              Home
 werk/index.html         AI-projecten + de deSchouwVloot-showcase
+werk/logboek/           Verhalend: één run door de pijplijn, stap voor stap
+werk/readme/            Technisch: de README van deSchouwVloot, gerenderd
 over/index.html         Over
 contact/index.html      Contact
 404.html                Niet-gevonden-pagina (volledig self-contained)
@@ -17,12 +19,36 @@ assets/
   fonts.css + fonts/    Space Grotesk + Cormorant Garamond, zelf gehost
   aurora.css / .js      De bewegende achtergrond en het "Come play…"-paneel
   widget.css / .js      De acht-stations-pijplijn op /werk
+  demo.css / .js        De speelbare demo onderaan het logboek
+  readme.css / .js      Het GitHub-achtige bestandskader op /werk/readme/
   og.png                Social card (1200x630)
   favicon.*             Iconen, gerenderd uit hetzelfde palet
 
 tools/set-site-url.py   Zet de site op een ander publiek adres
 archief/                De oude site, bewaard maar niet meer gelinkt
 ```
+
+### /werk/readme/ — waarom die tekst hier een tweede keer staat
+
+De pagina rendert de README van
+[KCTHolman/deSchouwVloot](https://github.com/KCTHolman/deSchouwVloot) met de
+hand, als HTML. Geen markdown-parser, geen build-stap — dezelfde regel als de
+rest van de site: de inhoud staat in het bestand. Dat betekent wél dat die
+tekst op twee plekken leeft. De afspraak daarbij:
+
+- **De tekst is letterlijk die van `README.md`.** Wijkt de repo af, dan is deze
+  pagina fout, niet de repo.
+- **Alleen de links zijn omgezet**, naar absolute adressen in
+  `github.com/KCTHolman/deSchouwVloot` — relatieve paden uit een README wijzen
+  hier nergens naar. Elke link in de body krijgt daarom een ↗ en opent in een
+  nieuw tabblad. Die afwijking staat ook op de pagina zelf benoemd.
+- **De kop-`id`'s zijn GitHub-slugs.** `#zelf-draaien` landt hier en op GitHub
+  op dezelfde kop, dus een gekopieerde link werkt aan beide kanten.
+
+`readme.js` doet twee dingen en verder niets: een kopieerknop op elk codeblok
+(alleen in een secure context — anders zou de knop er staan en stilletjes
+niets doen) en de outline-rail meelaten lopen met waar je bent. Zonder JS is
+de pagina compleet.
 
 ## Lokaal bekijken
 
