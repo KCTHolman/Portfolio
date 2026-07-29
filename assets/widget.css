@@ -506,15 +506,31 @@
 
 /* ---------- Verhalend: the log ------------------------------------------ */
 
+/* A fixed height, not a max-height. With max-height the box grew from nothing
+   to 440px as steps arrived, shoving the buttons and everything under them
+   down the page on every single step — that was the jumping. The space is
+   claimed up front instead, so nothing outside the log ever moves.
+
+   Laid out as a column anchored to the bottom, so a new step appears at the
+   bottom edge and lifts the older ones up rather than landing under them. */
 .dsv-log {
   margin: 14px 0 0;
   padding: 0 4px 0 0;
   list-style: none;
-  max-height: 440px;
+  height: 440px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden auto;
+  scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(125, 224, 210, 0.45) rgba(255, 255, 255, 0.05);
 }
+
+/* Bottom-anchoring via an auto margin on the first item rather than
+   justify-content:flex-end, which makes overflowing content unreachable at
+   the top in every browser. Once the steps outgrow the box this collapses to
+   zero on its own and it behaves as a normal scroller. */
+.dsv-entry:first-child { margin-top: auto; }
 
 /* WebKit ignores scrollbar-color, and its default bar is a white slab on a
    panel this dark. */
@@ -530,14 +546,36 @@
 .dsv-log::-webkit-scrollbar-thumb:hover { background: rgba(125, 224, 210, 0.62); }
 
 .dsv-entry {
+  position: relative;
+  /* Flex items shrink by default; without this the steps would squeeze
+     instead of overflowing once they outgrow the log. */
+  flex: none;
   padding: 13px 15px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
   border-radius: 13px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(255, 255, 255, 0.025);
   opacity: 0.82;
   animation: vwIn .45s ease both;
 }
+
+/* Three dots in the gap under each step: there is another one coming. The
+   final step has none, which is how the end of the run reads as the end. */
+.dsv-entry::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: calc(100% + 6px);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(159, 240, 226, 0.40);
+  box-shadow: 0 5px 0 rgba(159, 240, 226, 0.26), 0 10px 0 rgba(159, 240, 226, 0.14);
+}
+.dsv-entry:last-child {
+  margin-bottom: 0;
+}
+.dsv-entry:last-child::after { display: none; }
 /* Only the steps the run has reached are in view. */
 .dsv-entry:not([data-shown]) { display: none; }
 
@@ -1152,7 +1190,7 @@
     gap: 18px;
   }
   .dsv-rail { display: none; }
-  .dsv-log { max-height: 360px; }
+  .dsv-log { height: 360px; }
 
   /* Narrower, not shorter: 38px stays a comfortable tap target, and the strip
      sits at the bottom of the widget where a thumb already is. */
@@ -1202,5 +1240,11 @@
 .dsv.dsv-nojs .dsv-back,
 .dsv.dsv-nojs .dsv-controls,
 .dsv.dsv-nojs .dsv-rail { display: none; }
-.dsv.dsv-nojs .dsv-log { max-height: none; }
+/* Without JS every step is already visible, so there is nothing to reserve
+   space for and nothing to anchor — the log is just a list again. */
+.dsv.dsv-nojs .dsv-log {
+  height: auto;
+  display: block;
+}
+.dsv.dsv-nojs .dsv-entry:first-child { margin-top: 0; }
 .dsv.dsv-nojs .dsv-choice { cursor: default; }
