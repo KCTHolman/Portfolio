@@ -188,14 +188,21 @@
   border-radius: 5px;
   cursor: pointer;
   opacity: 0.55;
-  transition: opacity .2s, transform .2s, border-color .2s, box-shadow .2s;
+  /* Dimming alone left eleven fully-saturated gradients as the brightest
+     thing on the page. Desaturated at rest they read as a quiet row of
+     chips; the colour comes back the moment you reach for one. */
+  filter: saturate(0.45);
+  transition: opacity .2s, filter .2s, transform .2s, border-color .2s, box-shadow .2s;
 }
-.aur-preset:hover {
+.aur-preset:hover,
+.aur-preset:focus-visible {
   opacity: 1;
+  filter: saturate(1);
   transform: translateY(-1px);
 }
 .aur-preset[aria-pressed="true"] {
   opacity: 1;
+  filter: saturate(1);
   border-color: rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
 }

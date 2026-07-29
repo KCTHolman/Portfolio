@@ -684,6 +684,20 @@
 }
 .dsv-entry-fail code { color: rgba(251, 213, 112, 0.9); }
 
+/* Not a run control: it changes how much detail every entry shows. Pushed to
+   the far end and kept quiet at rest, so the row reads as "three ways to move
+   through the run" plus one switch, instead of four equal choices. */
+.dsv-btn--depth {
+  margin-left: auto;
+  border-color: transparent;
+  background: none;
+  color: rgba(200, 220, 238, 0.55);
+}
+.dsv-btn--depth:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--dsv-acc-soft);
+}
+
 .dsv-btn--depth[aria-pressed="true"] {
   border-color: rgba(125, 224, 210, 0.45);
   background: rgba(125, 224, 210, 0.12);
