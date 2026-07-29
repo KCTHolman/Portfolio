@@ -219,22 +219,28 @@
 
 /* ---------- Gate: two ways in ------------------------------------------- */
 
+/* Grid, geen flex-wrap: met drie kaarten zou een wikkelende flexrij de derde
+   over de volle breedte uitrekken — een kaart van dubbele grootte naast twee
+   normale leest als een fout, niet als een keuze. Een auto-fit-grid laat de
+   overgebleven cel gewoon leeg en houdt alle kaarten even breed. Zelfde
+   patroon als .kh-panel-grid in site.css. */
 .dsv-choices {
   position: relative;
   margin-top: 30px;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(264px, 1fr));
   gap: 18px;
-  flex-wrap: wrap;
 }
 
-/* Either a button (switches view in place) or a link (the logboek has its own
-   page), so both need the same reset. */
+/* Either a button (switches view in place) or a link (the logboek and the
+   README have their own page), so all three need the same reset. */
 .dsv-choice {
   position: relative;
   display: block;
   overflow: hidden;
-  flex: 1 1 320px;
-  min-width: 270px;
+  /* De kolombreedte komt van het grid; dit houdt alleen tegen dat een lange
+     tag de cel breder duwt dan zijn track. */
+  min-width: 0;
   text-decoration: none;
   padding: 28px 26px;
   border-radius: 18px;
@@ -271,6 +277,15 @@
   bottom: -14px;
   font-family: var(--dsv-mono);
   font-size: 110px;
+}
+
+/* Een markdown-kop, want dat is wat er achter deze kaart zit. Iets kleiner
+   dan de accolades: één glyph vult meer vlak dan twee. */
+.dsv-choice-mark--hash {
+  right: 20px;
+  bottom: -20px;
+  font-family: var(--dsv-mono);
+  font-size: 96px;
 }
 
 .dsv-choice-kicker {
@@ -850,14 +865,15 @@
   gap: 26px;
 }
 
-/* Het eerste blok van de technische kant, en met opzet het luidste: alles
-   eronder is mijn samenvatting, de README is de bron. Een developer die hier
-   binnenkomt hoort eerst die te zien.
+/* Het slotblok van de technische kant: alles erboven is mijn samenvatting,
+   dit is de bron eronder. Het keuzescherm biedt de README al als eigen kaart
+   aan, dus wie hier is heeft die bewust laten liggen — daarom staat dit ná
+   het overzicht en niet ervoor.
 
    Geel, niet teal — dezelfde kleur die dit widget al gebruikt voor "hier
    verschijnt een mens". Dat is precies wat dit is: de enige plek op deze
-   kant waar je zelf iets moet openen. En het zet het los van het
-   teal-omrande runner-blok eronder, dat anders even zwaar zou wegen. */
+   kant waar je zelf iets moet openen. En het zet het los van de teal-omrande
+   blokken erboven, die anders even zwaar zouden wegen. */
 .dsv-readme {
   display: flex;
   align-items: center;
