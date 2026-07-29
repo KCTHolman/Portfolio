@@ -724,6 +724,22 @@ a.khcta--ghost:hover {
   color: var(--kh-ink-bright);
 }
 
+/* Tijdelijk monogram tot het echte Indicia-beeldmerk klaarstaat. */
+.kh-indicia-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(226, 238, 250, 0.45);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 /* Naast elkaar houden op een telefoon: gestapeld kost het vijftig pixels en
    twee schermbrede knoppen lezen bovendien als een formulier. */
 @media (max-width: 699px) {
