@@ -16,6 +16,8 @@ import sys
 FILES = [
     "index.html",
     "werk/index.html",
+    "werk/logboek/index.html",
+    "werk/readme/index.html",
     "over/index.html",
     "contact/index.html",
     "sitemap.xml",

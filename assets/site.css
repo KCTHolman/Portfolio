@@ -84,6 +84,12 @@ button:focus-visible,
 
 .kh-shell {
   position: relative;
+  /* Een kolom over de volle schermhoogte: de main rekt uit, dus de footer
+     staat op élke pagina onderaan het scherm — ook als de inhoud korter is
+     dan één beeldscherm. 100vh als terugval voor browsers zonder dvh. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   min-height: 100dvh;
   /* clip, not hidden: overflow-x:hidden turns this into a scroll container,
      and .kh-header's position:sticky would then stick to a scrollport that
@@ -185,23 +191,27 @@ a.khnav[aria-current="page"] {
 
 /* ---------- Main + footer -------------------------------------------- */
 
+/* De main is het enige deel dat meegroeit: header en footer houden hun eigen
+   hoogte, de resthoogte van het scherm gaat naar de inhoud. Daarmee zakt de
+   footer op een korte pagina naar de onderkant in plaats van halverwege te
+   blijven hangen. */
 .kh-main {
   position: relative;
   z-index: 1;
+  flex: 1 0 auto;
+  width: 100%;
   max-width: var(--kh-measure);
   margin: 0 auto;
 }
+
+.kh-header,
+.kh-footer { flex: none; }
 
 .kh-main--home    { padding: 0 20px; }
 
 /* The home page is one screen: hero and project sit in the space between the
    header and the footer. min-height, not height, so a short viewport can
    still scroll instead of clipping. */
-.kh-home .kh-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
-}
 .kh-home .kh-main--home {
   flex: 1 0 auto;
   display: flex;
@@ -640,11 +650,60 @@ a.khnav[aria-current="page"] {
 .kh-project-links {
   margin-top: 14px;
   font-size: 14px;
+  align-items: center;
+}
+
+/* De README is geen derde invalshoek maar het bestand zelf, en dus geen
+   derde onderstreepte regel: een pil zegt dat in één oogopslag. margin-left
+   op auto duwt hem naar de rechterkant van zijn regel — past alles op één
+   regel, dan staat hij rechts naast de links; wikkelt het, dan zakt hij naar
+   rechtsonder in de kaart. Beide keren waar je hem zoekt. */
+a.kh-pill {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 7px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 224, 210, 0.35);
+  background: rgba(125, 224, 210, 0.09);
+  text-decoration: none;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--kh-teal-soft);
+  transition: background .25s, border-color .25s, color .25s;
+}
+a.kh-pill:hover {
+  background: rgba(125, 224, 210, 0.18);
+  border-color: rgba(125, 224, 210, 0.55);
+  color: #c9fbf1;
 }
 
 /* Meer lucht onder de ticker zodra die twee of drie regels beslaat. */
 @media (max-width: 1023px) {
   .kh-project-links { margin-top: 20px; }
+}
+
+/* Op een telefoon past de pil niet meer naast de tweede link en zakt hij naar
+   een regel van zichzelf. Die regel moet ergens vandaan komen: de home past
+   op één scherm en dat is geen toeval. Vandaar een krappere rijafstand, een
+   kleinere pil en minder lucht boven de rij — samen precies de hoogte die de
+   extra regel kost. */
+@media (max-width: 699px) {
+  .kh-project-links {
+    margin-top: 12px;
+    row-gap: 8px;
+    column-gap: 18px;
+  }
+
+  a.kh-pill {
+    padding: 6px 13px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+  }
 }
 
 a.khcta {
@@ -673,6 +732,22 @@ a.khcta--ghost {
 a.khcta--ghost:hover {
   border-color: rgba(255, 255, 255, 0.26);
   color: var(--kh-ink-bright);
+}
+
+/* Tijdelijk monogram tot het echte Indicia-beeldmerk klaarstaat. */
+.kh-indicia-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(226, 238, 250, 0.45);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 /* Naast elkaar houden op een telefoon: gestapeld kost het vijftig pixels en
