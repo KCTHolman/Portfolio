@@ -645,6 +645,10 @@ a.khnav[aria-current="page"] {
   .kh-ticker-item:first-child { opacity: 1; transform: none; }
 }
 
+/* Fewer items than the 8-slice default: same 4s-per-item pacing, but the
+   cycle shrinks to item-count &times; 4s so nothing sits blank between loops. */
+.kh-ticker--3 .kh-ticker-item { animation-duration: 12s; }
+
 /* The two deep links under the project card, in the same underlined style
    as the showcase's own footer links. */
 .kh-project-links {
