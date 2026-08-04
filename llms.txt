@@ -1,0 +1,19 @@
+# Koen Holman
+
+> Software engineer in Tilburg. Full stack development, AI-systemen en de vraag hoe je die veilig in productie houdt.
+
+Support engineer bij Indicia in Tilburg. Naast dat werk bouwt hij deSchouwVloot: een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie vaste momenten beslist — plan, review, escalatie.
+
+## Pagina's
+
+- [Home](https://koenholman.nl/): overzicht en de kern van deSchouwVloot.
+- [AI-projecten](https://koenholman.nl/werk/): hoe de pijplijn is opgebouwd, welke rol AI-agents spelen en waar de menselijke controlepunten zitten.
+- [Logboek](https://koenholman.nl/werk/logboek/): één idee gevolgd door de pijplijn, van inbox tot release.
+- [README](https://koenholman.nl/werk/readme/): de repo-documentatie van deSchouwVloot als pagina.
+- [Over](https://koenholman.nl/over/): achtergrond, werkwijze en hoe hij naar betrouwbaarheid van AI-systemen kijkt.
+- [Contact](https://koenholman.nl/contact/): LinkedIn en GitHub.
+
+## Notities
+
+- deSchouwVloot is een publieke repo zonder eigen triggers; zie de README-pagina voor het consumer-contract.
+- Content is in het Nederlands.
