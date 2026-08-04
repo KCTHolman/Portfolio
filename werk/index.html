@@ -25,10 +25,10 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="stylesheet" href="../assets/site.css?v=49">
-<link rel="stylesheet" href="../assets/aurora.css?v=49">
-<link rel="stylesheet" href="../assets/widget.css?v=49">
-<script src="../assets/transitions.js?v=49"></script>
+<link rel="stylesheet" href="../assets/site.css?v=51">
+<link rel="stylesheet" href="../assets/aurora.css?v=51">
+<link rel="stylesheet" href="../assets/widget.css?v=51">
+<script src="../assets/transitions.js?v=51"></script>
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"deSchouwVloot","description":"AI-native CI/CD-pijplijn: agents voeren het werk uit, een mens beslist op drie poorten. 16 reusable workflows, nul eigen triggers.","codeRepository":"https://github.com/KCTHolman/deSchouwVloot","programmingLanguage":["YAML","Bash","Python"],"author":{"@type":"Person","name":"Koen Holman"}}
@@ -94,8 +94,8 @@
           <header class="dsv-header">
             <div class="dsv-intro">
               <p class="dsv-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>Showcase &middot; CI/CD-infrastructuur</p>
-              <h3 class="dsv-title">Kies je <em>kant</em> van het verhaal</h3>
-              <p class="dsv-lead">Dezelfde pijplijn, twee invalshoeken. Kies wat je wilt zien &mdash; wisselen kan altijd.</p>
+              <h3 class="dsv-title">Kies je <em>ingang</em></h3>
+              <p class="dsv-lead">Dezelfde pijplijn, drie invalshoeken: het verhaal, de machinerie, of het bestand zelf. Wisselen kan altijd.</p>
             </div>
           </header>
 
@@ -123,6 +123,22 @@
               </span>
               <span class="dsv-choice-cta">Bekijk &rarr;</span>
             </button>
+
+            <!-- De derde kaart is geen derde invalshoek maar de bron onder de
+                 andere twee: geen samenvatting van mij, maar wat de repo zelf
+                 zegt. Daarom een eigen kaart en niet weggestopt achter de
+                 technische kant. -->
+            <a class="dsv-choice" href="readme/">
+              <span class="dsv-choice-mark dsv-choice-mark--hash" aria-hidden="true">#</span>
+              <span class="dsv-choice-kicker">03 &middot; Voor de bron</span>
+              <span class="dsv-choice-title">README</span>
+              <span class="dsv-choice-body">Het bestand zelf, woord voor woord. De drie ontwerpidee&euml;n, het contract van vijftien regels, en waarom geen enkele workflow een eigen trigger heeft.</span>
+              <span class="dsv-tags">
+                <span class="dsv-tag">README.md</span>
+                <span class="dsv-tag">links naar de repo</span>
+              </span>
+              <span class="dsv-choice-cta">Lees &rarr;</span>
+            </a>
           </div>
 
           <footer class="dsv-foot">
@@ -131,7 +147,7 @@
               <a class="kh-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Architectuur &amp; ontwerpkeuzes</a>
               <a class="kh-link" href="https://www.linkedin.com/in/koen-holman/" target="_blank" rel="noopener">Praat met me erover</a>
             </div>
-            <div class="dsv-foot-note">Twee kanten, dezelfde pijplijn &middot; publieke, gecureerde repo</div>
+            <div class="dsv-foot-note">Drie ingangen, dezelfde pijplijn &middot; publieke, gecureerde repo</div>
           </footer>
         </div>
 
@@ -249,6 +265,19 @@
                 </div>
               </div>
             </div>
+
+            <!-- Onderaan, niet bovenaan: wie hier binnenkwam koos net bewust
+                 de samenvatting boven de bron, en dan is een luide "begin
+                 hier" boven de tekst een tweede keer dezelfde vraag stellen.
+                 Ná het overzicht is het een aanbod om na te trekken. -->
+            <a class="dsv-readme" href="readme/">
+              <div class="dsv-readme-main">
+                <p class="dsv-readme-eyebrow"><span class="dsv-eyebrow-dot" aria-hidden="true"></span>de bron &middot; README.md</p>
+                <span class="dsv-readme-title">Dit was mijn samenvatting</span>
+                <p class="dsv-readme-body">De repo zegt het in eigen woorden: de volledige <code>README.md</code>, hier gerenderd. De drie ontwerpidee&euml;n, het consumer-contract van vijftien regels, en waarom geen enkele van de zestien workflows een eigen trigger heeft. Alle verwijzingen erin linken door naar het echte bestand op GitHub.</p>
+              </div>
+              <span class="dsv-readme-cta">Lees de README &rarr;</span>
+            </a>
           </div>
 
           <footer class="dsv-foot">
@@ -274,8 +303,8 @@
   </footer>
 </div>
 
-<script src="../assets/aurora.js?v=49" defer></script>
-<script src="../assets/widget.js?v=49" defer></script>
+<script src="../assets/aurora.js?v=51" defer></script>
+<script src="../assets/widget.js?v=51" defer></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

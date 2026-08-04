@@ -219,22 +219,28 @@
 
 /* ---------- Gate: two ways in ------------------------------------------- */
 
+/* Grid, geen flex-wrap: met drie kaarten zou een wikkelende flexrij de derde
+   over de volle breedte uitrekken — een kaart van dubbele grootte naast twee
+   normale leest als een fout, niet als een keuze. Een auto-fit-grid laat de
+   overgebleven cel gewoon leeg en houdt alle kaarten even breed. Zelfde
+   patroon als .kh-panel-grid in site.css. */
 .dsv-choices {
   position: relative;
   margin-top: 30px;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(264px, 1fr));
   gap: 18px;
-  flex-wrap: wrap;
 }
 
-/* Either a button (switches view in place) or a link (the logboek has its own
-   page), so both need the same reset. */
+/* Either a button (switches view in place) or a link (the logboek and the
+   README have their own page), so all three need the same reset. */
 .dsv-choice {
   position: relative;
   display: block;
   overflow: hidden;
-  flex: 1 1 320px;
-  min-width: 270px;
+  /* De kolombreedte komt van het grid; dit houdt alleen tegen dat een lange
+     tag de cel breder duwt dan zijn track. */
+  min-width: 0;
   text-decoration: none;
   padding: 28px 26px;
   border-radius: 18px;
@@ -271,6 +277,15 @@
   bottom: -14px;
   font-family: var(--dsv-mono);
   font-size: 110px;
+}
+
+/* Een markdown-kop, want dat is wat er achter deze kaart zit. Iets kleiner
+   dan de accolades: één glyph vult meer vlak dan twee. */
+.dsv-choice-mark--hash {
+  right: 20px;
+  bottom: -20px;
+  font-family: var(--dsv-mono);
+  font-size: 96px;
 }
 
 .dsv-choice-kicker {
@@ -850,6 +865,98 @@
   gap: 26px;
 }
 
+/* Het slotblok van de technische kant: alles erboven is mijn samenvatting,
+   dit is de bron eronder. Het keuzescherm biedt de README al als eigen kaart
+   aan, dus wie hier is heeft die bewust laten liggen — daarom staat dit ná
+   het overzicht en niet ervoor.
+
+   Geel, niet teal — dezelfde kleur die dit widget al gebruikt voor "hier
+   verschijnt een mens". Dat is precies wat dit is: de enige plek op deze
+   kant waar je zelf iets moet openen. En het zet het los van de teal-omrande
+   blokken erboven, die anders even zwaar zouden wegen. */
+.dsv-readme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(251, 213, 112, 0.3);
+  background: linear-gradient(135deg, rgba(251, 213, 112, 0.08), rgba(251, 213, 112, 0.015));
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .25s, background .25s, transform .25s;
+}
+.dsv-readme:hover {
+  border-color: rgba(251, 213, 112, 0.55);
+  background: linear-gradient(135deg, rgba(251, 213, 112, 0.13), rgba(251, 213, 112, 0.03));
+  transform: translateY(-2px);
+}
+
+.dsv-readme-main { min-width: 0; }
+
+.dsv-readme-eyebrow {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--dsv-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(251, 213, 112, 0.9);
+}
+.dsv-readme-eyebrow .dsv-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--dsv-gate);
+  box-shadow: 0 0 9px var(--dsv-gate);
+}
+
+.dsv-readme-title {
+  display: block;
+  margin-top: 9px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.15;
+  color: #f4f7ff;
+}
+
+.dsv-readme-body {
+  max-width: 560px;
+  margin: 8px 0 0;
+  font-weight: 300;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(226, 238, 250, 0.75);
+  text-wrap: pretty;
+}
+.dsv-readme-body code {
+  font-family: var(--dsv-mono);
+  font-size: 12px;
+  color: rgba(251, 213, 112, 0.92);
+}
+
+/* Geen echte knop: het hele blok is de link. Dit is de affordance ervan. */
+.dsv-readme-cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(251, 213, 112, 0.4);
+  background: rgba(251, 213, 112, 0.1);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(251, 213, 112, 0.95);
+}
+
 .dsv-runner {
   display: flex;
   flex-direction: column;
@@ -1162,6 +1269,19 @@
     margin-top: 22px;
     gap: 22px;
   }
+
+  /* De knop schuift onder de tekst in plaats van ernaast, en wordt schermbreed
+     zodat hij niet als een losse chip naast de titel blijft hangen. */
+  .dsv-readme {
+    padding: 18px;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .dsv-readme-cta {
+    justify-content: center;
+    width: 100%;
+  }
+
   .dsv-runner { padding: 18px; }
   .dsv-checks { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 
