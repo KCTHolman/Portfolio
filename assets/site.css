@@ -827,6 +827,15 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
   text-wrap: pretty;
 }
 
+/* A teaser, not a project page yet: dashed and dimmer, no link to follow. */
+.kh-soon-card {
+  margin-top: 14px;
+  max-width: 560px;
+  border-style: dashed;
+  opacity: 0.82;
+}
+.kh-card-title--static { color: var(--kh-ink-bright); }
+
 /* ---------- Over: numbered panels ------------------------------------- */
 
 .kh-panel-grid {
