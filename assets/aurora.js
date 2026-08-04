@@ -104,7 +104,13 @@
   var DIM = { sat: 38, light: 24, alpha: 0.16, paint: 0.34 };
   var FULL_PAINT = 0.62;
 
-  var state = { preset: 0 };
+  // How often the wash drifts to a new preset on its own, and how long that
+  // handover takes — a crossfade, not a cut, so it never announces itself.
+  var AUTO_CYCLE_SEC = 100;
+  var BLEND_SEC = 6;
+
+  var state = { preset: Math.floor(Math.random() * PRESETS.length), nextSwitchAt: AUTO_CYCLE_SEC };
+  var blend = null; // { from: presetIndex, startElapsed: seconds } while crossfading
 
   var t0 = Date.now();
   var raf = null;
@@ -141,7 +147,11 @@
 
   function saveSession() {
     try {
-      sessionStorage.setItem(STORE_KEY, JSON.stringify({ preset: state.preset, t0: t0 }));
+      sessionStorage.setItem(STORE_KEY, JSON.stringify({
+        preset: state.preset,
+        t0: t0,
+        nextSwitchAt: state.nextSwitchAt
+      }));
     } catch (e) {
       // Private mode or a full quota: the backdrop just starts fresh.
     }
@@ -157,11 +167,15 @@
     if (!saved || typeof saved !== 'object') return;
 
     var i = parseInt(saved.preset, 10);
-    // Clamped: a stored index outlives a preset being removed.
+    // Clamped: a stored index outlives a preset being removed. A page opened
+    // fresh (no session yet) keeps the random pick made above.
     if (isFinite(i)) state.preset = Math.min(PRESETS.length - 1, Math.max(0, i));
 
     var when = Number(saved.t0);
     if (isFinite(when) && when > 0 && when <= Date.now()) t0 = when;
+
+    var next = Number(saved.nextSwitchAt);
+    if (isFinite(next) && next > 0) state.nextSwitchAt = next;
   }
 
   /* ---------- markup ------------------------------------------------------ */
@@ -229,53 +243,93 @@
 
   /* ---------- painting ---------------------------------------------------- */
 
-  // Runs on the loop, so it stays limited to the eight colour variables —
-  // nothing here forces layout.
-  function paintColors() {
-    var cols, tcols;
+  // Colours for one preset at the current instant, as raw [h,s,l(,a)]
+  // tuples rather than formatted strings — paintColors blends two of these
+  // together while a crossfade is running.
+  function computeCols(presetIndex) {
+    var p = PRESETS[presetIndex] || PRESETS[0];
 
-    if (isLiving()) {
+    if (p.auto) {
       var h = hueNow();
       var b = bloom();
       var mix = function (from, to) { return from + (to - from) * b; };
 
       // Hue offsets scale with the bloom too, so the blobs start stacked on
       // one blue and only drift apart as the colour comes up.
-      cols = HUE_STEPS.map(function (step, i) {
-        return hsla(h + step * b, mix(DIM.sat, SATS[i]), mix(DIM.light, LIGHTS[i]), mix(DIM.alpha, ALPHAS[i]));
+      var cols = HUE_STEPS.map(function (step, i) {
+        return [h + step * b, mix(DIM.sat, SATS[i]), mix(DIM.light, LIGHTS[i]), mix(DIM.alpha, ALPHAS[i])];
       });
-      tcols = [
-        hsla(h, mix(70, 96), mix(62, 76), 1),
-        hsla(h + 72 * b, mix(66, 92), mix(56, 68), 1),
-        hsla(h + 186 * b, mix(68, 94), mix(64, 76), 1)
+      var tcols = [
+        [h, mix(70, 96), mix(62, 76)],
+        [h + 72 * b, mix(66, 92), mix(56, 68)],
+        [h + 186 * b, mix(68, 94), mix(64, 76)]
       ];
-      root.style.setProperty('--aur-paint-op', mix(DIM.paint, FULL_PAINT).toFixed(3));
-    } else {
-      var p = current();
-      var d = p.drift || { amp: 8, period: 80 };
-      var phase = (2 * Math.PI * elapsed()) / d.period;
-
-      // Each blob sits a little further along the same sway, so the palette
-      // breathes instead of sliding as one block.
-      var amp = d.amp * 1.8;
-      cols = p.cols.map(function (c, i) {
-        var local = phase + i * 0.6;
-        return hsla(
-          c[0] + Math.sin(local) * amp,
-          c[1],
-          c[2] + Math.sin(local * 0.7) * 5,
-          Math.max(0.2, Math.min(0.85, c[3] + Math.sin(local * 1.3) * 0.06))
-        );
-      });
-      tcols = p.tcols.map(function (c, i) {
-        var local = phase + i * 0.9;
-        return hsla(c[0] + Math.sin(local) * amp * 0.6, c[1], c[2], 1);
-      });
-      root.style.setProperty('--aur-paint-op', String(FULL_PAINT));
+      return { cols: cols, tcols: tcols, paintOp: mix(DIM.paint, FULL_PAINT) };
     }
 
-    for (var i = 0; i < cols.length; i++) root.style.setProperty('--c' + (i + 1), cols[i]);
-    for (var j = 0; j < tcols.length; j++) root.style.setProperty('--t' + (j + 1), tcols[j]);
+    var d = p.drift || { amp: 8, period: 80 };
+    var phase = (2 * Math.PI * elapsed()) / d.period;
+
+    // Each blob sits a little further along the same sway, so the palette
+    // breathes instead of sliding as one block.
+    var amp = d.amp * 1.8;
+    var cols2 = p.cols.map(function (c, i) {
+      var local = phase + i * 0.6;
+      return [
+        c[0] + Math.sin(local) * amp,
+        c[1],
+        c[2] + Math.sin(local * 0.7) * 5,
+        Math.max(0.2, Math.min(0.85, c[3] + Math.sin(local * 1.3) * 0.06))
+      ];
+    });
+    var tcols2 = p.tcols.map(function (c, i) {
+      var local = phase + i * 0.9;
+      return [c[0] + Math.sin(local) * amp * 0.6, c[1], c[2]];
+    });
+    return { cols: cols2, tcols: tcols2, paintOp: FULL_PAINT };
+  }
+
+  function lerp(a, b, k) { return a + (b - a) * k; }
+
+  // Hue wraps at 360, so a naive lerp can take the long way round — this
+  // always takes the shorter arc.
+  function lerpHue(a, b, k) {
+    var diff = ((b - a + 540) % 360) - 180;
+    return a + diff * k;
+  }
+
+  // Runs on the loop, so it stays limited to the eight colour variables —
+  // nothing here forces layout. When a crossfade is active it blends the
+  // outgoing preset's colours into the incoming ones over BLEND_SEC.
+  function paintColors() {
+    var target = computeCols(state.preset);
+    var cols = target.cols, tcols = target.tcols, paintOp = target.paintOp;
+
+    if (blend) {
+      var t = Math.min(1, (elapsed() - blend.startElapsed) / BLEND_SEC);
+      var k = t * t * (3 - 2 * t);
+      var from = computeCols(blend.from);
+
+      cols = cols.map(function (c, i) {
+        var f = from.cols[i];
+        return [lerpHue(f[0], c[0], k), lerp(f[1], c[1], k), lerp(f[2], c[2], k), lerp(f[3], c[3], k)];
+      });
+      tcols = tcols.map(function (c, i) {
+        var f = from.tcols[i];
+        return [lerpHue(f[0], c[0], k), lerp(f[1], c[1], k), lerp(f[2], c[2], k)];
+      });
+      paintOp = lerp(from.paintOp, paintOp, k);
+
+      if (t >= 1) blend = null;
+    }
+
+    root.style.setProperty('--aur-paint-op', paintOp.toFixed(3));
+    for (var i = 0; i < cols.length; i++) {
+      root.style.setProperty('--c' + (i + 1), hsla(cols[i][0], cols[i][1], cols[i][2], cols[i][3]));
+    }
+    for (var j = 0; j < tcols.length; j++) {
+      root.style.setProperty('--t' + (j + 1), hsla(tcols[j][0], tcols[j][1], tcols[j][2], 1));
+    }
   }
 
   // Geometrie hoort bij de preset en verandert alleen als je er een kiest.
@@ -303,13 +357,40 @@
     syncSwatches();
   }
 
+  // Crossfades to a different preset — used both by a swatch click and by
+  // the automatic drift below, so the two feel like the same gesture.
+  function switchPreset(newIndex) {
+    if (newIndex === state.preset && !blend) return;
+    blend = reduceMotion.matches ? null : { from: state.preset, startElapsed: elapsed() };
+    state.preset = newIndex;
+    state.nextSwitchAt = elapsed() + AUTO_CYCLE_SEC;
+    render();
+    syncLoop();
+    saveSession();
+  }
+
+  // Left alone, the wash drifts to a new preset every AUTO_CYCLE_SEC — a
+  // slow crossfade, never a cut. A manual pick (below) pushes this out by
+  // the same interval, so it doesn't immediately overrule the choice.
+  function checkAutoCycle() {
+    if (reduceMotion.matches || elapsed() < state.nextSwitchAt) return;
+    var options = [];
+    for (var i = 0; i < PRESETS.length; i++) {
+      if (i !== state.preset) options.push(i);
+    }
+    switchPreset(options[Math.floor(Math.random() * options.length)]);
+  }
+
   /* ---------- animation loop ---------------------------------------------- */
 
   function loop(now) {
+    checkAutoCycle();
+
     // Elke kleurwissel hertekent zes grote, zwaar geblurde lagen. 25 keer per
     // seconde is ruim genoeg voor een wandeling van 9 graden per seconde, en
     // een sway van een paar graden per minuut heeft nog veel minder nodig.
-    var interval = isLiving() ? 40 : 160;
+    // A crossfade gets a shorter interval so the blend itself reads smoothly.
+    var interval = blend ? 60 : (isLiving() ? 40 : 160);
     if (now - lastPaint >= interval) {
       lastPaint = now;
       paintColors();
@@ -330,10 +411,7 @@
 
   swatches.forEach(function (btn, i) {
     btn.addEventListener('click', function () {
-      state.preset = i;
-      render();
-      syncLoop();
-      saveSession();
+      switchPreset(i);
     });
   });
 

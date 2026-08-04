@@ -70,6 +70,10 @@
   /* Houdt de blobs op een eigen laag, zodat het driften en spinnen op de GPU
      blijft in plaats van bij elke stap opnieuw geschilderd te worden. */
   will-change: transform;
+  /* --soft only ever changes once per preset switch (see aurora.js), so
+     easing the resulting blur here is cheap and turns that single jump
+     into part of the crossfade instead of a snap. */
+  transition: filter 2.4s ease;
 }
 
 /* The two conic blobs each declare a spin and a drift. Both animate
