@@ -939,3 +939,52 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
   }
   a.khcard:hover { transform: none; }
 }
+
+/* ---------- Page transitions -------------------------------------------
+   Cross-document View Transitions: a soft cross-fade by default, and a
+   directional slide when assets/transitions.js can tell forward from back
+   (it reads the Navigation API and compares against the nav order below).
+   Browsers without support just do a normal navigation — no fallback code
+   needed. ------------------------------------------------------------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .45s;
+  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+}
+
+:root:active-view-transition-type(kh-forward)::view-transition-old(root) {
+  animation-name: kh-vt-out-left;
+}
+:root:active-view-transition-type(kh-forward)::view-transition-new(root) {
+  animation-name: kh-vt-in-right;
+}
+:root:active-view-transition-type(kh-back)::view-transition-old(root) {
+  animation-name: kh-vt-out-right;
+}
+:root:active-view-transition-type(kh-back)::view-transition-new(root) {
+  animation-name: kh-vt-in-left;
+}
+
+@keyframes kh-vt-out-left {
+  to { transform: translateX(-2.5%); opacity: 0; }
+}
+@keyframes kh-vt-in-right {
+  from { transform: translateX(2.5%); opacity: 0; }
+}
+@keyframes kh-vt-out-right {
+  to { transform: translateX(2.5%); opacity: 0; }
+}
+@keyframes kh-vt-in-left {
+  from { transform: translateX(-2.5%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}

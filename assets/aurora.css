@@ -10,11 +10,11 @@
 
 @keyframes khDrift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50%      { transform: translate(5%, -4%) scale(1.16); }
+  50%      { transform: translate(8%, -7%) scale(1.24); }
 }
 @keyframes khDrift2 {
-  0%, 100% { transform: translate(0, 0) scale(1.08); }
-  50%      { transform: translate(-6%, 4%) scale(1); }
+  0%, 100% { transform: translate(0, 0) scale(1.12); }
+  50%      { transform: translate(-9%, 6%) scale(0.98); }
 }
 @keyframes khSpin    { to { transform: rotate(360deg); } }
 @keyframes khSpinRev { to { transform: rotate(-360deg); } }
@@ -25,6 +25,13 @@
   75%      { transform: translate(2%, 2%); }
 }
 @keyframes khFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* The wash's own breath: a slow brighten-and-dim independent of the colour
+   walk/sway in aurora.js, so the backdrop never sits at one fixed exposure. */
+@keyframes khBreathe {
+  0%, 100% { filter: url(#kh-paint) brightness(0.88) saturate(0.94); }
+  50%      { filter: url(#kh-paint) brightness(1.16) saturate(1.1); }
+}
 
 /* ---------- Backdrop --------------------------------------------------- */
 
@@ -54,6 +61,7 @@
   /* The boost is a stylesheet knob (see the narrow-screen block); the op comes
      from JS as an inline style, so the two have to be separate properties. */
   opacity: calc(var(--aur-paint-op, 0.62) * var(--aur-paint-boost, 1));
+  animation: khBreathe 26s ease-in-out infinite;
 }
 
 .aur-blob {
@@ -62,6 +70,10 @@
   /* Houdt de blobs op een eigen laag, zodat het driften en spinnen op de GPU
      blijft in plaats van bij elke stap opnieuw geschilderd te worden. */
   will-change: transform;
+  /* --soft only ever changes once per preset switch (see aurora.js), so
+     easing the resulting blur here is cheap and turns that single jump
+     into part of the crossfade instead of a snap. */
+  transition: filter 2.4s ease;
 }
 
 /* The two conic blobs each declare a spin and a drift. Both animate
@@ -236,5 +248,6 @@
 @media (prefers-reduced-motion: reduce) {
   .aur-blob,
   .aur-grain,
-  .aur-stage { animation: none; }
+  .aur-stage,
+  .aur-paint { animation: none; }
 }
