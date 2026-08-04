@@ -1,0 +1,643 @@
+/* ==========================================================================
+   werk/readme/ — de README van deSchouwVloot, gerenderd als pagina.
+
+   Twee lagen die bewust van elkaar verschillen:
+
+     - de pagina eromheen is de site (Cormorant-kop, aurora, kh-shell);
+     - het blok in het midden is een bestand, en leest als GitHub: een
+       file-header met acties, een markdown-body met streepjes onder de
+       koppen, een outline-rail ernaast, code in een eigen kader.
+
+   Dat contrast is het punt. De site zegt "dit hoort bij mij", het kader
+   zegt "dit is niet mijn samenvatting, dit is het bestand zelf". Vandaar
+   ook: schreefloos binnen het kader, geen enkele Cormorant-kop.
+
+   Alleen deze pagina laadt dit bestand, dus de kh-main--readme-modifier
+   staat hier en niet in site.css — hij heeft buiten deze pagina geen
+   betekenis en zou daar alleen bytes kosten.
+   ========================================================================== */
+
+.kh-main--readme {
+  /* De site host geen mono-face (zie widget.css), dus dezelfde stack als de
+     showcase: dit valt terug op wat het platform heeft. */
+  --gh-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  padding: 44px 20px 80px;
+}
+
+.kh-readme-head { max-width: 720px; }
+.kh-readme-head .kh-lead { margin-bottom: 0; }
+
+/* ---------- Repo-kaart ---------------------------------------------------- */
+
+/* Wat GitHub boven een repo zet: eigenaar, naam, zichtbaarheid, de één-regel
+   omschrijving en de talen. Hier heeft het een tweede functie — het maakt
+   meteen zichtbaar dat alles hieronder ergens echt staat en na te lopen is. */
+.gh-repo {
+  margin-top: 30px;
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.gh-repo-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gh-repo-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: rgba(159, 240, 226, 0.75);
+}
+
+.gh-repo-path {
+  font-family: var(--gh-mono);
+  font-size: 15px;
+  color: rgba(226, 238, 250, 0.6);
+}
+/* De repo-naam is de link, de eigenaar niet — precies zoals in de kop van
+   een repo op GitHub. */
+.gh-repo-path a {
+  color: var(--kh-teal-soft);
+  text-decoration: none;
+  font-weight: 500;
+}
+.gh-repo-path a:hover { text-decoration: underline; }
+
+.gh-pill {
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-family: var(--gh-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: rgba(206, 222, 238, 0.62);
+}
+
+.gh-repo-desc {
+  margin: 12px 0 0;
+  max-width: 640px;
+  font-weight: 300;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(214, 230, 245, 0.7);
+  text-wrap: pretty;
+}
+
+.gh-repo-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 12px;
+  color: rgba(200, 220, 238, 0.55);
+}
+
+.gh-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Linguist-kleuren, letterlijk de tinten die GitHub zelf aan deze drie talen
+   geeft. Ze vallen uit het palet — dat is precies waarom ze herkenbaar zijn. */
+.gh-lang-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* ---------- Bestandskader ------------------------------------------------- */
+
+.gh-file {
+  margin-top: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.006));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  /* De kop en de outline-rail lopen tot aan de rand; zonder clipping steken
+     hun achtergronden buiten de afronding uit. clip, niet hidden: hidden
+     maakt hiervan een scroll-container, en de sticky outline zou dan plakken
+     aan een scrollport die nooit scrolt — precies de val die .kh-shell in
+     site.css al eens tegenkwam. */
+  overflow: clip;
+}
+
+.gh-file-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 13px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.gh-file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--gh-mono);
+  font-size: 13.5px;
+  color: var(--kh-ink-bright);
+}
+
+.gh-file-icon {
+  width: 15px;
+  height: 15px;
+  color: rgba(180, 206, 228, 0.6);
+}
+
+.gh-ref {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 10.5px;
+  color: rgba(200, 220, 238, 0.6);
+}
+
+.gh-file-acts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gh-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--gh-mono);
+  font-size: 11px;
+  text-decoration: none;
+  white-space: nowrap;
+  color: rgba(226, 238, 250, 0.75);
+  transition: border-color .2s, color .2s, background .2s;
+}
+.gh-act:hover {
+  border-color: rgba(125, 224, 210, 0.4);
+  background: rgba(125, 224, 210, 0.07);
+  color: var(--kh-teal-soft);
+}
+.gh-act--primary {
+  border-color: rgba(125, 224, 210, 0.35);
+  background: rgba(125, 224, 210, 0.1);
+  color: var(--kh-teal-soft);
+}
+
+/* De regel die verantwoording aflegt over wat er met de links is gebeurd.
+   Zonder die uitleg lijkt het bestand ongewijzigd overgenomen, en dat is het
+   op precies dit punt niet. */
+.gh-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(125, 224, 210, 0.035);
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(200, 220, 238, 0.6);
+  text-wrap: pretty;
+}
+.gh-note code {
+  font-family: var(--gh-mono);
+  font-size: 11px;
+  color: var(--kh-teal-soft);
+}
+
+/* ---------- Body + outline ------------------------------------------------ */
+
+.gh-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 244px;
+}
+
+.gh-outline {
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 24px 20px;
+}
+
+.gh-outline-inner {
+  position: sticky;
+  /* Onder de plakkende sitekop, plus een marge zodat de actieve regel niet
+     tegen de rand aan komt te liggen. */
+  top: 74px;
+}
+
+.gh-outline-label {
+  margin: 0 0 12px;
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(180, 206, 228, 0.5);
+}
+
+.gh-outline ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gh-outline a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 7px;
+  /* Draagt de actieve markering; een border links zou de tekst laten
+     verspringen zodra hij verschijnt. */
+  box-shadow: inset 2px 0 0 transparent;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-decoration: none;
+  color: rgba(206, 222, 238, 0.6);
+  transition: color .2s, background .2s, box-shadow .2s;
+}
+.gh-outline a:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--kh-ink-bright);
+}
+.gh-outline a[data-current] {
+  background: rgba(125, 224, 210, 0.08);
+  box-shadow: inset 2px 0 0 var(--kh-teal);
+  color: var(--kh-teal-soft);
+}
+.gh-outline li[data-depth="3"] a {
+  padding-left: 22px;
+  font-size: 12px;
+  color: rgba(206, 222, 238, 0.48);
+}
+
+/* ---------- Markdown ------------------------------------------------------ */
+
+.gh-md {
+  padding: 30px 34px 36px;
+  min-width: 0;
+  font-size: 15.5px;
+  line-height: 1.68;
+  font-weight: 300;
+  color: rgba(226, 238, 250, 0.8);
+}
+
+.gh-md > :first-child { margin-top: 0; }
+.gh-md > :last-child  { margin-bottom: 0; }
+
+.gh-md p {
+  margin: 0 0 16px;
+  text-wrap: pretty;
+}
+
+/* Eén niveau lager dan het bestand zelf: de h1 van de pagina is de kop van de
+   pagina, en dit bestand staat daarin. De README-titel is hier dus een h2 en
+   z'n ## een h3 — de maten hieronder houden de gerenderde hiërarchie precies
+   die van GitHub, alleen de tags schuiven mee met waar ze staan. */
+.gh-md h2,
+.gh-md h3,
+.gh-md h4 {
+  position: relative;
+  margin: 30px 0 16px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  line-height: 1.28;
+  color: var(--kh-ink-bright);
+  scroll-margin-top: 84px;
+}
+
+/* De liniaal onder de titel en de secties is het sterkste GitHub-signaal in
+   een gerenderde README — sterker dan de kleuren. Die blijft dus zoals hij is. */
+.gh-md h2,
+.gh-md h3 {
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gh-md h2 { font-size: 27px; margin-top: 0; letter-spacing: -0.01em; }
+.gh-md h3 { font-size: 21px; margin-top: 38px; }
+.gh-md h4 { font-size: 16.5px; margin-top: 30px; }
+
+/* Het ankertje dat op GitHub links van een kop verschijnt zodra je eroverheen
+   gaat. Hier ook echt bruikbaar: de slug is dezelfde als op GitHub, dus een
+   gekopieerde link werkt op beide plekken. */
+.gh-anchor {
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  padding: 0 4px;
+  font-size: 15px;
+  text-decoration: none;
+  color: var(--kh-teal);
+  transition: opacity .2s;
+}
+.gh-md h2:hover .gh-anchor,
+.gh-md h3:hover .gh-anchor,
+.gh-md h4:hover .gh-anchor,
+.gh-anchor:focus-visible { opacity: 1; }
+
+.gh-md strong {
+  font-weight: 500;
+  color: var(--kh-ink-bright);
+}
+
+.gh-md em { color: rgba(234, 244, 255, 0.86); }
+
+.gh-md a {
+  color: var(--kh-teal-soft);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(125, 224, 210, 0.3);
+}
+.gh-md a:hover {
+  color: #c9fbf1;
+  border-color: var(--kh-teal);
+}
+
+/* Elke link in de body verlaat de site en gaat naar de repo. Het pijltje is
+   de enige toevoeging aan de tekst zelf, en zegt dat vooraf in plaats van
+   achteraf in de statusbalk. */
+.gh-md a::after {
+  content: '\2197';
+  margin-left: 2px;
+  font-size: 0.82em;
+  vertical-align: 1px;
+  opacity: 0.75;
+}
+.gh-md .gh-anchor::after { content: none; }
+
+.gh-md ul,
+.gh-md ol {
+  margin: 0 0 16px;
+  padding-left: 26px;
+}
+.gh-md li { margin-bottom: 6px; }
+.gh-md li::marker { color: rgba(125, 224, 210, 0.55); }
+
+.gh-md hr {
+  height: 3px;
+  margin: 30px 0;
+  border: 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.gh-md blockquote {
+  margin: 0 0 16px;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid rgba(125, 224, 210, 0.4);
+  color: rgba(214, 230, 245, 0.66);
+}
+.gh-md blockquote > :last-child { margin-bottom: 0; }
+
+/* ---------- Code ---------------------------------------------------------- */
+
+.gh-md code {
+  padding: 0.16em 0.38em;
+  border-radius: 6px;
+  background: rgba(125, 224, 210, 0.09);
+  font-family: var(--gh-mono);
+  font-size: 0.85em;
+  color: var(--kh-teal-soft);
+}
+
+.gh-snippet {
+  position: relative;
+  margin: 0 0 18px;
+}
+
+.gh-md pre {
+  margin: 0;
+  padding: 15px 17px;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(1, 4, 12, 0.55);
+  font-family: var(--gh-mono);
+  font-size: 12.8px;
+  line-height: 1.62;
+  color: rgba(226, 238, 250, 0.86);
+  tab-size: 2;
+}
+/* Binnen een blok geen tweede achtergrond of accentkleur: de tokens hieronder
+   bepalen daar de kleur, niet de inline-code-regel. */
+.gh-md pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  color: inherit;
+}
+
+.gh-lang-tag {
+  position: absolute;
+  top: 9px;
+  right: 12px;
+  font-family: var(--gh-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(200, 220, 238, 0.32);
+  pointer-events: none;
+  transition: right .2s;
+}
+
+/* De kopieerknop landt in dezelfde hoek. readme.js zet dit attribuut zodra
+   hij er een heeft ingehangen, zodat het label opzij gaat in plaats van
+   eronder te verdwijnen — en zonder JS niets verschuift voor een knop die
+   er niet is. */
+.gh-snippet[data-copyable] .gh-lang-tag { right: 108px; }
+
+/* assets/readme.js hangt de knop hier in. Zonder JS is er geen knop en geen
+   lege ruimte waar er een had moeten zitten. */
+.gh-copy {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  /* Breed genoeg voor "gekopieerd": een knop die tijdens het label-wisselen
+     uitzet, schuift het taallabel ernaast weg. Zelfde reden als de vaste
+     breedte op .dsv-btn--play in widget.css. */
+  min-width: 92px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(6, 14, 28, 0.9);
+  cursor: pointer;
+  font-family: var(--gh-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: rgba(226, 238, 250, 0.7);
+  opacity: 0;
+  transition: opacity .2s, color .2s, border-color .2s;
+}
+.gh-snippet:hover .gh-copy,
+.gh-copy:focus-visible { opacity: 1; }
+.gh-copy:hover {
+  border-color: rgba(125, 224, 210, 0.4);
+  color: var(--kh-teal-soft);
+}
+.gh-copy[data-done] {
+  opacity: 1;
+  border-color: rgba(125, 224, 210, 0.45);
+  color: var(--kh-teal-soft);
+}
+/* Een aanraakscherm kent geen hover, dus daar staat de knop er gewoon. */
+@media (hover: none) {
+  .gh-copy { opacity: 1; }
+}
+
+/* Kleuren uit GitHub's donkere thema, met één afwijking: sleutels en
+   commando's zijn teal in plaats van blauw. Dat is de enige token die op elke
+   regel terugkomt, en blauw zou het blok tegen de rest van de site in
+   trekken. */
+.tok-c { color: rgba(150, 176, 200, 0.62); font-style: italic; }
+.tok-k { color: #ffa898; }
+.tok-n { color: var(--kh-teal-soft); }
+.tok-s { color: #a5d6ff; }
+.tok-v { color: #d2a8ff; }
+.tok-p { color: rgba(200, 220, 238, 0.5); }
+
+/* ---------- Voettekst van het kader --------------------------------------- */
+
+.gh-file-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 15px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.018);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(190, 212, 232, 0.42);
+}
+
+.gh-next {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  font-size: 13.5px;
+}
+
+/* ---------- Smal ---------------------------------------------------------- */
+
+/* Onder 1023px verdwijnt de rail naar boven en wordt hij een strook die je
+   veegt — hetzelfde antwoord als de feiten op /werk/logboek/ en het menu in
+   de kop. Gestapeld zou het zeven regels kosten voordat het bestand begint. */
+@media (max-width: 1023px) {
+  .gh-body { grid-template-columns: minmax(0, 1fr); }
+
+  .gh-outline {
+    order: -1;
+    border-left: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 14px 16px;
+  }
+
+  .gh-outline-inner { position: static; }
+
+  .gh-outline ul {
+    flex-direction: row;
+    gap: 7px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+    padding-bottom: 2px;
+  }
+  .gh-outline ul::-webkit-scrollbar { display: none; }
+
+  .gh-outline li { flex: none; }
+
+  .gh-outline a {
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: none;
+  }
+  .gh-outline a[data-current] {
+    box-shadow: none;
+    border-color: rgba(125, 224, 210, 0.4);
+  }
+  .gh-outline li[data-depth="3"] a { padding-left: 10px; }
+}
+
+@media (max-width: 699px) {
+  .kh-main--readme { padding: 32px 14px 64px; }
+
+  .gh-repo { padding: 16px 17px; }
+  .gh-file-head { padding: 12px 15px; }
+  .gh-note { padding: 10px 15px; }
+
+  .gh-md {
+    padding: 22px 17px 26px;
+    font-size: 15px;
+  }
+  /* Buiten de tekstkolom is geen ruimte meer voor het ankertje; op een
+     telefoon is er ook geen hover om het mee tevoorschijn te halen. */
+  .gh-anchor { display: none; }
+
+  .gh-md h2 { font-size: 23px; }
+  .gh-md h3 { font-size: 19px; }
+  .gh-md pre { font-size: 12px; }
+
+  /* Eén brede tabel op een smal scherm: hij mag binnen zijn eigen kader
+     schuiven in plaats van de pagina mee te trekken. */
+  .gh-table-wrap { margin: 0 -17px 18px; padding: 0 17px; }
+}
+
+/* ---------- Tabel --------------------------------------------------------- */
+
+.gh-table-wrap {
+  margin: 0 0 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.gh-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.gh-md th,
+.gh-md td {
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  vertical-align: top;
+  text-wrap: pretty;
+}
+
+.gh-md th {
+  font-weight: 500;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--kh-ink-bright);
+}
+
+/* Zebra, zoals GitHub: bij zes regels van elk drie zinnen is dat het verschil
+   tussen een tabel en een muur. */
+.gh-md tbody tr:nth-child(2n) { background: rgba(255, 255, 255, 0.022); }
+
+.gh-md td code { white-space: nowrap; }
