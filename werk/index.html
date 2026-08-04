@@ -180,6 +180,7 @@
                 <span class="dsv-chip">0 open inbound poorten</span>
                 <span class="dsv-chip">auth via OAuth, geen API-key in repo</span>
               </div>
+              <p class="dsv-entry-fail"><span class="dsv-fail-label">gemeten valkuil</span>Een gemount cache-volume is niet automatisch de plek waar een toolchain z&#39;n cache zoekt &mdash; zonder de omgevingsvariabele die er expliciet naar wijst, bouwde een run z&#39;n cache stil opnieuw op. Pas op te vallen door te kijken of het volume ook echt groeide.</p>
             </div>
 
             <div>
@@ -188,7 +189,7 @@
                 <div class="dsv-metric">
                   <div class="dsv-metric-n">6,2</div>
                   <div class="dsv-metric-l">permission-denials per run</div>
-                  <div class="dsv-metric-fix">&rarr; opgelost met allowlist-profielen per station</div>
+                  <div class="dsv-metric-fix">&rarr; opgelost met allowlist-profielen per station, en sinds kort bewaakt: komt de ratio boven de drempel, dan opent de pijplijn er zelf een issue over &mdash; van meten naar melden</div>
                 </div>
                 <div class="dsv-metric">
                   <div class="dsv-metric-n">18,4%</div>
@@ -224,7 +225,7 @@
                 <div class="dsv-check">
                   <span class="dsv-check-tag">pin::sha</span>
                   <span class="dsv-check-title">Gelaagd pin-beleid</span>
-                  <p class="dsv-check-body">Third-party actions op SHA, fleet-refs op @main zolang er &eacute;&eacute;n consument is en op SHA of tag zodra de tweede aanhaakt, GitHub-eigen actions op major-tag. Drie soorten vertrouwen, drie soorten pin.</p>
+                  <p class="dsv-check-body">Third-party actions op SHA, GitHub-eigen actions op major-tag. Fleet-refs stonden op @main zolang er &eacute;&eacute;n consument was &mdash; sinds er een tweede is aangehaakt staat die pin ook echt op SHA, met een nachtelijke bump-baan die zichzelf bewust ongepind laat: een kapotte pin mag z&#39;n eigen reparatie niet blokkeren.</p>
                   <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
                 </div>
                 <div class="dsv-check">
@@ -236,7 +237,7 @@
                 <div class="dsv-check">
                   <span class="dsv-check-tag">drift::single-source</span>
                   <span class="dsv-check-title">E&eacute;n bron van waarheid</span>
-                  <p class="dsv-check-body">Bij een eerdere tweede consument groeiden vier gedrifte kopie&euml;n &mdash; dat kan nu niet meer. Logica leeft precies &eacute;&eacute;n keer; een consument krijgt een caller van vijftien regels, nooit een fork.</p>
+                  <p class="dsv-check-body">Bij een eerdere, geforkte tweede consument groeiden vier gedrifte kopie&euml;n &mdash; dat kan nu niet meer. De huidige, echte tweede consument bewijst het: logica leeft precies &eacute;&eacute;n keer, en die repo kreeg een caller van vijftien regels, geen fork.</p>
                   <a class="kh-link dsv-check-link" href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md" target="_blank" rel="noopener">Bekijk in repo &rarr;</a>
                 </div>
                 <div class="dsv-check">
@@ -253,14 +254,14 @@
               <div class="dsv-roadmap">
                 <div class="dsv-road dsv-road--now">
                   <span class="dsv-road-tag">VANDAAG</span>
-                  <div class="dsv-road-title">E&eacute;n machine, &eacute;&eacute;n groot model</div>
-                  <p class="dsv-road-body">De Ubuntu-server praat via OAuth met &eacute;&eacute;n gehost model, en elke fleet-workflow wijst nog naar @main &mdash; dat mag ook, zolang deSchouwVloot &eacute;&eacute;n consument bedient.</p>
+                  <div class="dsv-road-title">Twee consumenten, &eacute;&eacute;n bron van waarheid</div>
+                  <p class="dsv-road-body">Een tweede, functioneel geheel ander project draait inmiddels op de Vloot &mdash; andere taal, andere stack, geen self-hosted runner, alleen GitHub-hosted lanes. Geen regel fleet-logica geforkt om dat werkend te krijgen: precies de proef of de abstractie draagt, en die proef is nu met een echt project doorstaan.</p>
                 </div>
                 <div class="dsv-road-arrow" aria-hidden="true">&rarr;</div>
                 <div class="dsv-road dsv-road--next">
                   <span class="dsv-road-tag">MORGEN</span>
                   <div class="dsv-road-title">Kleine workers, klein lokaal model</div>
-                  <p class="dsv-road-body">Zodra een tweede consument aanhaakt, wijzen fleet-refs niet langer naar @main maar naar een SHA of tag &mdash; en verschuift terugkerend werk naar kleine, lokale workers per taaktype, met het grote model gereserveerd voor architectuur.</p>
+                  <p class="dsv-road-body">Terugkerend werk verschuift naar kleine, lokale workers per taaktype, met het grote model gereserveerd voor architectuur. De org-migratie (gedeelde runner-groups i.p.v. per-repo-registraties) volgt pas ná die volgende stap.</p>
                 </div>
               </div>
             </div>
