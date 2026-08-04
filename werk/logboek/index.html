@@ -288,8 +288,8 @@
             </article>
 
             <article class="kh-fact">
-              <h3>Gemeten v&oacute;&oacute;r dit ontwerp</h3>
-              <p><strong>6,2</strong> geweigerde rechten per run, <strong>18,4%</strong> van de runs tegen het beurtenplafond, <strong>30,8%</strong> dubbele builds. Alle drie opgelost met een regel in plaats van een gewoonte.</p>
+              <h3>Van meten naar melden</h3>
+              <p><strong>6,2</strong> geweigerde rechten per run, <strong>18,4%</strong> van de runs tegen het beurtenplafond, <strong>30,8%</strong> dubbele builds &mdash; de nulmeting die dit ontwerp stuurde. Sinds kort blijft die meting niet in een artifact liggen: komt de ratio geweigerde rechten boven de drempel, dan opent de pijplijn er zelf een issue over. Een KPI die niemand leest, is geen KPI.</p>
             </article>
 
             <article class="kh-fact">
@@ -325,6 +325,16 @@
             <article class="kh-fact">
               <h3>Een noodrem, geen bezuiniging</h3>
               <p>Elk station heeft een maximum aantal beurten. Loopt een agent vast, dan stopt hij en vraagt om hulp &mdash; in plaats van eindeloos door te draaien op een probleem dat hij niet gaat oplossen.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Een pin die pas vastdraait als er iets te beschermen valt</h3>
+              <p>Zolang er &eacute;&eacute;n project op de Vloot draaide, wees de gedeelde logica naar <code>@main</code>. Sinds er een tweede, heel anders gevormd project is aangehaakt, staat dat pin-beleid ook echt aan: een SHA-pin met een nachtelijke bump-baan die zichzelf bewust ongepind laat, want een kapotte pin mag zijn eigen reparatie niet blokkeren.</p>
+            </article>
+
+            <article class="kh-fact">
+              <h3>Een cache-volume is geen cache zonder de knop ernaartoe</h3>
+              <p>Een gemount cache-volume bleek niet automatisch de plek waar de toolchain z&#39;n cache zoekt &mdash; zonder de omgevingsvariabele die er expliciet naar wijst, bouwde elke run de cache stil opnieuw op. Gemeten valkuil, niet giswerk: pas op te vallen door te kijken of het volume ook echt groeide.</p>
             </article>
           </div>
 
