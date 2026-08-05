@@ -75,18 +75,26 @@ grote scène-opbouw-`useEffect` in `use-fleet-scene.ts` (die canvas, deeltjes en
 opzet) mag **niet** opnieuw draaien bij een preset-wissel — dat zou de hele intro-animatie en
 muisstaat resetten. In plaats daarvan:
 
-1. Binnen die effect wordt, na `build()`/`layout()`, een lokale functie `setFormation(index)`
+1. Binnen die effect wordt, na `build()`, een lokale functie `setFormation(index, snap)`
    gedefinieerd die voor elke boot `dcx`/`dcy`/`dheel` bijwerkt (uit `deriveFormation`, zie
-   hieronder) en, alleen als `frozen`, ook meteen `tcx`/`tcy`/`theel` gelijkzet en een enkele
-   herteken-`draw()` afdwingt (geen lopende lus om de tween in te laten lopen).
+   hieronder). Het tweede argument, `snap`, bepaalt of `tcx`/`tcy`/`theel` meteen gelijkgezet
+   worden aan het doel in plaats van te tweenen: dat gebeurt altijd bij de allereerste aanroep
+   (mount) en bij een resize, en verder alleen als `frozen`. Na een snap dwingt de functie één
+   herteken-`draw()` af — bij mount en resize gebeurt dat toch al als onderdeel van de
+   bestaande opzet-/resize-volgorde, dus alleen de `frozen`-tak roept zelf expliciet `draw()`
+   aan.
 2. Die functie wordt weggeschreven in een `ref` (bv. `sceneRef.current = { setFormation }`),
    opgezet aan het eind van de effect en opgeruimd in de cleanup.
-3. Een aparte, kleine `useEffect(() => sceneRef.current?.setFormation(presetIndex),
+3. Een aparte, kleine `useEffect(() => sceneRef.current?.setFormation(presetIndex, false),
    [presetIndex])` roept 'm aan wanneer de preset verandert — zonder de grote effect te
-   raken.
-4. Bij mount wordt `setFormation` één keer met de dan actieve preset aangeroepen, vóór de
-   eerste `layout()`, zodat `tcx`/`tcy` een zinnig startpunt hebben (zie hieronder,
-   "Gevolgen voor de bestaande opbouwanimatie").
+   raken, en altijd tweenend (`snap = false`), ook tijdens `frozen` (waar `setFormation` het
+   zelf naar een snap omzet).
+4. Bij mount wordt `setFormation(huidige preset, snap = true)` aangeroepen vóór de eerste
+   `layout()`, zodat `tcx`/`tcy` een zinnig startpunt hebben (zie hieronder, "Gevolgen voor de
+   bestaande opbouwanimatie"). `onResize` doet hetzelfde: na `build()` opnieuw
+   `setFormation(laatst bekende presetIndex, snap = true)` vóór `layout()` — de preset-index
+   zelf staat inmiddels ook in een ref (bijgewerkt door dezelfde kleine effect uit punt 3),
+   dus `onResize` kan 'm aflezen zonder afhankelijk te zijn van React-state.
 
 ### Formatie afleiden uit preset-data
 
@@ -107,18 +115,22 @@ formaat getweend.
 De functie leest `PRESETS[presetIndex]` uit `lib/aurora.ts` (met dezelfde val-terug-drift
 als `computeFrame` voor presets zonder `drift`, bv. de levende preset) en rekent:
 
-- **Aantal actieve kleine boten** — een deterministische selectie uit de ankerpool, met de
-  grootte gestuurd door `geo.speed` (rustiger presets tonen minder boten, drukkere meer).
-  Welke ankers actief zijn wordt geloot met een op `presetIndex` + slotindex geseede RNG
-  (`rng()` bestaat al in `fleet-geometry.ts`) — dezelfde preset geeft dus altijd exact
-  dezelfde selectie.
+- **Aantal actieve kleine boten** — lineair gemapt vanuit `geo.speed`. `speed` ligt over alle
+  presets tussen 0.20 en 0.62; dat bereik wordt lineair geschaald naar `[3, 6]` actieve kleine
+  boten voor `hero` (van de 6 kleine ankers) en `[2, 4]` voor `ambient` (van de 4 kleine
+  ankers), afgerond op een geheel getal. Welke ankers uit de pool actief zijn wordt geloot met
+  een op `presetIndex` + slotindex geseede RNG (`rng()` bestaat al in `fleet-geometry.ts`) —
+  dezelfde preset geeft dus altijd exact dezelfde selectie.
 - **Grote boot** — `cx`/`cy` schuiven t.o.v. het anker op basis van `geo.scale` en
   `drift.amp`, `heel` op basis van `geo.freq`, met een kleine per-preset jitter uit dezelfde
   geseede RNG. Alles geklemd binnen een bescheiden marge rond het anker, zodat de boot nooit
   over de tekstkolom of buiten het canvas belandt.
 - **Niet-actieve kleine boten (en, voor het eerste-mount-doel, elke boot die de preset niet
   kiest)** krijgen als doel een positie buiten beeld, in het verlengde van hun eigen
-  boeg-richting (rechts, `cx ≈ 1.35`) — vandaar "wegvaren" in plaats van verdwijnen.
+  boeg-richting: `cx ≈ 1.35`, met **`cy` ongewijzigd op de eigen ankerwaarde**. Zonder die
+  laatste voorwaarde zouden meerdere gelijktijdig vertrekkende of aankomende boten door
+  hetzelfde punt buiten beeld heen bewegen en elkaars pad kruisen; met een eigen `cy` per boot
+  vertrekt en arriveert elke boot langs zijn eigen horizontale lijn.
 
 ### Gevolgen voor de bestaande opbouwanimatie
 
@@ -127,22 +139,27 @@ elke frame in `draw()`, uit `boat.tcx`/`tcy` (twee vermenigvuldigingen per boot 
 tegenover de honderden deeltjes die toch al per frame langsgaan). `layout()` heeft nog wel een
 positie nodig vóór de eerste frame, voor de bestaande scatter-naar-binnen-intro (`p.sx`/`sy`,
 uitgerekend uit de boot-positie op het moment van `layout()`) — daarom loopt de mount-volgorde
-voortaan: `build()` → `setFormation(huidige preset)` (zet `tcx = dcx` meteen, geen tween nodig
-bij eerste teken) → `layout()` → animatie starten. Een geparkeerde boot bij het laden begint dus
-al buiten beeld, zichtbaar noch storend, en komt pas invaren als de gebruiker een preset kiest
-die 'm activeert.
+voortaan: `build()` → `setFormation(huidige preset, snap = true)` (zet `tcx = dcx` meteen,
+geen tween nodig bij eerste teken) → `layout()` → animatie starten. Een geparkeerde boot bij
+het laden begint dus al buiten beeld, zichtbaar noch storend, en komt pas invaren als de
+gebruiker een preset kiest die 'm activeert.
 
 ### Ambient krijgt een leidende boot
 
 `AMBIENT_BOATS[0].w` gaat omhoog van de huidige kleine maat (~0.11) naar een bescheiden
 leidende maat (~0.30) — duidelijk groter dan de overige 4 kleine boten, ruim onder de 0.72
-van de hero-boot, zodat `ambient` een rustige achtergrondlaag blijft. `deriveFormation` past
+van de hero-boot, zodat `ambient` een rustige achtergrondlaag blijft. `depth` en `par` gaan in
+dezelfde beweging mee omhoog (van 0.30 naar iets boven de 0.55-drempel die `buildBoat()`
+gebruikt om vulpunten toe te voegen naast randpunten — zie `if (shape.fill && d > 0.55)` in
+`lib/fleet-geometry.ts`); zonder die aanpassing zou de vergrote boot alleen als omtrek tekenen,
+niet als volle vorm zoals de hero-boot, en het "leidende" effect missen. `deriveFormation` past
 voor `ambient` dezelfde logica toe met 1 leidende + 4 kleine slots in plaats van 1 + 6.
 
 ### Frozen, reduced motion, resize
 
-`frozen` (reduced motion of smal scherm) slaat de tween over: `setFormation` zet `tcx`/`tcy`/
-`theel` direct op het doel en dwingt één herteken-`draw()` af, net zoals `frozen` nu al de
+`frozen` (reduced motion of smal scherm) laat `setFormation` altijd met `snap = true` draaien:
+`tcx`/`tcy`/`theel` gaan direct op het doel en er wordt één herteken-`draw()` afgedwongen, net
+zoals `frozen` nu al de
 opbouwanimatie overslaat. Een resize bouwt (zoals nu al) de hele scène opnieuw op; daarbij
 snapt elke boot naar de formatie van de op dat moment actieve preset — geen poging om een
 lopende tween-voortgang door een volledige herbouw heen te bewaren, want resize herschikt
@@ -153,12 +170,15 @@ toch al alles.
 - `lib/aurora.ts` — `DEFAULT_DRIFT`-constante geëxporteerd (nu inline in `computeFrame`), zodat
   `deriveFormation` dezelfde val-terug-drift hergebruikt.
 - `lib/fleet-geometry.ts` — nieuwe `deriveFormation()` en `FormationSlot`-type;
-  `AMBIENT_BOATS[0].w` aangepast; `HERO_BOATS`/`AMBIENT_BOATS` verder ongewijzigd (blijven de
-  ankers).
+  `AMBIENT_BOATS[0].w`/`depth`/`par` aangepast; `HERO_BOATS`/`AMBIENT_BOATS` verder
+  ongewijzigd (blijven de ankers).
 - `lib/use-fleet-scene.ts` — `Boat`-type krijgt `tcx`/`tcy`/`theel`/`dcx`/`dcy`/`dheel`;
   `layout()` levert niet langer de live `px`/`py`, dat verhuist naar `draw()`; nieuwe
-  `setFormation()` plus het wegzetten ervan in een ref; nieuwe `presetIndex`-parameter en een
-  kleine losse `useEffect` die 'm doorzet; mount-volgorde aangepast (zie hierboven).
+  `setFormation(index, snap)` plus het wegzetten ervan in een ref; nieuwe
+  `presetIndex`-parameter, een ref die de laatst bekende waarde vasthoudt (voor `onResize`) en
+  een kleine losse `useEffect` die beide bijwerkt; `onResize` roept na `build()` ook
+  `setFormation(..., snap = true)` aan, vóór `layout()`; mount-volgorde aangepast (zie
+  hierboven).
 - `components/fleet.tsx` — leest `activePreset` via `useAurora()`, geeft door aan
   `useFleetScene`.
 
