@@ -11,7 +11,6 @@ import { AuroraProvider } from '@/components/aurora/aurora-provider'
 import { AuroraStage } from '@/components/aurora/aurora-stage'
 import { AuroraToast } from '@/components/aurora/aurora-toast'
 import { SiteFooter } from '@/components/site-footer'
-import { SiteHeader } from '@/components/site-header'
 import { ViewTransitions } from '@/components/view-transitions'
 import { SITE_URL } from '@/lib/metadata'
 
@@ -49,7 +48,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <AuroraProvider>
             <div className="kh-shell">
               <AuroraStage />
-              <SiteHeader />
               {children}
               <SiteFooter />
               <AuroraToast />

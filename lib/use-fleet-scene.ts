@@ -76,6 +76,16 @@ type Boat = BoatSpec & {
   dcx: number
   dcy: number
   dheel: number
+  /** Vaste kant/sterkte van de boog die deze boot vaart tijdens een lange
+   *  overtocht (wegvaren/aankomen) — zie de boot-lus in draw(). Bij build()
+   *  gezet, per boot verschillend, zodat een vertrekkende vloot niet als één
+   *  blok dezelfde kant op zwaait. */
+  curveSign: number
+  /** Hoe ver "onderweg" deze boot nu is (0 = ligt stil op zijn plek of
+   *  anker, oplopend tot 1 midden in een wegvaren/aankomen) — elke frame
+   *  herrekend in draw(), gelezen door de deeltjeslus om de jitter tijdens
+   *  zo'n overtocht op te voeren. */
+  distort: number
 }
 
 type FleetSceneOptions = {
@@ -94,6 +104,11 @@ type FleetSceneOptions = {
    *  Hetzelfde principe als pointer.tx/ty hieronder: de container (de ref)
    *  staat stil, de inhoud verandert, draw() leest 'm elke frame vers. */
   progressRef?: RefObject<number>
+  /** Alleen variant "journey": true zolang de bezoeker over een
+   *  GitHub-link zweeft. Zelfde reden als progressRef: een ref, want dit
+   *  wisselt op de muis, niet op React-state. draw() mengt hier zelf naar
+   *  toe en weer vanaf — geen aparte animatie-state nodig. */
+  githubHoverRef?: RefObject<boolean>
   /** Welke aurora-preset nu actief is (hero/ambient: stuurt de
    *  vlootformatie; journey negeert 'm). Verandert los van de rest — zie
    *  setFormation() hieronder voor waarom dit geen effect-dependency is. */
@@ -109,6 +124,7 @@ export function useFleetScene({
   coarsePointer,
   onSailing,
   progressRef,
+  githubHoverRef,
   presetIndex,
 }: FleetSceneOptions): void {
   /* setFormation leeft in de grote effect hieronder (het heeft toegang tot
@@ -146,11 +162,35 @@ export function useFleetScene({
     let t0 = performance.now()
     let repelR = 0
     let repelPush = 0
+    /* Journey, laatste stadium: wanneer de raket volledig gevormd is, begint
+       dit op eigen tempo te lopen — geen verdere scroll nodig. Terugscrollen
+       zet 'm terug op null, dus scroll blijft de enige bron van waarheid. */
+    let liftoffStart: number | null = null
+    /* Hoeveel de vorm nu naar het raket-stadium is gemengd, 0..1 — vloeit
+       naar de hover-status van een GitHub-link toe in plaats van te
+       springen, zowel bij aankomst als bij vertrek. */
+    let githubWeight = 0
 
     /* Tijdconstante voor de formatie-tween (zie setFormation() en de
-       boot-lus in draw()): bij TAU = 2s is een overgang na ~6s voor ~95%
-       voltooid, in de buurt van de kleur-blend (BLEND_SEC in lib/aurora.ts). */
+       boot-lus in draw()): bij TAU = 2s is een overgave na ~6s voor ~95%
+       voltooid, in de buurt van de kleur-blend (BLEND_SEC in lib/aurora.ts).
+       Dat tempo past bij een kleine bijstelling van de leidende boot, maar
+       voor kleine boten die een heel eind moeten wegvaren of aankomen loopt
+       TAU hieronder op tot POS_TAU + EXTRA_TAU — anders is de overtocht
+       voorbij voordat je 'm goed en wel ziet vertrekken. */
     const POS_TAU = 2
+    const EXTRA_TAU = 3.5
+    /* Genormaliseerde afstand (in cx-fracties) waarbij een overtocht als
+       "vol onderweg" telt — de meeste boot-tot-parkeerplek-afstanden liggen
+       tussen 0.4 en 1.1, dus hier zit een boot al ruim voor de helft van de
+       reis op volle boog/jitter. */
+    const TRANSIT_SPAN = 0.5
+    /* Hoogte van de boog die een varende boot beschrijft, als fractie van de
+       canvashoogte — een rechte lijn was precies de klacht. */
+    const CURVE_AMP = 0.07
+    /* Hoeveel extra de deeltjes-jitter oploopt op volle overtocht: de boot
+       "vervormt" onderweg in plaats van als vast blok te verschuiven. */
+    const DISTORT_BOOST = 1.4
 
     const settle = new Array<number>(SETTLE.length)
     const groups: Particle[][] = []
@@ -252,6 +292,10 @@ export function useFleetScene({
           dcx: JOURNEY_BOAT.cx,
           dcy: JOURNEY_BOAT.cy,
           dheel: JOURNEY_BOAT.heel,
+          // Ongebruikt: journey vaart nooit weg/aan (zie de boot-lus in
+          // draw(), die slot 0 altijd overslaat).
+          curveSign: 1,
+          distort: 0,
         })
 
         for (const p of buildJourneyIdentities(quality)) {
@@ -294,6 +338,11 @@ export function useFleetScene({
             dcx: spec.cx,
             dcy: spec.cy,
             dheel: spec.heel,
+            // Om en om een andere kant op, met een beetje eigen maat — zo
+            // zwaait een vertrekkende vloot niet als één blok dezelfde kant
+            // op. Boot 0 (de leidende) gebruikt dit nooit (zie draw()).
+            curveSign: (b % 2 === 0 ? 1 : -1) * (1 + (b % 3) * 0.15),
+            distort: 0,
           })
 
           for (const made of buildBoat(spec, b, quality)) {
@@ -337,7 +386,10 @@ export function useFleetScene({
          scherm terwijl de boot maar de rechterhelft gebruikt, dus de breedte
          telt voor ongeveer de helft mee. Op een telefoon staat de vloot achter
          de tekst en mag hij het scherm wél vullen. */
-      const share = narrowScreen ? 0.78 : 0.44
+      /* Journey staat verder naar rechts en mag daarom smaller blijven: de
+         leeskolom is links smaller gemaakt zodat de twee elkaar hooguit
+         nipt raken, niet structureel overlappen. */
+      const share = narrowScreen ? 0.78 : variant === 'journey' ? 0.36 : 0.44
       const lead = Math.min(w * share, (h * 0.62) / RATIO)
 
       for (const boat of boats) {
@@ -434,7 +486,6 @@ export function useFleetScene({
       for (let s = 0; s < SETTLE.length; s++) {
         settle[s] = 1 - Math.exp(-dt / SETTLE[s])
       }
-      const posLerp = 1 - Math.exp(-dt / POS_TAU)
 
       pointer.x += (pointer.tx - pointer.x) * 0.06
       pointer.y += (pointer.ty - pointer.y) * 0.06
@@ -468,17 +519,62 @@ export function useFleetScene({
       const needleCos = Math.cos(needleWobble)
       const needleSin = Math.sin(needleWobble)
 
-      for (const boat of boats) {
+      /* Hover op een GitHub-link trekt de vorm naar het raket-stadium toe, en
+         weer terug bij het verlaten — een vloeiende overgang, geen knip, op
+         dezelfde manier als de formatie-tween hierboven. */
+      const githubTarget = variant === 'journey' && githubHoverRef?.current ? 1 : 0
+      githubWeight += frozen ? githubTarget - githubWeight : (githubTarget - githubWeight) * (1 - Math.exp(-dt / 0.22))
+      if (Math.abs(githubWeight - githubTarget) < 0.001) githubWeight = githubTarget
+
+      /* Lancering: pas als de raket het laatste stadium volledig heeft
+         bereikt (geen tussenvorm meer), en dan op de klok, niet op progress —
+         anders zou verder scrollen nodig zijn om 'm te laten opstijgen. Een
+         GitHub-link hoverend telt hetzelfde als daar aangekomen zijn, zodra
+         de vorm er grotendeels naartoe gemengd is. */
+      const atFinalStage =
+        variant === 'journey' && (clampedProgress >= JOURNEY_STAGE_COUNT - 1 - 0.02 || githubWeight > 0.6)
+      if (atFinalStage) {
+        if (liftoffStart === null) liftoffStart = now
+      } else {
+        liftoffStart = null
+      }
+      const liftoffRise = liftoffStart === null ? 0 : (now - liftoffStart) / 1000
+
+      for (let bi = 0; bi < boats.length; bi++) {
+        const boat = boats[bi]
+
+        /* Hoe ver deze boot nog van haar doel af staat, in cx-fracties: 0
+           voor de leidende boot (die schuift altijd rechtstreeks bij, geen
+           boog/vervorming — "verplaatsen", geen "wegvaren") en voor een boot
+           die al (bijna) op haar plek of geparkeerd staat, oplopend naar 1
+           voor een boot die nog een heel eind moet wegvaren of aankomen. */
+        const remain = bi === 0 ? 0 : Math.abs(boat.dcx - boat.tcx)
+        const transit = Math.min(1, remain / TRANSIT_SPAN)
+        boat.distort = transit
+
+        /* Trager naarmate er meer overtocht te gaan is: dat is precies het
+           "te snel"-gevoel dat een vaste TAU voor elke verplaatsing gaf. */
+        const tau = POS_TAU + EXTRA_TAU * transit
+        const lerp = 1 - Math.exp(-dt / tau)
+
         // Naar het doel toe schuiven, niet ernaartoe springen: dcx/dcy/dheel
         // is het enige dat setFormation() ooit aanraakt, dus een nieuwe
         // preset-klik buigt de tween gewoon bij vanaf hier — geen wachtrij.
-        boat.tcx += (boat.dcx - boat.tcx) * posLerp
-        boat.tcy += (boat.dcy - boat.tcy) * posLerp
-        boat.theel += (boat.dheel - boat.theel) * posLerp
+        boat.tcx += (boat.dcx - boat.tcx) * lerp
+        boat.tcy += (boat.dcy - boat.tcy) * lerp
+        boat.theel += (boat.dheel - boat.theel) * lerp
         boat.px = w * boat.tcx
         boat.py = h * boat.tcy
 
-        boat.dy = Math.sin(time * boat.bobF + boat.bobP) * boat.bobA + pointer.y * boat.par * 8
+        /* De boog: nul bij vertrek en bij aankomst, op zijn breedst
+           halverwege — een boot die wegvaart of invaart volgt zo een
+           gebogen pad in plaats van kaarsrecht cx te veranderen. */
+        const bulge = transit <= 0 ? 0 : Math.sin(Math.PI * transit)
+
+        boat.dy =
+          Math.sin(time * boat.bobF + boat.bobP) * boat.bobA +
+          pointer.y * boat.par * 8 +
+          boat.curveSign * CURVE_AMP * h * bulge
         boat.rot = boat.theel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
         boat.sin = Math.sin(boat.rot)
         boat.cos = Math.cos(boat.rot)
@@ -505,6 +601,9 @@ export function useFleetScene({
         for (const p of list) {
           let x: number
           let y: number
+          // Hoe "vervormd" deze korrel oogt: alleen een boot-eigen boot heeft
+          // een distort-waarde, los stof (p.boat < 0) blijft er gewoon buiten.
+          let distort = 0
 
           if (p.boat < 0) {
             x = p.bx + (p.vx ? p.vx * time : 0)
@@ -529,17 +628,36 @@ export function useFleetScene({
               by = wy
             }
 
+            // Hover trekt naar het raket-stadium toe, geleidelijk: bij
+            // githubWeight 0 verandert hier niets, bij 1 staat de volledige
+            // raket er, alles ertussen is een rechte lerp naar dat doel.
+            if (githubWeight > 0) {
+              const rocketIndex = JOURNEY_STAGE_COUNT - 1
+              bx += (p.jx[rocketIndex] - bx) * githubWeight
+              by += (p.jy[rocketIndex] - by) * githubWeight
+            }
+
             x = o.px + o.dx + bx * o.cos - by * o.sin
             y = o.py + o.dy + bx * o.sin + by * o.cos
+
+            // Elke korrel heeft z'n eigen stijgsnelheid (vy), dus de vloot
+            // rafelt uiteen terwijl hij wegdrijft in plaats van als één blok
+            // omhoog te schuiven.
+            if (liftoffRise > 0) y -= liftoffRise * (p.vy ?? 70)
           } else {
             const o = boats[p.boat]
             x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
             y = o.py + o.dy + p.bx * o.sin + p.by * o.cos
+            distort = o.distort
           }
 
           if (!frozen) {
-            x += Math.sin(time * p.jf + p.jp) * p.ja
-            y += Math.cos(time * p.jf * 0.8 + p.jp) * p.ja * 0.7
+            // Op volle overtocht buigt de jitter fors op: de boot oogt
+            // onderweg als een korrelige, kokende wolk in plaats van een
+            // vast blokje dat over de rail schuift.
+            const ja = p.ja * (1 + distort * DISTORT_BOOST)
+            x += Math.sin(time * p.jf + p.jp) * ja
+            y += Math.cos(time * p.jf * 0.8 + p.jp) * ja * 0.7
           }
 
           if (forming) {
@@ -647,9 +765,12 @@ export function useFleetScene({
     function loop(now: number): void {
       /* Tijdens de opbouw op volle snelheid, daarna rond de 30 beelden per
          seconde: het is een deinende achtergrond, geen animatie waar iemand
-         naar zit te kijken. */
+         naar zit te kijken. Journey is dat wél — die vorm hoort direct op
+         scroll te reageren, dus die tekent elk frame, anders loopt de morph
+         achter de scrollpositie aan en voelt het schokkerig. */
       const forming = now - t0 < formMs
-      if (forming || now - lastFrame >= 30) {
+      const frameGap = variant === 'journey' ? 0 : 30
+      if (forming || now - lastFrame >= frameGap) {
         lastFrame = now
         if (now - lastPalette >= 220) {
           lastPalette = now

@@ -1,6 +1,6 @@
 /* ==========================================================================
    Koen Holman — portfolio
-   Shared shell: colour, type, header, nav, footer, cards.
+   Shared shell: colour, type, nav, footer, cards.
    Page-specific styling lives in the .kh-main--* modifiers near the bottom.
    ========================================================================== */
 
@@ -100,34 +100,13 @@ button:focus-visible,
   min-height: 100vh;
   min-height: 100dvh;
   /* clip, not hidden: overflow-x:hidden turns this into a scroll container,
-     and .kh-header's position:sticky would then stick to a scrollport that
-     never scrolls — i.e. the menu would scroll away with the page. */
+     and .kh-footer's position:sticky would then stick to a scrollport that
+     never scrolls — i.e. the footer would scroll away with the page. */
   overflow-x: clip;
   background: radial-gradient(125% 105% at 50% 0%, #050c1a 0%, #02060f 30%, #010309 54%, #000000 78%);
 }
 
-/* ---------- Header + nav --------------------------------------------- */
-
-.kh-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(3, 7, 16, 0.62);
-  border-bottom: 1px solid var(--kh-line);
-}
-
-.kh-header-inner {
-  max-width: var(--kh-measure);
-  margin: 0 auto;
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
+/* ---------- Wordmark + nav (live in the footer, see below) ------------ */
 
 .kh-brand {
   display: flex;
@@ -138,6 +117,7 @@ button:focus-visible,
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(234, 244, 255, 0.86);
+  flex: none;
 }
 .kh-brand:hover { color: var(--kh-ink-bright); }
 
@@ -153,27 +133,7 @@ button:focus-visible,
   display: flex;
   align-items: center;
   gap: 3px;
-  flex-wrap: wrap;
-}
-
-/* Once the four items no longer fit next to the wordmark, the menu becomes a
-   strip you swipe rather than a second line — same treatment as the swatches.
-   The fade at the right edge is what says there is more. */
-@media (max-width: 859px) {
-  .kh-header-inner { flex-wrap: nowrap; }
-
-  .kh-nav {
-    flex-wrap: nowrap;
-    min-width: 0;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
-  }
-  .kh-nav::-webkit-scrollbar { display: none; }
-
-  a.khnav { flex: none; }
+  flex: none;
 }
 
 /* Geen omlijnde pillen meer: de rangorde komt uit de kleur alleen — grijs
@@ -210,10 +170,10 @@ a.khnav[aria-current="page"]::after {
 
 /* ---------- Main + footer -------------------------------------------- */
 
-/* De main is het enige deel dat meegroeit: header en footer houden hun eigen
-   hoogte, de resthoogte van het scherm gaat naar de inhoud. Daarmee zakt de
-   footer op een korte pagina naar de onderkant in plaats van halverwege te
-   blijven hangen. */
+/* De main is het enige deel dat meegroeit: de footer houdt zijn eigen hoogte,
+   de resthoogte van het scherm gaat naar de inhoud. Daarmee zakt de footer op
+   een korte pagina naar de onderkant in plaats van halverwege te blijven
+   hangen. */
 .kh-main {
   position: relative;
   z-index: 1;
@@ -223,14 +183,13 @@ a.khnav[aria-current="page"]::after {
   margin: 0 auto;
 }
 
-.kh-header,
 .kh-footer { flex: none; }
 
 .kh-main--home    { padding: 0 20px; }
 
-/* The home page is one screen: hero and project sit in the space between the
-   header and the footer. min-height, not height, so a short viewport can
-   still scroll instead of clipping. */
+/* The home page is one screen: hero and project sit in the space above the
+   footer. min-height, not height, so a short viewport can still scroll
+   instead of clipping. */
 .kh-main--home {
   flex: 1 0 auto;
   display: flex;
@@ -275,11 +234,51 @@ a.khnav[aria-current="page"]::after {
   }
   .kh-home-copy { gap: 16px; }
 }
-.kh-main--werk    { padding: 0 20px 96px; }
+.kh-main--werk    { padding: 0 20px 0; }
 .kh-main--over    { padding: 76px 20px 120px; }
 .kh-main--contact { padding: 76px 20px 130px; }
 .kh-main--error   { padding: 76px 20px 130px; }
 .kh-main--logboek { padding: 52px 20px 80px; }
+
+/* ---------- Werk: scrollverhaal, vloot rechts --------------------------
+   Zelfde truc als kh-home-grid/kh-home-copy: geen echte kolommen, een
+   leeskolom met z-index 1 vóór een schermvullende vaste canvaslaag
+   (.kh-journey, zie fleet.css). ------------------------------------- */
+
+.kh-werk-grid { display: block; }
+
+.kh-werk-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0;
+}
+
+/* Elke halte krijgt een eigen scherm-achtig ritme — de tekst scrollt weg
+   terwijl de vorm rechts verandert — maar niet de volle 100vh: in de
+   "verhalende" stand is dat alleen een korte kernzin, en dan is 100vh vooral
+   lege ruimte om doorheen te scrollen. min-height, niet height: een sectie
+   met veel opengeklapte diepgang mag best hoger worden dan dit minimum. */
+.kh-journey-section {
+  min-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+/* "Verhalend" toont uitsluitend de kernzin: tech, fail én losse children
+   (checks-grid, metrics, de RAG/MCP-alinea) zitten allemaal in .dsv-depth-extra
+   en gaan als één geheel open of dicht. Eén schakelaar voor alle zes secties
+   tegelijk, net als de bestaande "Technische versie"-knop dat nu al voor één
+   run doet. */
+.dsv-depth-extra { display: none; }
+.kh-werk-journey[data-depth="tech"] .dsv-depth-extra { display: block; }
+
+.kh-werk-journey[data-depth="tech"] .dsv-entry-tech,
+.kh-werk-journey[data-depth="tech"] .dsv-entry-fail {
+  display: block;
+}
 
 /* ---------- Logboek: run links, feiten rechts ------------------------- */
 
@@ -468,49 +467,53 @@ a.khnav[aria-current="page"]::after {
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* Altijd één regel: de footer wrapt nooit naar een tweede rij. Als het niet
+   past, is de presetrij (.aur-presets, zie aurora.css) wat inschikt en een
+   veegbare strip wordt — het menu blijft heel, want dat is de navigatie. */
 .kh-footer-inner {
   max-width: var(--kh-measure);
   margin: 0 auto;
-  padding: 16px 20px 20px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(190, 212, 232, 0.42);
+  gap: 16px;
+  flex-wrap: nowrap;
 }
 
-/* display:contents keeps the two lines as direct flex items of the footer, so
-   a wide screen looks exactly as before: name left, role right. */
-.kh-footer-line { display: contents; }
+/* Wordmark + hoofdmenu, samen de linkerhelft van de footer. Krimpt hier niet:
+   de presets ernaast geven eerst ruimte. */
+.kh-footer-menu {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  flex-shrink: 0;
+}
 
-/* The swatch strip takes a row of its own here, so the rest has to give. And
-   the two lines become one strip you swipe rather than stacking. */
+/* Pas als wordmark + vier nav-items zelf niet meer passen — ook niet nadat de
+   presets al zijn platgeknepen — mag het menu ook inschikken en een eigen
+   veegbare strip worden. De fade aan de rechterkant zegt dat er meer is. */
+@media (max-width: 859px) {
+  .kh-footer-menu {
+    flex-shrink: 1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
+  }
+  .kh-footer-menu::-webkit-scrollbar { display: none; }
+
+  a.khnav { flex: none; }
+}
+
 @media (max-width: 699px) {
   .kh-footer-inner {
     padding: 10px 16px 12px;
     gap: 8px;
-    font-size: 9px;
   }
-
-  .kh-footer-line {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    min-width: 0;
-    white-space: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent 100%);
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent 100%);
-  }
-  .kh-footer-line::-webkit-scrollbar { display: none; }
-  .kh-footer-line span { flex: none; }
 }
 
 /* ---------- Type ------------------------------------------------------ */
@@ -636,75 +639,6 @@ a.khnav[aria-current="page"]::after {
   flex-wrap: wrap;
   margin-top: 24px;
 }
-
-/* ---------- Rotating facts on the project card ------------------------- */
-
-/* One shared 32s cycle; each item shows for its own 4s slice via --i. No JS:
-   the card is on a page that loads none of the widget's scripts. */
-.kh-ticker {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin: 10px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--kh-line);
-}
-
-.kh-ticker-dot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  margin-top: 7px;
-  border-radius: 50%;
-  background: var(--t1, #7de0d2);
-  box-shadow: 0 0 9px var(--t1, #7de0d2);
-}
-
-.kh-ticker-items {
-  position: relative;
-  display: block;
-  flex: 1;
-  /* One line fits on the card's width; narrow screens wrap to two or three,
-     and the items are absolutely positioned so the box has to reserve it. */
-  min-height: 21px;
-}
-
-.kh-ticker-item {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  font-weight: 300;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: rgba(214, 230, 245, 0.72);
-  text-wrap: pretty;
-  animation: khTicker 32s linear infinite;
-  animation-delay: calc(var(--i) * 4s);
-}
-
-@keyframes khTicker {
-  0%            { opacity: 0; transform: translateY(5px); }
-  1%, 11.5%     { opacity: 1; transform: translateY(0); }
-  12.5%, 100%   { opacity: 0; transform: translateY(-5px); }
-}
-
-/* Absolutely positioned items cannot push their box open, so on a narrow card
-   it has to reserve room for the longest line — three of them. This has to sit
-   after the base rule: same specificity, so source order decides. */
-@media (max-width: 1023px) {
-  .kh-ticker-items { min-height: calc(1.5em * 3); }
-}
-
-/* The global reduced-motion rule kills the animation, which would leave every
-   item at opacity 0 — so one line stays put instead. */
-@media (prefers-reduced-motion: reduce) {
-  .kh-ticker-item { animation: none; }
-  .kh-ticker-item:first-child { opacity: 1; transform: none; }
-}
-
-/* Fewer items than the 8-slice default: same 4s-per-item pacing, but the
-   cycle shrinks to item-count &times; 4s so nothing sits blank between loops. */
-.kh-ticker--3 .kh-ticker-item { animation-duration: 12s; }
 
 /* De README is geen derde invalshoek maar het bestand zelf, en dus geen
    derde onderstreepte regel: een pil zegt dat in één oogopslag. margin-left

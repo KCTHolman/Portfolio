@@ -25,11 +25,13 @@ import { useMediaQuery, useNarrowScreen, usePrefersReducedMotion } from '@/lib/u
 
 export type { FleetVariant }
 
-/** journey heeft een progressRef nodig om te weten welke vorm te tonen;
- *  hero/ambient hebben dat niet en mogen 'm dus ook niet meekrijgen. */
+/** journey heeft een progressRef nodig om te weten welke vorm te tonen, en
+ *  optioneel een githubHoverRef om naar het raket-stadium te mengen en te
+ *  lanceren; hero/ambient
+ *  hebben geen van beide en mogen ze dus ook niet meekrijgen. */
 type FleetProps =
   | { variant: 'hero' | 'ambient' }
-  | { variant: 'journey'; progressRef: RefObject<number> }
+  | { variant: 'journey'; progressRef: RefObject<number>; githubHoverRef?: RefObject<boolean> }
 
 export function Fleet(props: FleetProps) {
   const { variant } = props
@@ -59,6 +61,7 @@ export function Fleet(props: FleetProps) {
     coarsePointer,
     onSailing,
     progressRef: variant === 'journey' ? props.progressRef : undefined,
+    githubHoverRef: variant === 'journey' ? props.githubHoverRef : undefined,
     presetIndex: activePreset,
   })
 
