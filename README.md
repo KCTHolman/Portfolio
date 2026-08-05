@@ -39,7 +39,6 @@ lib/
   metadata.ts             SITE_URL en de metadata per pagina
   nav.ts · readme-outline.ts
 
-proxy.ts                  De Content-Security-Policy, met een nonce per verzoek
 public/assets/            Lettertypen, iconen, social card
 archief/                  De oude site, bewaard maar niet meer gelinkt
 ```
@@ -94,11 +93,11 @@ overbodig geworden en verwijderd.
 Koppel de repo in het dashboard; Vercel herkent Next.js en bouwt vanzelf. Elke
 push naar `master` deployt, elke PR krijgt een preview-URL.
 
-`vercel.json` houdt nog twee dingen vast: `X-Content-Type-Options` en
-`Referrer-Policy`, plus de cache-headers voor `public/assets/` (lettertypen een
-jaar, iconen een dag). `trailingSlash` staat nu in `next.config.ts`, en de
-Content-Security-Policy is verhuisd naar `proxy.ts` — zie hieronder.
-`.vercelignore` houdt `archief/` en dit bestand buiten de deploy.
+`vercel.json` houdt vast: `X-Content-Type-Options`, `Referrer-Policy`, de
+Content-Security-Policy, plus de cache-headers voor `public/assets/`
+(lettertypen een jaar, iconen een dag). `trailingSlash` staat in
+`next.config.ts`. `.vercelignore` houdt `archief/` en dit bestand buiten de
+deploy.
 
 ### De CSP, en wat die kost
 
@@ -109,21 +108,20 @@ drie uitwegen en ze kosten alle drie iets:
 
 | | |
 |---|---|
-| **nonce per verzoek** | policy blijft even streng; de HTML kan niet meer statisch van de CDN komen |
+| nonce per verzoek | policy blijft even streng; de HTML kan niet meer statisch van de CDN komen |
 | hashes | onwerkbaar: ze veranderen bij elke build |
-| `'unsafe-inline'` | pagina's blijven statisch, maar élk inline script mag — precies wat de header tegenhield |
+| **`'unsafe-inline'`** | pagina's blijven statisch, maar élk inline script mag — precies wat de header tegenhield |
 
-Hier staat de nonce-variant, omdat een strengere header stilletjes zwakker maken
-erger is dan een pagina die per verzoek gerenderd wordt. De prijs is zichtbaar in
-de build-output: de zes pagina's staan op `ƒ (Dynamic)` in plaats van `○
-(Static)`. Wil je de statische levering terug, dan is `proxy.ts`
-weghalen en de policy mét `'unsafe-inline'` terugzetten in `vercel.json` de
-hele wijziging.
-
-> Let op: dit werkt alléén met dynamische rendering. Statisch geprerenderde HTML
-> kan geen nonce per verzoek dragen; de header zou er dan wel staan en de
-> scripts zouden er niet bij passen, waarmee de browser de hele site stilzet.
-> Vandaar de `await headers()` in `app/layout.tsx` — die staat er met opzet.
+Hier staat de `'unsafe-inline'`-variant, in `vercel.json`, statisch uitgeleverd
+(`○ Static` in de build-output). De site heeft geen forms, geen auth en geen
+user-data, en de enige inline scripts zijn Next's eigen hydration-bootstrap —
+tegen dat threat model weegt de CDN-caching en de lagere TTFB van een
+volledig statische build zwaarder dan de marginale winst van een nonce. Wil je
+de striktere policy terug, zet dan een `proxy.ts` (Next 16's naam voor
+middleware) terug die per verzoek een nonce genereert en op de policy zet, én
+een `await headers()` in `app/layout.tsx` — zonder dat laatste kan Next de
+nonce niet per verzoek op z'n eigen scripts zetten, en zou de header de eigen
+hydration blokkeren.
 
 ## Herkomst
 

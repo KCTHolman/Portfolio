@@ -1,7 +1,7 @@
 import { Link } from '@/components/link'
 import type { CSSProperties, ReactNode } from 'react'
 
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 import { CodeSnippet } from '@/components/readme/code-snippet'
 import { ReadmeOutline } from '@/components/readme/readme-outline'
 import { pageMetadata } from '@/lib/metadata'
