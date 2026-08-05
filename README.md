@@ -39,7 +39,7 @@ lib/
   metadata.ts             SITE_URL en de metadata per pagina
   nav.ts · readme-outline.ts
 
-middleware.ts             De Content-Security-Policy, met een nonce per verzoek
+proxy.ts                  De Content-Security-Policy, met een nonce per verzoek
 public/assets/            Lettertypen, iconen, social card
 archief/                  De oude site, bewaard maar niet meer gelinkt
 ```
@@ -97,7 +97,7 @@ push naar `master` deployt, elke PR krijgt een preview-URL.
 `vercel.json` houdt nog twee dingen vast: `X-Content-Type-Options` en
 `Referrer-Policy`, plus de cache-headers voor `public/assets/` (lettertypen een
 jaar, iconen een dag). `trailingSlash` staat nu in `next.config.ts`, en de
-Content-Security-Policy is verhuisd naar `middleware.ts` — zie hieronder.
+Content-Security-Policy is verhuisd naar `proxy.ts` — zie hieronder.
 `.vercelignore` houdt `archief/` en dit bestand buiten de deploy.
 
 ### De CSP, en wat die kost
@@ -116,7 +116,7 @@ drie uitwegen en ze kosten alle drie iets:
 Hier staat de nonce-variant, omdat een strengere header stilletjes zwakker maken
 erger is dan een pagina die per verzoek gerenderd wordt. De prijs is zichtbaar in
 de build-output: de zes pagina's staan op `ƒ (Dynamic)` in plaats van `○
-(Static)`. Wil je de statische levering terug, dan is `middleware.ts`
+(Static)`. Wil je de statische levering terug, dan is `proxy.ts`
 weghalen en de policy mét `'unsafe-inline'` terugzetten in `vercel.json` de
 hele wijziging.
 

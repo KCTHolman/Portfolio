@@ -19,7 +19,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
    Hier staat de nonce-variant, omdat een strengere header stilletjes zwakker
    maken erger is dan een pagina die per verzoek gerenderd wordt. Wil je de
-   statische levering terug, haal dan deze middleware weg en zet de policy
+   statische levering terug, haal dan deze proxy weg en zet de policy
    terug in vercel.json met 'unsafe-inline' erbij op script-src.
 
    Next leest de nonce zelf uit de Content-Security-Policy op het binnenkomende
@@ -32,7 +32,7 @@ function makeNonce(): string {
   return btoa(String.fromCharCode(...bytes))
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = makeNonce()
 
   const policy = [
@@ -58,15 +58,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
+  /* Alles behalve de statische build-output en de bestanden uit public/ — die
+     hebben geen nonce nodig en zouden er alleen trager van worden.
+
+     Alleen de string-vorm: de objectvorm met `missing` accepteert Vercel niet
+     als routing-regel, en dat merk je pas bij de deploy — `next build` laat
+     hem lokaal gewoon door. */
   matcher: [
-    /* Alles behalve de statische build-output en de bestanden uit public/ —
-       die hebben geen nonce nodig en zouden er alleen trager van worden. */
-    {
-      source: '/((?!_next/static|_next/image|assets|favicon.ico|robots.txt|sitemap.xml|site.webmanifest).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
+    '/((?!_next/static|_next/image|assets|favicon.ico|robots.txt|sitemap.xml|site.webmanifest).*)',
   ],
 }

@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   /* Dwingt dynamische rendering af. Dat is geen bijvangst maar de hele reden:
-     Next zet de nonce uit middleware.ts pas op z'n inline scripts als de HTML
+     Next zet de nonce uit proxy.ts pas op z'n inline scripts als de HTML
      per verzoek gemaakt wordt. Statisch geprerenderde HTML kan geen nonce per
      verzoek dragen, en dan blokkeert je eigen CSP je eigen hydration. */
   await headers()
