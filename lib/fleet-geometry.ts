@@ -345,6 +345,10 @@ export type Particle = {
    *  draw() bijvoorbeeld alleen de kompasnaald (slot 1/2) om de as laten
    *  schommelen zonder de kast en de tikken mee te draaien. */
   slot?: number
+  /** Alleen journey-deeltjes: eigen stijgsnelheid voor de lancering aan het
+   *  eind, in pixels per seconde — pas van kracht zodra het laatste stadium
+   *  (de raket) volledig gevormd is. */
+  vy?: number
 }
 
 export type BoatSpec = {
@@ -606,10 +610,120 @@ const COMPASS_STAGE: JourneyStage = [
   poly([KX - 0.02, KY - 0.02], [KX + 0.02, KY - 0.02], [KX + 0.02, KY + 0.02], [KX - 0.02, KY + 0.02]), // centrum-pin (flag-rol)
 ]
 
-/** Geordend: elk journey-stadium van boot tot raket. Vier vormen volgen nog
- *  (tandwiel, schild, sleutel, raket) — de kompas-spike bewijst eerst dat het
- *  patroon werkt voordat die getekend worden. */
-export const JOURNEY_STAGES: JourneyStage[] = [BOAT_STAGE, COMPASS_STAGE]
+function gearPoly(cx: number, cy: number, rOuter: number, rInner: number, teeth: number): Point[] {
+  const pts: Point[] = []
+  const toothWidth = 0.42 // fractie van de tandbreedte die "uit" staat
+  for (let t = 0; t < teeth; t++) {
+    const a0 = (t / teeth) * Math.PI * 2
+    const a1 = ((t + 1) / teeth) * Math.PI * 2
+    const mid = (a0 + a1) / 2
+    const half = ((a1 - a0) * toothWidth) / 2
+    pts.push([cx + Math.cos(a0) * rInner, cy + Math.sin(a0) * rInner])
+    pts.push([cx + Math.cos(mid - half) * rOuter, cy + Math.sin(mid - half) * rOuter])
+    pts.push([cx + Math.cos(mid + half) * rOuter, cy + Math.sin(mid + half) * rOuter])
+    pts.push([cx + Math.cos(a1) * rInner, cy + Math.sin(a1) * rInner])
+  }
+  return pts
+}
+
+/* Tandwiel, zelfde middelpunt en schaal als het kompas: lichaam, tandrand,
+   naaf, een tussenring, en drie spaken plus een boutje in het midden. */
+const GEAR_STAGE: JourneyStage = [
+  circlePoly(KX, KY, 0.34, 0.34, 40), // lichaam (hull-rol)
+  gearPoly(KX, KY, 0.42, 0.34, 10), // tandrand (mainsail-rol)
+  circlePoly(KX, KY, 0.16, 0.16, 28), // naaf (jib-rol)
+  circlePoly(KX, KY, 0.26, 0.26, 34), // tussenring (flyer-rol)
+  spar([KX, KY - 0.34], [KX, KY + 0.34], 0.006), // spaak (mast-rol)
+  spar([KX - 0.34, KY], [KX + 0.34, KY], 0.006), // spaak (boom-rol)
+  spar([KX - 0.24, KY - 0.24], [KX + 0.24, KY + 0.24], 0.005), // spaak (sprit-rol)
+  poly([KX - 0.025, KY - 0.025], [KX + 0.025, KY - 0.025], [KX + 0.025, KY + 0.025], [KX - 0.025, KY + 0.025]), // bout (flag-rol)
+]
+
+/* Schild: een gewelfde bovenkant die naar een punt onderaan toeloopt, met een
+   binnenpaneel, een vinkje, een band en een randlijn. */
+const SHIELD_TOP_L: Point = [0.22, 0.12]
+const SHIELD_TOP_R: Point = [0.78, 0.12]
+const SHIELD_TIP: Point = [0.5, 0.9]
+const SHIELD_OUTLINE = poly(
+  SHIELD_TOP_L,
+  SHIELD_TOP_R,
+  curve(SHIELD_TOP_R, SHIELD_TIP, -0.35, 14),
+  SHIELD_TIP,
+  curve(SHIELD_TIP, SHIELD_TOP_L, -0.35, 14),
+)
+const SHIELD_INNER = poly(
+  [0.32, 0.22],
+  [0.68, 0.22],
+  curve([0.68, 0.22], [0.5, 0.76], -0.3, 10),
+  [0.5, 0.76],
+  curve([0.5, 0.76], [0.32, 0.22], -0.3, 10),
+)
+const SHIELD_CHECK: Point[] = [
+  [0.35, 0.52],
+  [0.4, 0.47],
+  [0.47, 0.58],
+  [0.64, 0.33],
+  [0.69, 0.38],
+  [0.48, 0.68],
+]
+const SHIELD_STAGE: JourneyStage = [
+  SHIELD_OUTLINE, // hull-rol
+  SHIELD_INNER, // mainsail-rol
+  SHIELD_CHECK, // jib-rol
+  spar([0.24, 0.55], [0.76, 0.55], 0.045), // band (flyer-rol)
+  spar([0.5, 0.12], [0.5, 0.9], 0.006), // middenlijn (mast-rol)
+  spar(SHIELD_TOP_L, SHIELD_TOP_R, 0.006), // bovenrand (boom-rol)
+  spar([0.3, 0.2], [0.6, 0.75], 0.005), // accentlijn (sprit-rol)
+  poly([0.485, 0.16], [0.515, 0.16], [0.515, 0.19], [0.485, 0.19]), // klinknagel (flag-rol)
+]
+
+/* Sleutel: baard links, schacht, en de tanden rechts — horizontaal, net als
+   de boot een duidelijke richting heeft. */
+const KEY_BOW: Point = [0.22, 0.46]
+const KEY_STAGE: JourneyStage = [
+  circlePoly(KEY_BOW[0], KEY_BOW[1], 0.16, 0.16, 36), // baard (hull-rol)
+  spar([0.34, 0.46], [0.8, 0.46], 0.045), // schacht (mainsail-rol)
+  poly([0.8, 0.4], [0.92, 0.4], [0.92, 0.5], [0.86, 0.5], [0.86, 0.58], [0.8, 0.58]), // tanden (jib-rol)
+  circlePoly(KEY_BOW[0], KEY_BOW[1], 0.09, 0.09, 26), // opening in de baard (flyer-rol)
+  spar([0.72, 0.46], [0.72, 0.58], 0.006), // extra tand (mast-rol)
+  spar([0.36, 0.4], [0.78, 0.4], 0.005), // schachtrand (boom-rol)
+  spar([0.36, 0.52], [0.78, 0.52], 0.005), // schachtrand (sprit-rol)
+  poly([0.205, 0.44], [0.235, 0.44], [0.235, 0.47], [0.22, 0.5], [0.205, 0.47]), // sleutelgat-accent (flag-rol)
+]
+
+/* Raket: neus boven, romp, twee vinnen en een vlam onderaan — de vlam wordt
+   bij de lancering (zie use-fleet-scene.ts) het startpunt van de deeltjes
+   die omhoog wegdrijven. */
+const ROCKET_NOSE: Point = [0.5, 0.06]
+const ROCKET_BODY = poly(
+  ROCKET_NOSE,
+  curve(ROCKET_NOSE, [0.6, 0.24], -0.12, 8),
+  [0.6, 0.24],
+  [0.6, 0.7],
+  [0.4, 0.7],
+  [0.4, 0.24],
+  curve([0.4, 0.24], ROCKET_NOSE, 0.12, 8),
+)
+const ROCKET_STAGE: JourneyStage = [
+  ROCKET_BODY, // romp (hull-rol)
+  poly([0.4, 0.56], [0.22, 0.78], [0.4, 0.7]), // linkervin (mainsail-rol)
+  poly([0.6, 0.56], [0.78, 0.78], [0.6, 0.7]), // rechtervin (jib-rol)
+  poly([0.42, 0.7], [0.58, 0.7], [0.52, 0.9], [0.5, 0.96], [0.48, 0.9]), // vlam (flyer-rol)
+  spar([0.5, 0.1], [0.5, 0.68], 0.005), // middennaad (mast-rol)
+  spar([0.4, 0.45], [0.6, 0.45], 0.006), // band (boom-rol)
+  spar([0.4, 0.6], [0.3, 0.74], 0.005), // vinstut (sprit-rol)
+  poly([0.485, 0.09], [0.515, 0.09], [0.515, 0.12], [0.485, 0.12]), // neusbaken (flag-rol)
+]
+
+/** Geordend: elk journey-stadium van boot tot raket. */
+export const JOURNEY_STAGES: JourneyStage[] = [
+  BOAT_STAGE,
+  COMPASS_STAGE,
+  GEAR_STAGE,
+  SHIELD_STAGE,
+  KEY_STAGE,
+  ROCKET_STAGE,
+]
 
 /** Hoeveel journey-stadia er nu getekend zijn — de scroll-voortgang wordt
  *  hiertegen geklemd zolang niet alle zes vormen bestaan. */
@@ -618,7 +732,7 @@ export const JOURNEY_STAGE_COUNT = JOURNEY_STAGES.length
 /** Vaste plek en maat voor de journey-vorm: rechts in beeld, zoals de
  *  voorste boot in HERO_BOATS, en altijd op volle detail — er is maar één
  *  vorm, geen vloot om in te schalen. */
-export const JOURNEY_BOAT: BoatSpec = { cx: 0.72, cy: 0.50, w: LEAD_W, depth: 1, par: 1, heel: 0 }
+export const JOURNEY_BOAT: BoatSpec = { cx: 0.8, cy: 0.5, w: LEAD_W, depth: 1, par: 1, heel: 0 }
 
 /** Identiteit van elke journey-deeltje: één keer gegenereerd, vormonafhankelijk.
  *  Dezelfde volgorde (slot voor slot, rand voor vulling) als buildJourneyStage
@@ -634,6 +748,7 @@ export function buildJourneyIdentities(quality: number): Particle[] {
       const col = rnd() < 0.05 ? 4 : pick(rnd, slot.bias)
       const p = particle(0, 0, col, 1, rnd)
       p.slot = i
+      p.vy = 45 + rnd() * 110
       out.push(p)
     }
   })

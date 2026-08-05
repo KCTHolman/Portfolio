@@ -570,8 +570,8 @@ export default function ReadmePage() {
           <a className="kh-link" href={`${BLOB}/docs/gitflow.md`} target="_blank" rel="noopener">
             gitflow.md &mdash; de detailspec &rarr;
           </a>
-          <Link className="kh-link" href="/werk/logboek/">
-            Of de niet-technische kant: het logboek
+          <Link className="kh-link" href="/werk/">
+            Of de niet-technische kant: het scrollverhaal
           </Link>
         </div>
       </main>

@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import { Link } from '@/components/link'
 
 import { Fleet } from '@/components/fleet'
@@ -21,34 +20,6 @@ const PERSON_SCHEMA = {
   sameAs: ['https://github.com/KCTHolman', 'https://www.linkedin.com/in/koen-holman/'],
   knowsAbout: ['Software engineering', 'CI/CD', 'AI-agents', 'Flutter', 'Full stack development'],
   worksFor: { '@type': 'Organization', name: 'Indicia' },
-}
-
-const SCHOUWVLOOT_FACTS = [
-  'Zestien workflows, geen enkele die zichzelf kan starten.',
-  'Bij twijfel gokt de poort niet, maar vraagt hij het.',
-  'Een plan wordt getoetst vóór er iets gebouwd wordt.',
-  'Zes controles op elke wijziging, twee ervan blokkerend.',
-  'Dubbele builds zaten op 30,8% — nu structureel onmogelijk.',
-  'Documentatie die scheef staat, houdt de build tegen.',
-  'Logica leeft precies één keer, nooit als fork.',
-  'Drie plekken waar het op mij wacht. Verder niets.',
-]
-
-/** Cyclet op CSS alleen: elk item heeft z'n eigen plak van één gedeelde
- *  animatie. Reduced motion valt terug op de eerste regel, stilstaand. */
-function Ticker({ label, items, className }: { label: string; items: string[]; className?: string }) {
-  return (
-    <p className={`kh-ticker${className ? ` ${className}` : ''}`} aria-label={label}>
-      <span className="kh-ticker-dot" aria-hidden="true" />
-      <span className="kh-ticker-items">
-        {items.map((item, i) => (
-          <span key={item} className="kh-ticker-item" style={{ '--i': i } as CSSProperties}>
-            {item}
-          </span>
-        ))}
-      </span>
-    </p>
-  )
 }
 
 export default function HomePage() {
@@ -98,8 +69,6 @@ export default function HomePage() {
                 Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie
                 plekken verschijnt. Publiek te lezen. (showcase variant)
               </span>
-
-              <Ticker label="Feiten over deSchouwVloot" items={SCHOUWVLOOT_FACTS} />
             </div>
           </section>
         </div>
