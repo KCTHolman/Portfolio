@@ -706,14 +706,6 @@ a.khnav[aria-current="page"]::after {
    cycle shrinks to item-count &times; 4s so nothing sits blank between loops. */
 .kh-ticker--3 .kh-ticker-item { animation-duration: 12s; }
 
-/* The two deep links under the project card, in the same underlined style
-   as the showcase's own footer links. */
-.kh-project-links {
-  margin-top: 10px;
-  font-size: 14px;
-  align-items: center;
-}
-
 /* De README is geen derde invalshoek maar het bestand zelf, en dus geen
    derde onderstreepte regel: een pil zegt dat in één oogopslag. margin-left
    op auto duwt hem naar de rechterkant van zijn regel — past alles op één
@@ -741,30 +733,6 @@ a.kh-pill:hover {
   background: rgba(125, 224, 210, 0.18);
   border-color: rgba(125, 224, 210, 0.55);
   color: #c9fbf1;
-}
-
-/* Meer lucht onder de ticker zodra die twee of drie regels beslaat. */
-@media (max-width: 1023px) {
-  .kh-project-links { margin-top: 20px; }
-}
-
-/* Op een telefoon past de pil niet meer naast de tweede link en zakt hij naar
-   een regel van zichzelf. Die regel moet ergens vandaan komen: de home past
-   op één scherm en dat is geen toeval. Vandaar een krappere rijafstand, een
-   kleinere pil en minder lucht boven de rij — samen precies de hoogte die de
-   extra regel kost. */
-@media (max-width: 699px) {
-  .kh-project-links {
-    margin-top: 12px;
-    row-gap: 8px;
-    column-gap: 18px;
-  }
-
-  a.kh-pill {
-    padding: 6px 13px;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-  }
 }
 
 /* Precies één gevulde knop per scherm — de rest is kale tekst. Zolang er
@@ -887,23 +855,13 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
   text-wrap: pretty;
 }
 
-/* Zonder rand hebben de twee projecten op de home nog wel een aanhechting
-   nodig, en op één scherm is er geen ruimte voor de witruimte die dat
-   normaal doet. Eén haarlijn erboven is het minimum dat werkt: een streep,
-   geen doos. */
-.kh-now-card,
-.kh-soon-card {
+/* Zonder rand heeft het project op de home nog wel een aanhechting nodig,
+   en op één scherm is er geen ruimte voor de witruimte die dat normaal doet.
+   Eén haarlijn erboven is het minimum dat werkt: een streep, geen doos. */
+.kh-now-card {
   padding-top: 14px;
   border-top: 1px solid var(--kh-line);
 }
-
-/* A teaser, not a project page yet: dimmer, no link to follow. */
-.kh-soon-card {
-  margin-top: 14px;
-  max-width: 560px;
-  opacity: 0.72;
-}
-.kh-card-title--static { color: var(--kh-ink-bright); }
 
 /* ---------- Over: numbered panels ------------------------------------- */
 

@@ -34,12 +34,6 @@ const SCHOUWVLOOT_FACTS = [
   'Drie plekken waar het op mij wacht. Verder niets.',
 ]
 
-const BIOHACKOS_FACTS = [
-  'Een logsysteem voor gewicht, sport, boodschappen en voeding.',
-  'RAG als experiment: antwoorden ophalen uit eigen logs.',
-  'Nog in opbouw — meer volgt zodra het staat.',
-]
-
 /** Cyclet op CSS alleen: elk item heeft z'n eigen plak van één gedeelde
  *  animatie. Reduced motion valt terug op de eerste regel, stilstaand. */
 function Ticker({ label, items, className }: { label: string; items: string[]; className?: string }) {
@@ -93,13 +87,10 @@ export default function HomePage() {
           </section>
 
           <section className="kh-now">
-            <h2 className="kh-section-label">Waar ik nu aan bouw</h2>
+            <h2 className="kh-section-label">Huidig project</h2>
 
-            {/* Een paneel, geen link: de twee diepe links zitten erin, en een
-                anchor kan niet in een anchor. De titel draagt de link naar de
-                projectpagina zelf. */}
             <div className="kh-panel kh-now-card">
-              <span className="kh-card-kicker">Project 01 &middot; huidig</span>
+              <span className="kh-card-kicker">Project &middot; huidig</span>
               <Link className="kh-card-title" href="/werk/">
                 de Schouw<span className="kh-accent">vloot</span>
               </Link>
@@ -109,36 +100,6 @@ export default function HomePage() {
               </span>
 
               <Ticker label="Feiten over deSchouwVloot" items={SCHOUWVLOOT_FACTS} />
-
-              <div className="kh-link-row kh-project-links">
-                <Link className="kh-link" href="/werk/logboek/">
-                  Verhalend &middot; niet-technische uitleg
-                </Link>
-                <Link className="kh-link" href="/werk/#technisch">
-                  Technisch &middot; wat het soepel houdt
-                </Link>
-                <Link className="kh-pill" href="/werk/readme/" aria-label="Lees de README van deSchouwVloot">
-                  README &rarr;
-                </Link>
-              </div>
-            </div>
-
-            <div className="kh-panel kh-soon-card">
-              <span className="kh-card-kicker">Project 02 &middot; in ontwikkeling</span>
-              <span className="kh-card-title kh-card-title--static">
-                Biohack<span className="kh-accent">OS</span>
-              </span>
-              <span className="kh-card-body">
-                Mijn eigen logsysteem voor gewicht, sportresultaten, boodschappen en voedselinname.
-                Hier experimenteer ik met RAG, zodat de agent antwoorden kan ophalen uit die eigen
-                logs in plaats van alleen op getraind te vertrouwen.
-              </span>
-
-              <Ticker
-                label="Feiten over BiohackOS"
-                items={BIOHACKOS_FACTS}
-                className="kh-ticker--3"
-              />
             </div>
           </section>
         </div>
