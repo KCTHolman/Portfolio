@@ -40,10 +40,14 @@ in elkaar grijpende tandwielen verandert, elke 40 seconden wisselend, in een lus
 - `app/over/page.tsx` en `app/contact/page.tsx` worden permanente redirects naar
   `/koen-holman/` (bestaande links/bookmarks blijven werken).
 - `lib/nav.ts`: de regels voor `/over/` en `/contact/` worden vervangen door één regel:
-  `{ href: '/koen-holman/', label: 'Koen Holman' }`. `components/view-transitions.tsx` bepaalt
-  de richting van een paginawissel op basis van de volgorde in `NAV_ITEMS` — met een item
-  minder in de lijst moet gecontroleerd worden dat die logica geen aanname doet over een
-  vaste lijstlengte.
+  `{ href: '/koen-holman/', label: 'Koen Holman' }`.
+- `components/view-transitions.tsx` bepaalt de richting van een paginawissel via een **eigen,
+  losse** `ORDER`-array (`['/', '/werk/', '/over/', '/contact/']`), niet via `NAV_ITEMS` —
+  die twee lijsten lopen nu toevallig gelijk op, maar zijn niet aan elkaar gekoppeld. `ORDER`
+  moet dus apart bijgewerkt worden: `/over/` en `/contact/` eruit, `/koen-holman/` erin. Zonder
+  die aanpassing blijft de transitierichting werken (kortere lijst is geen probleem voor
+  `directionBetween()`), maar navigatie naar/van `/koen-holman/` krijgt dan nooit een richting
+  toegekend en valt terug op een gewone routerwissel zonder view-transition-animatie.
 - `pageMetadata()` voor de nieuwe pagina combineert de titel/omschrijving van de huidige
   Over- en Contact-metadata (uit te werken in het implementatieplan, geen nieuw
   ontwerpvraagstuk).
@@ -99,15 +103,36 @@ Dit is een nieuw, eigen client-component (naar het patroon van `components/werk/
   precies één vorm (index 0). Voor `showcase` moet dezelfde interpolatietechniek toegepast
   worden op elk van de 7 boten onafhankelijk: iedere boot morft deeltje-voor-deeltje naar
   haar eigen raketje, en later naar haar eigen tandwiel. Dat is een generalisatie van de
-  bestaande code (nu hardcoded op boot-index 0), geen nieuw algoritme.
+  bestaande code (nu hardcoded op boot-index 0), geen nieuw algoritme, maar wel met twee
+  concrete addertjes die het implementatieplan moet meenemen:
+  - **Boot-index 0 is nu overal een uitzondering.** `use-fleet-scene.ts` behandelt boot 0
+    als de "leidende" boot die nooit wegvaart/aankomt (`bi === 0` slaat de boog/transit-
+    logica over) en die nooit mag lanceren (`canLaunch: variant === 'hero' && b > 0`). Voor
+    `showcase` morphen/roteren alle 7 boten gelijkwaardig — er is geen leidende boot — dus
+    die twee uitzonderingen moeten expliciet omzeild worden voor deze variant, niet per
+    ongeluk overgenomen.
+  - **Dichtheid moet per boot schalen, net als bij `buildBoat()`.** `buildJourneyIdentities`/
+    `buildJourneyStage` nemen nu alleen een vlakke `quality` (0,5 of 1) aan, zonder de
+    `boat.w`/`boat.depth`-afhankelijke `detail`-factor die `buildBoat()` wél heeft. Zonder
+    aanpassing zou elke `SHOWCASE_BOATS`-boot, ongeacht haar grootte, op volle "leidende
+    boot"-dichtheid tekenen — met 7 boten tegelijk een reëel prestatierisico. Deze functies
+    moeten dus een vergelijkbare per-boot detailschaal krijgen.
+  - **`showcase` slaat `deriveFormation`/`setFormation` over**, net zoals `journey` dat al
+    doet: de boot-posities (ankerformatie, en later de compacte tandwiel-cluster) zijn hier
+    vaste, in `showcase` zelf berekende doelen, niet afhankelijk van het actieve
+    aurora-preset.
 - **Drie scènes op een lus van 3× 40 seconden**, bijgehouden met dezelfde
   `performance.now()`-aanpak als `nextLaunchAt`:
   1. **Vloot** — de 7 boten in hun ankerformatie, normaal varend (bestaand gedrag,
      `BOAT_STAGE`).
-  2. **Een lading raketjes** — alle boten morphen gelijktijdig naar `ROCKET_STAGE`. Nieuw
-     stuk logica: een doorlopende stijg-en-zak-lus (in plaats van de bestaande, eenmalige
-     `launchRocketRise` van de hero-variant) zodat het aanvoelt als herhaaldelijk lanceren
-     zolang de scène duurt, zonder dat de vorm het zichtbare gebied verlaat.
+  2. **Een lading raketjes** — alle boten morphen gelijktijdig naar `ROCKET_STAGE`. Dit is
+     **geen hergebruik** van de bestaande hero-lanceermachine (`launchPhase` 0→1→2→3, die
+     eenmalig vertrekt en zich daarna volledig terugtrekt): die is per ontwerp een
+     eenmalige gebeurtenis, geen lus. Voor `showcase` komt er een nieuwe, eenvoudigere
+     doorlopende stijg-en-zak-beweging (een sinus- of ease-in/uit-golf op de verticale
+     positie van elke raket, met een eigen fase per boot zodat ze niet synchroon bewegen)
+     die de hele 40 seconden blijft lopen zolang deze scène actief is, zonder dat de vorm
+     het zichtbare gebied verlaat.
   3. **Tandwielen die in elkaar grijpen** — de boten schuiven eerst naar een compacte
      cluster-formatie (een paar grote, een paar kleine, tegen elkaar aan geplaatst) en
      morphen dan naar `GEAR_STAGE`-varianten. Nieuw: verschillende tandwiel-groottes/
