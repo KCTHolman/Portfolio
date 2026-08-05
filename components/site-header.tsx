@@ -1,17 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-/* Dezelfde volgorde als de leesrichting van de site — assets/transitions.js
-   leidde de richting van de paginawissel er ooit uit af, en
-   components/view-transitions.tsx doet dat nog steeds. */
-export const NAV_ITEMS = [
-  { href: '/', label: 'Home' },
-  { href: '/werk/', label: 'AI-projecten' },
-  { href: '/over/', label: 'Over' },
-  { href: '/contact/', label: 'Contact' },
-] as const
+import { Link } from '@/components/link'
+import { NAV_ITEMS } from '@/lib/nav'
 
 /** /werk/logboek/ en /werk/readme/ liggen onder AI-projecten, dus daar blijft
  *  die nav-ingang de huidige. */

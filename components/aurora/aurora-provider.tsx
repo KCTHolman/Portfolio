@@ -19,6 +19,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -184,6 +185,18 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
   /* ---------- de loop ------------------------------------------------------ */
 
+  /* Links alleen gelaten drijft de wash elke AUTO_CYCLE_SEC naar een andere
+     preset — een trage crossfade, nooit een cut. Dit is een effect-event en
+     geen gewone callback, zodat de loop hieronder niet opnieuw hoeft te
+     abonneren telkens als switchPreset een nieuwe identiteit krijgt. */
+  const advanceAutoCycle = useEffectEvent(() => {
+    const options: number[] = []
+    for (let i = 0; i < PRESETS.length; i++) {
+      if (i !== presetRef.current) options.push(i)
+    }
+    switchPreset(options[Math.floor(Math.random() * options.length)])
+  })
+
   useEffect(() => {
     if (staticFrame) {
       // Eén stilstaand, volledig opgebloeid frame en verder niets.
@@ -198,8 +211,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
       if (!reduceMotion && elapsed >= nextSwitchAtRef.current) {
-        const options = PRESETS.map((_, i) => i).filter((i) => i !== presetRef.current)
-        switchPreset(options[Math.floor(Math.random() * options.length)])
+        advanceAutoCycle()
       }
 
       /* Elke kleurwissel hertekent zes grote, zwaar geblurde lagen. 25 keer per
@@ -240,7 +252,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', onVisibilityChange)
       stop()
     }
-  }, [paint, reduceMotion, staticFrame, switchPreset])
+  }, [paint, reduceMotion, staticFrame])
 
   const value = useMemo<AuroraContextValue>(
     () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset }),

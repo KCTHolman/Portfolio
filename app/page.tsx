@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import Link from 'next/link'
+import { Link } from '@/components/link'
 
 import { Fleet } from '@/components/fleet'
 import { pageMetadata } from '@/lib/metadata'
@@ -60,9 +60,14 @@ function Ticker({ label, items, className }: { label: string; items: string[]; c
 export default function HomePage() {
   return (
     <main className="kh-main kh-main--home" id="inhoud">
+      {/* De < wordt ontsnapt zodat een string in het schema het script-blok
+          nooit kan afsluiten. De inhoud is hier statisch, maar dit is de
+          eigenschap die je wilt bewaken, niet de huidige data. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(PERSON_SCHEMA) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(PERSON_SCHEMA).replace(/</g, '\\u003c'),
+        }}
       />
 
       {/* Alles wat je leest staat links en stopt bij 600px; de vloot ligt als
