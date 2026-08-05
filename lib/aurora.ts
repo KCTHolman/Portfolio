@@ -160,6 +160,12 @@ export function hueAt(elapsed: number): number {
 /** Kleuren voor één preset op dit moment, als ruwe tuples in plaats van
  *  geformatteerde strings — blendFrames mengt er twee van. `bloom` komt van
  *  buiten omdat reduced motion en smalle schermen meteen op 1 beginnen. */
+/** Drift voor presets zonder eigen `drift` (bv. de levende preset) — ook wat
+ *  `deriveFormation` in fleet-geometry.ts gebruikt, zodat elke preset een
+ *  zinnige vlootformatie krijgt zonder een aparte val-terug-waarde bij te
+ *  houden. */
+export const DEFAULT_DRIFT: AuroraDrift = { amp: 8, period: 80 }
+
 export function computeFrame(presetIndex: number, elapsed: number, bloom: number): AuroraFrame {
   const p = PRESETS[presetIndex] ?? PRESETS[0]
 
@@ -185,7 +191,7 @@ export function computeFrame(presetIndex: number, elapsed: number, bloom: number
     }
   }
 
-  const d = p.drift ?? { amp: 8, period: 80 }
+  const d = p.drift ?? DEFAULT_DRIFT
   const phase = (2 * Math.PI * elapsed) / d.period
 
   // Elke blob zit een stukje verder in dezelfde zwaai, zodat het palet ademt

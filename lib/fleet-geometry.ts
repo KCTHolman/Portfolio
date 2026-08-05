@@ -8,7 +8,14 @@
    lijst korrels. De component rekent die om naar pixels en tekent ze.
    ========================================================================== */
 
+import { BASE_GEOMETRY, DEFAULT_DRIFT, PRESETS } from './aurora'
+
 export type Point = readonly [x: number, y: number]
+
+/** Alleen de twee vloot-varianten die een preset-formatie hebben — "journey"
+ *  (zie use-fleet-scene.ts) is één evoluerende vorm zonder ankerboten en
+ *  blijft hier dus buiten beeld. */
+type FormationVariant = 'hero' | 'ambient'
 
 /** Terugkeertijden in seconden. Elke korrel valt in één van deze bakjes, en
  *  dus komt niet alles tegelijk thuis: de vorm hervindt zichzelf als een golf
@@ -330,6 +337,14 @@ export type Particle = {
   sy: number
   /** Index van de boot, of -1 voor los stof. */
   boat: number
+  /** Alleen journey-deeltjes: boot-lokale positie (zelfde transform als bx/by)
+   *  per vorm-stadium, zodat draw() er per frame tussen kan lerpen. */
+  jx?: number[]
+  jy?: number[]
+  /** Alleen journey-deeltjes: welke slot (0-7) dit deeltje hoort — zo kan
+   *  draw() bijvoorbeeld alleen de kompasnaald (slot 1/2) om de as laten
+   *  schommelen zonder de kast en de tikken mee te draaien. */
+  slot?: number
 }
 
 export type BoatSpec = {
@@ -360,12 +375,106 @@ export const HERO_BOATS: BoatSpec[] = [
 ]
 
 export const AMBIENT_BOATS: BoatSpec[] = [
-  { cx: 0.16, cy: 0.22, w: 0.11, depth: 0.30, par: 0.30, heel: -0.06 },
+  /* Leidend, sinds de vlootformatie per aurora-preset: duidelijk groter dan de
+     overige vier, en boven de 0.55-vuldrempel in buildBoat() zodat hij als
+     volle vorm tekent, niet als lijntekening. */
+  { cx: 0.16, cy: 0.22, w: 0.30, depth: 0.60, par: 0.60, heel: -0.06 },
   { cx: 0.78, cy: 0.16, w: 0.08, depth: 0.24, par: 0.24, heel: 0.05 },
   { cx: 0.62, cy: 0.72, w: 0.13, depth: 0.34, par: 0.34, heel: -0.045 },
   { cx: 0.30, cy: 0.84, w: 0.07, depth: 0.20, par: 0.20, heel: 0.04 },
   { cx: 0.92, cy: 0.55, w: 0.06, depth: 0.18, par: 0.18, heel: -0.05 },
 ]
+
+/* ---------- formatie per aurora-preset -----------------------------------
+   HERO_BOATS/AMBIENT_BOATS hierboven zijn nog altijd de vorm-budgetten
+   (w/depth/par, één keer gebruikt in buildBoat()), maar leveren niet langer
+   de live positie: dat doet vanaf hier deriveFormation(), die per preset een
+   doelpositie teruggeeft. use-fleet-scene.ts tweent er per boot continu naar
+   toe — zie het ontwerp voor waarom dat de sleutel is tot "blijft kloppen
+   ook als je snel klikt": er is precies één doel, geen wachtrij. -------- */
+
+export type FormationSlot = {
+  cx: number
+  cy: number
+  heel: number
+}
+
+/** Ver buiten beeld, in het verlengde van de boeg (die wijst naar rechts) —
+ *  een niet-gekozen boot "vaart weg" in plaats van te verdwijnen. */
+const PARKED_CX = 1.35
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v))
+}
+
+function mapRange(v: number, a0: number, a1: number, b0: number, b1: number): number {
+  const t = clamp((v - a0) / (a1 - a0), 0, 1)
+  return b0 + (b1 - b0) * t
+}
+
+/** Uiterste `geo.speed` over alle presets in lib/aurora.ts (Inkt 0.20 tot
+ *  Citrus 0.62) — het bereik waarover het aantal actieve kleine boten
+ *  schaalt. */
+const SPEED_MIN = 0.2
+const SPEED_MAX = 0.62
+
+/** Deterministische Fisher-Yates-schudding: dezelfde preset geeft dus altijd
+ *  exact dezelfde selectie van actieve kleine boten. */
+function shuffled(indices: number[], rnd: () => number): number[] {
+  const out = indices.slice()
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1))
+    const tmp = out[i]
+    out[i] = out[j]
+    out[j] = tmp
+  }
+  return out
+}
+
+/** Formatie voor één preset: per boot-slot een doel (cx, cy, heel). Puur en
+ *  zonder DOM — leest alleen de bestaande presetdata, geen canvas- of
+ *  tijdstoestand. De leidende boot (slot 0) verschuift t.o.v. haar anker op
+ *  basis van de geometrie/drift van de preset en verdwijnt nooit. Kleine
+ *  boten (slot 1+) worden een gelote subset van de ankerpool: de rest krijgt
+ *  een geparkeerd doel buiten beeld. */
+export function deriveFormation(presetIndex: number, variant: FormationVariant): FormationSlot[] {
+  const anchors = variant === 'hero' ? HERO_BOATS : AMBIENT_BOATS
+  const preset = PRESETS[presetIndex] ?? PRESETS[0]
+  const drift = preset.drift ?? DEFAULT_DRIFT
+
+  const smallAnchorIndices: number[] = []
+  for (let i = 1; i < anchors.length; i++) smallAnchorIndices.push(i)
+
+  const [countMin, countMax] = variant === 'hero' ? [3, 6] : [2, 4]
+  const activeCount = Math.round(mapRange(preset.geo.speed, SPEED_MIN, SPEED_MAX, countMin, countMax))
+  const selectRnd = rng(0x9e00 + presetIndex * 131)
+  const active = new Set(shuffled(smallAnchorIndices, selectRnd).slice(0, activeCount))
+
+  return anchors.map((anchor, i) => {
+    const jitter = rng(0x9e00 + presetIndex * 131 + i * 977)
+
+    if (i === 0) {
+      const scaleShift = ((preset.geo.scale - BASE_GEOMETRY.scale) / 60) * 0.1
+      const ampShift = ((drift.amp - DEFAULT_DRIFT.amp) / 20) * 0.08
+      const freqShift = (preset.geo.freq - BASE_GEOMETRY.freq) * 3
+      return {
+        cx: clamp(anchor.cx + scaleShift + (jitter() - 0.5) * 0.03, anchor.cx - 0.13, anchor.cx + 0.13),
+        cy: clamp(anchor.cy + ampShift + (jitter() - 0.5) * 0.03, anchor.cy - 0.13, anchor.cy + 0.13),
+        heel: anchor.heel + freqShift + (jitter() - 0.5) * 0.02,
+      }
+    }
+
+    if (!active.has(i)) {
+      return { cx: PARKED_CX, cy: anchor.cy, heel: anchor.heel }
+    }
+
+    return {
+      cx: anchor.cx + (jitter() - 0.5) * 0.08,
+      cy: anchor.cy + (jitter() - 0.5) * 0.08,
+      heel: anchor.heel + (jitter() - 0.5) * 0.04,
+    }
+  })
+}
 
 function pick(rnd: () => number, list: number[]): number {
   return list[(rnd() * list.length) | 0]
@@ -442,6 +551,116 @@ export function buildBoat(boat: BoatSpec, index: number, quality: number): Parti
   }
 
   return parts
+}
+
+/* ---------- journey: één vorm die in een andere overvloeit --------------
+   De boot hierboven is acht losse vormen (SHAPES) met elk een eigen,
+   handmatig afgestemd aantal rand-/vulpunten. Om een deeltje bij index i een
+   vaste identiteit te geven — hetzelfde deeltje, alleen ergens anders — moet
+   elke andere vorm (kompas, tandwiel, schild, sleutel, raket) exact hetzelfde
+   aantal punten opleveren, in dezelfde volgorde, per "slot".
+
+   Vandaar de knip die buildBoat() niet maakt: identiteit (kleur, tier,
+   grootte, jitter, ...) hoort bij een slot en staat los van de vorm.
+   Positie hoort bij een (vorm, slot)-combinatie. Elke (vorm, slot) krijgt
+   bovendien een eigen RNG-instantie — buildBoat() laat één stroom door alle
+   acht vormen lopen, en omdat fillPoints() rejection sampling doet (dus een
+   wisselend aantal rnd()-calls per vorm), zou een gedeelde stroom de ene
+   slot laten meelopen met hoeveel toeval een andere slot toevallig kostte.
+   Dat is precies wat parity breekt. --------------------------------------- */
+
+export type JourneyStage = Point[][]
+
+/** Zelfde acht rollen als SHAPES, maar nu vormonafhankelijk: elke nieuwe vorm
+ *  levert acht polygonen in deze volgorde, en put voor kleur uit dezelfde
+ *  bias als de boot dat voor die rol al deed. */
+const JOURNEY_SLOTS = SHAPES.map((s) => ({ edge: s.edge, fill: s.fill, bias: s.bias }))
+
+/** De boot als journey-stadium 0 — dezelfde acht polygonen als hierboven,
+ *  hier alleen herverpakt in het vormonafhankelijke formaat. */
+export const BOAT_STAGE: JourneyStage = SHAPES.map((s) => s.pts)
+
+function circlePoly(cx: number, cy: number, rx: number, ry: number, steps: number): Point[] {
+  const pts: Point[] = []
+  for (let i = 0; i < steps; i++) {
+    const a = (i / steps) * Math.PI * 2
+    pts.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry])
+  }
+  return pts
+}
+
+/* Kompas, genormaliseerd in hetzelfde vak als de boot. Geen ambitie om
+   fotorealistisch te zijn — de acht rollen van de boot (kast, twee
+   naaldhelften, binnenschijf, as en drie tikken/pin) geven een silhouet dat
+   meteen als kompas leest zodra de deeltjes zich verzamelen. */
+const KX = 0.5
+const KY = 0.48
+const COMPASS_STAGE: JourneyStage = [
+  circlePoly(KX, KY, 0.40, 0.40, 48), // kast (hull-rol)
+  poly([KX, KY], [KX - 0.065, KY - 0.02], [KX, KY - 0.40], [KX + 0.065, KY - 0.02]), // noordnaald (mainsail-rol)
+  poly([KX, KY], [KX - 0.05, KY + 0.018], [KX, KY + 0.27], [KX + 0.05, KY + 0.018]), // zuidnaald (jib-rol)
+  circlePoly(KX, KY, 0.29, 0.29, 40), // binnenschijf (flyer-rol)
+  spar([KX, KY - 0.40], [KX, KY + 0.40], 0.006), // naald-as (mast-rol)
+  spar([KX - 0.40, KY], [KX + 0.40, KY], 0.006), // oost-west-tik (boom-rol)
+  spar([KX - 0.28, KY - 0.28], [KX + 0.28, KY + 0.28], 0.005), // diagonale tik (sprit-rol)
+  poly([KX - 0.02, KY - 0.02], [KX + 0.02, KY - 0.02], [KX + 0.02, KY + 0.02], [KX - 0.02, KY + 0.02]), // centrum-pin (flag-rol)
+]
+
+/** Geordend: elk journey-stadium van boot tot raket. Vier vormen volgen nog
+ *  (tandwiel, schild, sleutel, raket) — de kompas-spike bewijst eerst dat het
+ *  patroon werkt voordat die getekend worden. */
+export const JOURNEY_STAGES: JourneyStage[] = [BOAT_STAGE, COMPASS_STAGE]
+
+/** Hoeveel journey-stadia er nu getekend zijn — de scroll-voortgang wordt
+ *  hiertegen geklemd zolang niet alle zes vormen bestaan. */
+export const JOURNEY_STAGE_COUNT = JOURNEY_STAGES.length
+
+/** Vaste plek en maat voor de journey-vorm: rechts in beeld, zoals de
+ *  voorste boot in HERO_BOATS, en altijd op volle detail — er is maar één
+ *  vorm, geen vloot om in te schalen. */
+export const JOURNEY_BOAT: BoatSpec = { cx: 0.72, cy: 0.50, w: LEAD_W, depth: 1, par: 1, heel: 0 }
+
+/** Identiteit van elke journey-deeltje: één keer gegenereerd, vormonafhankelijk.
+ *  Dezelfde volgorde (slot voor slot, rand voor vulling) als buildJourneyStage
+ *  hieronder produceert, dus index i hier is index i in elk stadium. */
+export function buildJourneyIdentities(quality: number): Particle[] {
+  const detail = quality
+  const out: Particle[] = []
+  JOURNEY_SLOTS.forEach((slot, i) => {
+    const edgeCount = Math.max(6, Math.round(slot.edge * detail))
+    const fillCount = slot.fill ? Math.max(0, Math.round(slot.fill * detail)) : 0
+    const rnd = rng(0x4a17 + i * 131)
+    for (let k = 0; k < edgeCount + fillCount; k++) {
+      const col = rnd() < 0.05 ? 4 : pick(rnd, slot.bias)
+      const p = particle(0, 0, col, 1, rnd)
+      p.slot = i
+      out.push(p)
+    }
+  })
+  return out
+}
+
+/** Slot 1 en 2 zijn overal de "naald"-rol (mainsail/jib bij de boot, de twee
+ *  naaldhelften bij het kompas) — de enige slots die draw() onafhankelijk
+ *  van de rest om de as mag laten schommelen. */
+export const NEEDLE_SLOTS = [1, 2]
+
+/** Posities voor één journey-stadium, in dezelfde slot-en-volgorde als
+ *  buildJourneyIdentities. Eigen RNG-instantie per (stadium, slot) — geen
+ *  gedeelde stroom — zodat rejection sampling in fillPoints() de ene slot
+ *  nooit uit de pas laat lopen met een andere. */
+export function buildJourneyStage(stage: JourneyStage, stageIndex: number, quality: number): Point[] {
+  const detail = quality
+  const out: Point[] = []
+  stage.forEach((pts, i) => {
+    const slot = JOURNEY_SLOTS[i]
+    const edgeCount = Math.max(6, Math.round(slot.edge * detail))
+    const fillCount = slot.fill ? Math.max(0, Math.round(slot.fill * detail)) : 0
+    const rnd = rng(0x1e35 + stageIndex * 9973 + i * 131)
+    edgePoints(pts, edgeCount, rnd, out)
+    if (fillCount) fillPoints(pts, fillCount, rnd, out)
+  })
+  return out
 }
 
 export function buildAmbientDust(count: number, rnd: () => number): Particle[] {
