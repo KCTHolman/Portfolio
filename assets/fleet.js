@@ -48,6 +48,11 @@
   // drieduizend keer.
   var SETTLE = [0.28, 0.36, 0.44, 0.53, 0.63, 0.74, 0.87, 1.02];
 
+  // Hoeveel van de opbouw opgaat aan het uit elkaar zetten van de boten.
+  // De rest van die tijd heeft elke boot voor zichzelf, dus ze varen even
+  // lang maar niet tegelijk.
+  var ENTER_STAGGER = 0.3;
+
   /* ---------- willekeur met een geheugen ---------------------------------
      Dezelfde seed geeft dezelfde boot. Dat is geen detail: zonder zaad
      tekent elke paginaovergang een nét andere vloot, en dan is het een
@@ -442,7 +447,12 @@
       chaos: rnd() * Math.PI * 2,
       grip: 0.45 + rnd() * 1.0,
       traag: (rnd() * SETTLE.length) | 0,
-      bx: 0, by: 0, sx: 0, sy: 0, boat: 0
+      // dis: hoe ver deze korrel bij binnenkomst uit positie ligt, als
+      // fractie van de bootmaat. disA is diezelfde afstand in beeldpunten,
+      // gezet zodra de maten bekend zijn.
+      dis: 0.10 + rnd() * 0.34,
+      disA: 0,
+      bx: 0, by: 0, boat: 0
     };
   }
 
@@ -464,7 +474,9 @@
         chaos: rnd() * Math.PI * 2,
         grip: 0.45 + rnd() * 1.0,
         traag: (rnd() * SETTLE.length) | 0,
-        bx: 0, by: 0, sx: 0, sy: 0, boat: -1
+        dis: 0.10 + rnd() * 0.34,
+        disA: 0,
+        bx: 0, by: 0, boat: -1
       });
     }
     return out;
@@ -498,7 +510,7 @@
     var repelR = 0, repelPush = 0;
     var settle = new Array(SETTLE.length);
 
-    var FORM_MS = mode === 'hero' ? 2100 : 1500;
+    var FORM_MS = mode === 'hero' ? 2600 : 1800;
 
     for (var t = 0; t < TIERS; t++) {
       // Niet lineair: de meeste korrels horen in de stille helft thuis, en
@@ -538,6 +550,12 @@
           // zou je hem zien verspringen. Een hele trage slinger houdt de
           // beweging en laat de vloot bovendien waar hij hoort.
           swayA: 0, swayF: 0.045 + (b % 5) * 0.011, swayP: b * 1.9,
+          // enter: wanneer deze boot aan z'n binnenkomst begint, als fractie
+          // van de opbouw. De verste eerst — die hoort al aan de horizon te
+          // liggen als de voorste nog moet aankomen. righting: hoeveel hij
+          // onderweg nog rechttrekt.
+          enter: ENTER_STAGGER * spec.depth,
+          righting: (b % 2 ? 0.16 : -0.13) - spec.heel,
           pw: 0, ph: 0, px: 0, py: 0, dx: 0, dy: 0, rot: 0, sin: 0, cos: 1
         };
         boats.push(boat);
@@ -611,6 +629,9 @@
         if (p.boat < 0) {
           p.bx = p.ux * w;
           p.by = p.uy * h;
+          // Het stof vaart niet mee binnen — het hangt er al — maar begint
+          // wel uit positie, zodat het hele veld zich tegelijk ordent.
+          p.disA = p.dis * Math.min(w, h) * 0.22;
         } else {
           var owner = boats[p.boat];
           p.bx = (p.ux - 0.5) * owner.pw;
@@ -618,16 +639,11 @@
           // (0.95), dus het optische midden ligt net boven het midden van
           // het genormaliseerde vak.
           p.by = (p.uy - 0.48) * owner.ph;
+          // Hoe ver deze korrel bij aankomst nog uit positie ligt. Naar de
+          // maat van de boot, anders is een kleine boot bij binnenkomst
+          // alleen maar een wolk.
+          p.disA = p.dis * owner.pw * 0.45;
         }
-        // Startpositie van de opbouw: vanaf buiten het beeld naar binnen,
-        // zodat de vloot zich verzamelt in plaats van te verschijnen.
-        var ax = p.boat < 0 ? p.bx : boats[p.boat].px + p.bx;
-        var ay = p.boat < 0 ? p.by : boats[p.boat].py + p.by;
-        var vx = ax - w * 0.5;
-        var vy = ay - h * 0.52;
-        var k = 1.5 + ((i * 37) % 100) / 100;
-        p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30;
-        p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30;
       }
     }
 
@@ -657,13 +673,26 @@
         var boat = boats[b];
         boat.dy = Math.sin(time * boat.bobF + boat.bobP) * boat.bobA + pointer.y * boat.par * 8;
         boat.rot = boat.heel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA;
-        boat.sin = Math.sin(boat.rot);
-        boat.cos = Math.cos(boat.rot);
 
         // Elke frame opnieuw uit de tijd gerekend, niet opgeteld: opgeteld
         // loopt de boot weg zodra er een frame overslaat.
         boat.dx = Math.sin(time * boat.swayF + boat.swayP) * boat.swayA
                 + pointer.x * boat.par * 12;
+
+        // De binnenkomst: de boot komt van bakboord aanvaren en loopt uit tot
+        // stilstand op z'n plek, met de helling die zich onderweg rechttrekt.
+        // De boeg wijst naar rechts, dus van links binnen is de enige kant
+        // die als varen leest. boat.enter is z'n eigen aandeel van de
+        // opbouw, zodat de vloot niet als één blok aan komt zetten.
+        if (forming) {
+          var be = ease(Math.min(1, Math.max(0, (form - boat.enter) / (1 - ENTER_STAGGER))));
+          boat.dx -= (1 - be) * (boat.pw * 0.34 + w * 0.035);
+          boat.rot += (1 - be) * boat.righting;
+          boat.dy -= (1 - be) * boat.ph * 0.05;
+        }
+
+        boat.sin = Math.sin(boat.rot);
+        boat.cos = Math.cos(boat.rot);
       }
 
       ctx.clearRect(0, 0, w, h);
@@ -699,10 +728,16 @@
             y += Math.cos(time * p.jf * 0.8 + p.jp) * p.ja * 0.7;
           }
 
+          // Bij binnenkomst ligt elke korrel nog uit positie, in z'n eigen
+          // richting — dezelfde wanorde die de muis later veroorzaakt. Die
+          // ebt weg terwijl de boot komt aanvaren, dus de vorm ontstaat pas
+          // op het moment dat hij op z'n plek ligt.
           if (forming) {
-            var e = ease(Math.min(1, Math.max(0, (form - p.lag) / (1 - 0.45))));
-            x = p.sx + (x - p.sx) * e;
-            y = p.sy + (y - p.sy) * e;
+            var vanaf = p.boat < 0 ? 0 : boats[p.boat].enter;
+            var mess = 1 - ease(Math.min(1, Math.max(0,
+              (form - vanaf - p.lag * 0.4) / (1 - ENTER_STAGGER - 0.18))));
+            x += Math.cos(p.chaos) * p.disA * mess;
+            y += Math.sin(p.chaos) * p.disA * mess;
           }
 
           // De muis roert door het veld. Drie delen, en de verhouding ertussen

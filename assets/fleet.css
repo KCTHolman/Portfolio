@@ -40,7 +40,11 @@
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.2s ease;
+  /* Trager dan de binnenkomst zelf. In de eerste seconde is de vloot nog een
+     wanordelijke wolk die over de kop heen trekt; die fase hoort bijna
+     onzichtbaar te zijn, en op volle sterkte pas als de boten hun vorm terug
+     hebben. */
+  transition: opacity 2.2s ease;
 }
 .kh-home-visual.is-varend { opacity: 1; }
 
