@@ -240,15 +240,11 @@ a.khnav[aria-current="page"]::after {
   padding-bottom: 12px;
 }
 
-/* Asymmetrisch: alles wat je leest staat links in één kolom, de vloot krijgt
-   de rechterhelft. Die helft was al leeg — de kaarten stoppen bij 560px — en
-   dat is precies waarom het beeld daar hoort en niet eronder. */
-.kh-home-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.88fr);
-  align-items: center;
-  gap: 30px;
-}
+/* Asymmetrisch, maar niet in kolommen. Alles wat je leest staat links en
+   stopt bij 600px; de vloot ligt als schermvullende laag daarachter met de
+   boten in de rechterhelft (zie fleet.css en fleet.js). Een echte kolom gaf
+   het beeld een rand, en juist die rand verraadde dat het een paneel was. */
+.kh-home-grid { display: block; }
 
 .kh-home-copy {
   position: relative;
@@ -266,27 +262,13 @@ a.khnav[aria-current="page"]::after {
 .kh-now { padding: 0; }
 .kh-now-card { max-width: 560px; }
 
-/* Tussen tablet en desktop blijft de split staan, maar krijgt de vloot een
-   smallere strook: liever een kleine boot in een eigen kolom dan een groot
-   beeld dwars achter de leesregels. */
 @media (max-width: 1023px) {
-  .kh-home-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.5fr);
-    gap: 20px;
-  }
   .kh-home-copy { gap: 20px; }
 }
 
-/* Op een telefoon is er geen kolom meer over: het beeld zakt achter de tekst
-   (zie fleet.css) in plaats van eronder — eronder zou van deze pagina van één
-   scherm ineens twee maken. En de kaart is hier hoger (ticker van drie
-   regels), dus de ruimte eromheen krimpt mee. */
+/* Op een telefoon is de kaart hoger (ticker van drie regels), dus de ruimte
+   eromheen krimpt mee — anders past het scherm net niet meer. */
 @media (max-width: 699px) {
-  .kh-home-grid {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
   .kh-home .kh-main--home {
     padding-top: 14px;
     padding-bottom: 14px;

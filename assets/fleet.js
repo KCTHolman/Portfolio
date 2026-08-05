@@ -326,25 +326,29 @@
   // cx/cy in fracties van het canvas, w in fracties van de basismaat, depth
   // stuurt helderheid, korrelgrootte en dichtheid in één keer — dat is wat
   // afstand hier is. vx laat de verre boten langzaam door beeld varen.
+  // cx/cy zijn fracties van het hele beeldscherm, niet van een kolom: het
+  // canvas ligt schermvullend achter de pagina. De boten houden daarom de
+  // rechterhelft aan — links staat de tekst — terwijl het losse stof wél
+  // overal drijft. Zo houdt het beeld geen rand waar het ophoudt.
   // heel = hoeveel de boot overligt, in radialen. Een graad of drie is genoeg:
   // het oog ziet meteen dat er wind staat, en de horizontale streep kielwater
   // eronder gaat er nog niet zichtbaar van scheef staan.
   var HERO_BOATS = [
-    { cx: 0.52, cy: 0.60, w: LEAD_W, depth: 1.00, vx: 0,    par: 1.00, heel: -0.052 },
-    { cx: 0.13, cy: 0.22, w: 0.22,   depth: 0.50, vx: 3.4,  par: 0.50, heel: -0.070 },
-    { cx: 0.84, cy: 0.17, w: 0.17,   depth: 0.40, vx: -2.6, par: 0.40, heel: 0.048 },
-    { cx: 0.36, cy: 0.10, w: 0.13,   depth: 0.30, vx: 2.1,  par: 0.30, heel: -0.040 },
-    { cx: 0.66, cy: 0.07, w: 0.10,   depth: 0.24, vx: 1.5,  par: 0.24, heel: -0.062 },
-    { cx: 0.95, cy: 0.42, w: 0.11,   depth: 0.28, vx: -1.8, par: 0.28, heel: 0.055 },
-    { cx: 0.04, cy: 0.50, w: 0.09,   depth: 0.22, vx: 1.2,  par: 0.22, heel: -0.045 }
+    { cx: 0.755, cy: 0.570, w: LEAD_W, depth: 1.00, par: 1.00, heel: -0.052 },
+    { cx: 0.605, cy: 0.165, w: 0.20,   depth: 0.48, par: 0.48, heel: -0.070 },
+    { cx: 0.890, cy: 0.145, w: 0.15,   depth: 0.38, par: 0.38, heel: 0.048 },
+    { cx: 0.745, cy: 0.085, w: 0.11,   depth: 0.28, par: 0.28, heel: -0.040 },
+    { cx: 0.945, cy: 0.300, w: 0.09,   depth: 0.24, par: 0.24, heel: 0.055 },
+    { cx: 0.565, cy: 0.855, w: 0.12,   depth: 0.30, par: 0.30, heel: -0.062 },
+    { cx: 0.870, cy: 0.895, w: 0.08,   depth: 0.20, par: 0.20, heel: -0.045 }
   ];
 
   var AMBIENT_BOATS = [
-    { cx: 0.16, cy: 0.22, w: 0.11, depth: 0.30, vx: 2.2,  par: 0.30, heel: -0.06 },
-    { cx: 0.78, cy: 0.16, w: 0.08, depth: 0.24, vx: -1.6, par: 0.24, heel: 0.05 },
-    { cx: 0.62, cy: 0.72, w: 0.13, depth: 0.34, vx: 1.4,  par: 0.34, heel: -0.045 },
-    { cx: 0.30, cy: 0.84, w: 0.07, depth: 0.20, vx: -1.1, par: 0.20, heel: 0.04 },
-    { cx: 0.92, cy: 0.55, w: 0.06, depth: 0.18, vx: 1.9,  par: 0.18, heel: -0.05 }
+    { cx: 0.16, cy: 0.22, w: 0.11, depth: 0.30, par: 0.30, heel: -0.06 },
+    { cx: 0.78, cy: 0.16, w: 0.08, depth: 0.24, par: 0.24, heel: 0.05 },
+    { cx: 0.62, cy: 0.72, w: 0.13, depth: 0.34, par: 0.34, heel: -0.045 },
+    { cx: 0.30, cy: 0.84, w: 0.07, depth: 0.20, par: 0.20, heel: 0.04 },
+    { cx: 0.92, cy: 0.55, w: 0.06, depth: 0.18, par: 0.18, heel: -0.05 }
   ];
 
   function pick(rnd, list) { return list[(rnd() * list.length) | 0]; }
@@ -474,10 +478,17 @@
 
     function still() { return reduceMotion.matches || narrowScreen.matches; }
 
+    function measure() {
+      var rect = mount.getBoundingClientRect();
+      w = Math.max(1, Math.round(rect.width));
+      h = Math.max(1, Math.round(rect.height));
+    }
+
     function build() {
       var specs = mode === 'hero' ? HERO_BOATS : AMBIENT_BOATS;
       var quality = still() ? 0.5 : 1;
       if (mode === 'ambient') quality *= 0.7;
+      measure();
 
       parts = [];
       boats = [];
@@ -486,9 +497,15 @@
         var spec = specs[b];
         var boat = {
           cx: spec.cx, cy: spec.cy, w: spec.w, depth: spec.depth,
-          vx: still() ? 0 : spec.vx, par: spec.par, heel: spec.heel || 0,
+          par: spec.par, heel: spec.heel || 0,
           bobA: 0, bobF: 0.22 + (b % 4) * 0.07, bobP: b * 1.7,
           rockA: 0.014 + (b % 3) * 0.008, rockF: 0.17 + (b % 5) * 0.05, rockP: b * 2.3,
+          // Overstag in plaats van doorvaren. Eerder voer een boot het beeld
+          // uit en kwam er aan de andere kant weer in; dat werkte zolang de
+          // randen wegvaagden, maar nu het canvas doorloopt tot de schermrand
+          // zou je hem zien verspringen. Een hele trage slinger houdt de
+          // beweging en laat de vloot bovendien waar hij hoort.
+          swayA: 0, swayF: 0.045 + (b % 5) * 0.011, swayP: b * 1.9,
           pw: 0, ph: 0, px: 0, py: 0, dx: 0, dy: 0, rot: 0, sin: 0, cos: 1
         };
         boats.push(boat);
@@ -500,8 +517,12 @@
         }
       }
 
+      // Het stof telt per oppervlak, niet per canvas: nu de laag het hele
+      // scherm beslaat zou een vast aantal op een breed scherm uitdunnen tot
+      // niets en op een telefoon een korrelig vlak worden. Wel een dak erop,
+      // want een 4K-scherm hoeft er geen tienduizend te tekenen.
       var dust = buildAmbientDust(
-        Math.round((mode === 'hero' ? 240 : 130) * quality),
+        Math.min(520, Math.round((w * h) / (mode === 'hero' ? 4200 : 7000) * quality)),
         rng(0x21f3)
       );
       for (var d = 0; d < dust.length; d++) parts.push(dust[d]);
@@ -515,9 +536,7 @@
     // Genormaliseerde vorm naar pixels. Draait bij elke maatverandering
     // opnieuw; de vorm zelf blijft staan, alleen de schaal verschuift.
     function layout() {
-      var rect = mount.getBoundingClientRect();
-      w = Math.max(1, Math.round(rect.width));
-      h = Math.max(1, Math.round(rect.height));
+      measure();
       dpr = Math.min(2, window.devicePixelRatio || 1);
 
       canvas.width = Math.round(w * dpr);
@@ -530,9 +549,12 @@
 
       // De voorste boot moet in beide richtingen passen mét lucht eromheen —
       // op de breedte alleen schalen levert op een laag canvas een boot op
-      // waarvan de romp onder de rand verdwijnt. De rest van de vloot hangt
-      // aan diezelfde maat, zodat de onderlinge verhoudingen blijven staan.
-      var lead = Math.min(w * 0.84, (h * 0.64) / RATIO);
+      // waarvan de romp onder de rand verdwijnt. Het canvas is nu het hele
+      // scherm terwijl de boot maar de rechterhelft gebruikt, dus de breedte
+      // telt voor ongeveer de helft mee. Op een telefoon staat de vloot
+      // achter de tekst en mag hij het scherm wél vullen.
+      var share = narrowScreen.matches ? 0.78 : 0.44;
+      var lead = Math.min(w * share, (h * 0.62) / RATIO);
 
       for (var b = 0; b < boats.length; b++) {
         var boat = boats[b];
@@ -541,6 +563,9 @@
         boat.px = w * boat.cx;
         boat.py = h * boat.cy;
         boat.bobA = boat.ph * 0.022;
+        // De voorste boot ligt bijna stil, de verste slingert het meest —
+        // hetzelfde principe als bij de helderheid en de korrelgrootte.
+        boat.swayA = still() ? 0 : w * (0.038 - boat.depth * 0.031);
       }
 
       for (var i = 0; i < parts.length; i++) {
@@ -587,16 +612,10 @@
         boat.sin = Math.sin(boat.rot);
         boat.cos = Math.cos(boat.rot);
 
-        // Verre boten varen door en komen er aan de andere kant weer in. De
-        // verplaatsing wordt elke frame opnieuw uit de tijd berekend, niet
-        // opgeteld: opgeteld loopt hij weg zodra er een frame overslaat.
-        var base = 0;
-        if (boat.vx) {
-          var span = w + boat.pw * 2;
-          var pos = boat.px + boat.vx * time + boat.pw;
-          base = (((pos % span) + span) % span) - boat.pw - boat.px;
-        }
-        boat.dx = base + pointer.x * boat.par * 12;
+        // Elke frame opnieuw uit de tijd gerekend, niet opgeteld: opgeteld
+        // loopt de boot weg zodra er een frame overslaat.
+        boat.dx = Math.sin(time * boat.swayF + boat.swayP) * boat.swayA
+                + pointer.x * boat.par * 12;
       }
 
       ctx.clearRect(0, 0, w, h);
@@ -685,6 +704,10 @@
     function onResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
+        // Opnieuw opbouwen én uitmeten: het aantal stofkorrels hangt aan het
+        // oppervlak, dus een ander formaat vraagt een andere vulling. De
+        // zaden liggen vast, dus de boten zelf blijven exact dezelfde.
+        build();
         layout();
         if (!shouldAnimate()) draw(t0 + FORM_MS + 1);
       }, 160);
