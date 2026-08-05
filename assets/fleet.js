@@ -425,6 +425,10 @@
       jp: rnd() * Math.PI * 2,
       ja: 0.6 + rnd() * 1.5,
       lag: rnd() * 0.45,
+      // ox/oy: hoe ver deze korrel op dit moment opzij gedrukt staat door de
+      // muis. Loopt met een veer naar z'n doel toe, zodat het veld openwijkt
+      // en zich daarna weer sluit in plaats van te knippen.
+      ox: 0, oy: 0,
       bx: 0, by: 0, sx: 0, sy: 0, boat: 0
     };
   }
@@ -443,6 +447,7 @@
         ja: 1.5 + rnd() * 3,
         lag: rnd() * 0.45,
         vx: (rnd() - 0.5) * 5,
+        ox: 0, oy: 0,
         bx: 0, by: 0, sx: 0, sy: 0, boat: -1
       });
     }
@@ -467,9 +472,14 @@
     var tierAlpha = [];
     var raf = null;
     var lastFrame = 0;
+    var lastDraw = 0;
     var lastPalette = 0;
     var t0 = clock();
-    var pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+    // x/y: de uitgevlakte stand voor de parallax, als fractie van -1 tot 1.
+    // px/py: waar de muis nu écht staat, in beeldpunten — het canvas ligt
+    // vast aan het beeldscherm, dus clientX/clientY zijn hier meteen goed.
+    var pointer = { x: 0, y: 0, tx: 0, ty: 0, px: 0, py: 0, on: false };
+    var repelR = 0, repelPush = 0;
 
     var FORM_MS = mode === 'hero' ? 2100 : 1500;
 
@@ -573,6 +583,12 @@
         boat.swayA = still() ? 0 : w * (0.038 - boat.depth * 0.031);
       }
 
+      // Het bereik van de muis groeit mee met het scherm, maar blijft binnen
+      // grenzen: te klein en er gebeurt niets zichtbaars, te groot en de hele
+      // vloot deint mee met elke beweging in plaats van alleen wat je raakt.
+      repelR = Math.max(110, Math.min(230, Math.min(w, h) * 0.19));
+      repelPush = repelR * 0.44;
+
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         if (p.boat < 0) {
@@ -604,6 +620,16 @@
       var forming = form < 1;
       var frozen = still();
       var time = frozen ? 0 : elapsed;
+      var repel = pointer.on && !frozen;
+
+      // Hoe hard de veren deze frame aantrekken, gerekend in tijd en niet in
+      // frames. Anders sluit hetzelfde gat op een trage machine merkbaar
+      // langzamer dan op een snelle. Het dak van 100 ms vangt de sprong op
+      // die volgt op een tabblad dat even weg is geweest.
+      var dt = lastDraw ? Math.min(0.1, (now - lastDraw) / 1000) : 0.03;
+      lastDraw = now;
+      var pullOpen = 1 - Math.exp(-dt / 0.10);
+      var pullShut = 1 - Math.exp(-dt / 0.32);
 
       pointer.x += (pointer.tx - pointer.x) * 0.06;
       pointer.y += (pointer.ty - pointer.y) * 0.06;
@@ -659,6 +685,41 @@
             x = p.sx + (x - p.sx) * e;
             y = p.sy + (y - p.sy) * e;
           }
+
+          // De muis duwt de korrels opzij. Recht van de cursor vandaan, sterk
+          // in het midden en uitdovend naar de rand van het bereik — zo wijkt
+          // het veld open in plaats van in z'n geheel te verschuiven.
+          var tox = 0, toy = 0;
+          if (repel) {
+            var rdx = x - pointer.px;
+            var rdy = y - pointer.py;
+            var d2 = rdx * rdx + rdy * rdy;
+            if (d2 < repelR * repelR) {
+              var d = Math.sqrt(d2);
+              var k = 1 - d / repelR;
+              // k * (2 - k), niet k in het kwadraat: dat laatste stopt bijna
+              // alle verplaatsing in de paar korrels pal onder de cursor, en
+              // dan zie je een speldenprik. Zo wijkt de hele omgeving mee en
+              // wordt het een gat.
+              var f = repelPush * k * (2 - k);
+              if (d > 0.5) {
+                tox = (rdx / d) * f;
+                toy = (rdy / d) * f;
+              } else {
+                // Pal onder de cursor is 'weg van het midden' richtingloos.
+                // De vaste hoek van de korrel zelf geeft dan een stabiele
+                // uitweg, in plaats van een richting die elk frame omslaat.
+                tox = Math.cos(p.spin) * f;
+                toy = Math.sin(p.spin) * f;
+              }
+            }
+          }
+          // Een veer naar dat doel toe, niet er meteen op: openwijken mag
+          // volgen op de muis, dichttrekken hoort langzamer te gaan.
+          p.ox += (tox - p.ox) * (tox ? pullOpen : pullShut);
+          p.oy += (toy - p.oy) * (toy ? pullOpen : pullShut);
+          x += p.ox;
+          y += p.oy;
 
           var r = p.r;
           var a = p.spin + (frozen ? 0 : time * 0.08);
@@ -722,11 +783,24 @@
       window.addEventListener('resize', onResize);
     }
 
-    if (mode === 'hero' && !coarse.matches) {
+    // Alleen waar er een echte aanwijzer is. Op een aanraakscherm zou de
+    // laatste tik een gat in de vloot achterlaten dat er blijft staan.
+    if (!coarse.matches) {
       window.addEventListener('pointermove', function (e) {
+        if (e.pointerType === 'touch') return;
+        pointer.px = e.clientX;
+        pointer.py = e.clientY;
         pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2;
         pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+        pointer.on = true;
       }, { passive: true });
+
+      // Muis het venster uit: het gat trekt weer dicht. Zonder dit blijft de
+      // laatste stand staan tot de muis terugkomt.
+      var release = function () { pointer.on = false; };
+      document.addEventListener('pointerleave', release);
+      document.addEventListener('pointercancel', release);
+      window.addEventListener('blur', release);
     }
 
     document.addEventListener('visibilitychange', sync);
