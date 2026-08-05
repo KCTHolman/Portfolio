@@ -85,10 +85,12 @@ muisstaat resetten. In plaats daarvan:
    aan.
 2. Die functie wordt weggeschreven in een `ref` (bv. `sceneRef.current = { setFormation }`),
    opgezet aan het eind van de effect en opgeruimd in de cleanup.
-3. Een aparte, kleine `useEffect(() => sceneRef.current?.setFormation(presetIndex, false),
-   [presetIndex])` roept 'm aan wanneer de preset verandert — zonder de grote effect te
-   raken, en altijd tweenend (`snap = false`), ook tijdens `frozen` (waar `setFormation` het
-   zelf naar een snap omzet).
+3. Een aparte, kleine `useEffect(() => { presetIndexRef.current = presetIndex;
+   sceneRef.current?.setFormation(presetIndex, false) }, [presetIndex])` roept 'm aan wanneer
+   de preset verandert — zonder de grote effect te raken, en altijd tweenend (`snap = false`),
+   ook tijdens `frozen` (waar `setFormation` het zelf naar een snap omzet). Dezelfde
+   `presetIndexRef` is wat `onResize` straks afleest (punt 4 en de resize-paragraaf hieronder):
+   die effect is de enige plek die 'm bijwerkt.
 4. Bij mount wordt `setFormation(huidige preset, snap = true)` aangeroepen vóór de eerste
    `layout()`, zodat `tcx`/`tcy` een zinnig startpunt hebben (zie hieronder, "Gevolgen voor de
    bestaande opbouwanimatie"). `onResize` doet hetzelfde: na `build()` opnieuw
@@ -138,7 +140,9 @@ als `computeFrame` voor presets zonder `drift`, bv. de levende preset) en rekent
 elke frame in `draw()`, uit `boat.tcx`/`tcy` (twee vermenigvuldigingen per boot — verwaarloosbaar
 tegenover de honderden deeltjes die toch al per frame langsgaan). `layout()` heeft nog wel een
 positie nodig vóór de eerste frame, voor de bestaande scatter-naar-binnen-intro (`p.sx`/`sy`,
-uitgerekend uit de boot-positie op het moment van `layout()`) — daarom loopt de mount-volgorde
+uitgerekend uit de boot-positie op het moment van `layout()`) — die berekening leest daarom
+voortaan óók `boat.tcx`/`tcy` in plaats van het statische `boat.cx`/`cy` uit de spec. Vandaar
+loopt de mount-volgorde
 voortaan: `build()` → `setFormation(huidige preset, snap = true)` (zet `tcx = dcx` meteen,
 geen tween nodig bij eerste teken) → `layout()` → animatie starten. Een geparkeerde boot bij
 het laden begint dus al buiten beeld, zichtbaar noch storend, en komt pas invaren als de
@@ -148,12 +152,15 @@ gebruiker een preset kiest die 'm activeert.
 
 `AMBIENT_BOATS[0].w` gaat omhoog van de huidige kleine maat (~0.11) naar een bescheiden
 leidende maat (~0.30) — duidelijk groter dan de overige 4 kleine boten, ruim onder de 0.72
-van de hero-boot, zodat `ambient` een rustige achtergrondlaag blijft. `depth` en `par` gaan in
-dezelfde beweging mee omhoog (van 0.30 naar iets boven de 0.55-drempel die `buildBoat()`
-gebruikt om vulpunten toe te voegen naast randpunten — zie `if (shape.fill && d > 0.55)` in
-`lib/fleet-geometry.ts`); zonder die aanpassing zou de vergrote boot alleen als omtrek tekenen,
-niet als volle vorm zoals de hero-boot, en het "leidende" effect missen. `deriveFormation` past
-voor `ambient` dezelfde logica toe met 1 leidende + 4 kleine slots in plaats van 1 + 6.
+van de hero-boot, zodat `ambient` een rustige achtergrondlaag blijft. `depth` gaat in dezelfde
+beweging mee omhoog, van 0.30 naar iets boven de 0.55-drempel die `buildBoat()` gebruikt om
+vulpunten toe te voegen naast randpunten (`const d = boat.depth`, getoetst in
+`if (shape.fill && d > 0.55)` in `lib/fleet-geometry.ts`); zonder die aanpassing zou de
+vergrote boot alleen als omtrek tekenen, niet als volle vorm zoals de hero-boot, en het
+"leidende" effect missen. `par` (stuurt alleen muis-parallax, niet de vuldrempel) gaat mee
+omhoog naar dezelfde waarde als `depth`, in lijn met hoe elke bestaande `BoatSpec` — hero én
+ambient — depth en par al gelijk houdt. `deriveFormation` past voor `ambient` dezelfde logica
+toe met 1 leidende + 4 kleine slots in plaats van 1 + 6.
 
 ### Frozen, reduced motion, resize
 
