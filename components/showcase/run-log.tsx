@@ -5,56 +5,44 @@
    poort staat hij écht stil tot de bezoeker goedkeurt.
 
    De state zat eerder als data-attributen op de DOM en werd door een render()
-   heen en weer geschreven. Hier is het gewone React-state, en de attributen
-   die overblijven (data-shown, data-last, data-waiting, data-depth) zijn puur
-   CSS-haken — widget.css hangt daaraan, dus die blijven.
+   heen en weer geschreven. Hier is het één reducer; of de run wacht is
+   afgeleid en geen eigen veld.
    ========================================================================== */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
 import { RUN_STEPS, RUN_TOTAL } from './run-data'
+import { RunEntry } from './run-entry'
+import { IDEA_TEXT, INITIAL_RUN_STATE, isWaiting, runReducer } from './run-reducer'
 import { ShowcaseFoot } from './showcase-foot'
-
-const IDEA_TEXT = 'Ik wil in mijn app bij gaan houden hoeveel koffie ik drink op een dag'
 
 const PLAY_LABEL = 'Speel de run'
 const RUNNING_LABEL = 'de run loopt…'
 const WAITING_LABEL = 'wacht op jou…'
 
-/** Na een goedkeuring even wachten voor de volgende stap komt, zodat de klik
- *  een moment krijgt in plaats van meteen weggeschoven te worden. */
-const RESUME_MS = 1200
-
-const GATE_STEPS = RUN_STEPS.map((step, i) => ({ step, i })).filter(({ step }) => step.gate)
+const GATE_STEPS = RUN_STEPS.flatMap((step, index) => (step.gate ? [{ step, index }] : []))
 
 export function RunLog({ onComplete }: { onComplete?: () => void }) {
   const reduceMotion = usePrefersReducedMotion()
-
-  /** Hoeveel stappen er zichtbaar zijn. 0 terwijl het idee nog getypt wordt. */
-  const [shown, setShown] = useState(RUN_TOTAL)
-  const [playing, setPlaying] = useState(false)
-  const [waiting, setWaiting] = useState(false)
-  const [typing, setTyping] = useState(false)
-  const [typedText, setTypedText] = useState(IDEA_TEXT)
+  const [state, dispatch] = useReducer(runReducer, INITIAL_RUN_STATE)
   const [depth, setDepth] = useState<'verhaal' | 'tech'>('verhaal')
-  /** Eenmalige afwijking op de dwell — gebruikt na een goedkeuring. */
-  const [resumeDelay, setResumeDelay] = useState<number | null>(null)
 
-  /* Zonder JS staat de hele run er gewoon; dsv-nojs verbergt dan de knoppen
-     die toch niets zouden doen. Na hydration mag alles aan. */
+  /* Zonder JS staat de hele run er uitgeklapt; dsv-nojs verbergt dan de
+     knoppen die toch niets zouden doen. Na hydration mag alles aan. */
   const [interactive, setInteractive] = useState(false)
 
   const logRef = useRef<HTMLOListElement>(null)
   const lastEntryRef = useRef<HTMLLIElement>(null)
 
+  const { shown, playing, typing, typedText, resumeDelay } = state
+  const waiting = isWaiting(state)
+  const completed = shown >= RUN_TOTAL
+
   useEffect(() => {
     setInteractive(true)
-    setShown(0)
-    setPlaying(true)
-    setTyping(true)
-    setTypedText('')
+    dispatch({ type: 'start' })
   }, [])
 
   /* ---------- het idee dat ingetypt wordt -------------------------------- */
@@ -63,9 +51,7 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
     if (!typing) return
 
     if (reduceMotion) {
-      setTypedText(IDEA_TEXT)
-      setTyping(false)
-      setShown(1)
+      dispatch({ type: 'typingDone' })
       return
     }
 
@@ -74,16 +60,13 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
 
     const step = () => {
       i += 1
-      setTypedText(IDEA_TEXT.slice(0, i))
+      dispatch({ type: 'typed', text: IDEA_TEXT.slice(0, i) })
       if (i < IDEA_TEXT.length) {
         // Een haartje variatie per teken leest als typen in plaats van als een ticker.
         timer = window.setTimeout(step, 30 + (i % 5) * 9)
         return
       }
-      timer = window.setTimeout(() => {
-        setTyping(false)
-        setShown(1)
-      }, 1100)
+      timer = window.setTimeout(() => dispatch({ type: 'typingDone' }), 1100)
     }
 
     timer = window.setTimeout(step, 0)
@@ -92,33 +75,15 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
 
   /* ---------- de run ------------------------------------------------------ */
 
-  const advance = useCallback(() => {
-    setShown((current) => {
-      if (current >= RUN_TOTAL) return current
-      const next = RUN_STEPS[current]
-      setWaiting(Boolean(next.gate))
-      return current + 1
-    })
-  }, [])
-
   useEffect(() => {
-    if (!playing || waiting || typing || shown === 0) return
-
-    if (shown >= RUN_TOTAL) {
-      setPlaying(false)
-      return
-    }
+    if (!playing || waiting || typing || shown === 0 || shown >= RUN_TOTAL) return
 
     const delay = resumeDelay ?? RUN_STEPS[shown - 1].dwell
-    const timer = window.setTimeout(() => {
-      setResumeDelay(null)
-      advance()
-    }, delay)
+    const timer = window.setTimeout(() => dispatch({ type: 'advance' }), delay)
     return () => window.clearTimeout(timer)
-  }, [advance, playing, resumeDelay, shown, typing, waiting])
+  }, [playing, resumeDelay, shown, typing, waiting])
 
   /* De run is uit: alles wat op de release wachtte mag nu tevoorschijn komen. */
-  const completed = shown >= RUN_TOTAL
   useEffect(() => {
     if (completed) onComplete?.()
   }, [completed, onComplete])
@@ -127,7 +92,7 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
      levend houden. */
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') setPlaying(false)
+      if (document.visibilityState === 'hidden') dispatch({ type: 'pause' })
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
@@ -153,39 +118,17 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
 
   /* ---------- knoppen ------------------------------------------------------ */
 
-  const play = useCallback(() => {
-    setResumeDelay(null)
-    setShown(0)
-    setWaiting(false)
-    setPlaying(true)
-    setTypedText('')
-    setTyping(true)
-  }, [])
+  const play = useCallback(() => dispatch({ type: 'start' }), [])
+  const showAll = useCallback(() => dispatch({ type: 'showAll' }), [])
+  const approve = useCallback(() => dispatch({ type: 'approve' }), [])
 
   /** Voor wie sneller leest dan de run: meteen door naar de volgende stap en
    *  de dwell daarvandaan opnieuw. Een poort is niet over te slaan —
    *  Goedkeuren is de enige weg erlangs, en dat is het hele punt. */
   const next = useCallback(() => {
-    if (waiting || shown >= RUN_TOTAL) return
-    setResumeDelay(null)
-    setPlaying(true)
-    advance()
-  }, [advance, shown, waiting])
-
-  const showAll = useCallback(() => {
-    setResumeDelay(null)
-    setTyping(false)
-    setTypedText(IDEA_TEXT)
-    setShown(RUN_TOTAL)
-    setWaiting(false)
-    setPlaying(false)
-  }, [])
-
-  const approve = useCallback(() => {
-    setWaiting(false)
-    setPlaying(true)
-    setResumeDelay(RESUME_MS)
-  }, [])
+    if (waiting || completed) return
+    dispatch({ type: 'advance' })
+  }, [completed, waiting])
 
   const toggleDepth = useCallback(() => {
     setDepth((current) => (current === 'tech' ? 'verhaal' : 'tech'))
@@ -196,11 +139,9 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
   const lastStep = RUN_STEPS[Math.max(0, shown - 1)]
   const playLabel = waiting ? WAITING_LABEL : playing ? RUNNING_LABEL : PLAY_LABEL
 
-  const rootClassName = ['dsv', interactive ? '' : 'dsv-nojs'].filter(Boolean).join(' ')
-
   return (
     <section
-      className={rootClassName}
+      className={interactive ? 'dsv' : 'dsv dsv-nojs'}
       data-view="verhalend"
       data-depth={depth}
       {...(typing ? { 'data-typing': '' } : {})}
@@ -238,12 +179,12 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
               >
                 <div className="dsv-rail-fill" />
                 <div className="dsv-rail-dot" />
-                {GATE_STEPS.map(({ step, i }) => (
+                {GATE_STEPS.map(({ step, index }) => (
                   <span
                     key={step.t}
                     className="dsv-rail-tick"
                     style={{ '--p': `${step.p}%` } as CSSProperties}
-                    {...(i < shown ? { 'data-reached': '' } : {})}
+                    {...(index < shown ? { 'data-reached': '' } : {})}
                   />
                 ))}
               </div>
@@ -278,44 +219,15 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
                 const isShown = i < shown
                 const isLast = isShown && i === shown - 1
                 return (
-                  <li
+                  <RunEntry
                     key={step.t}
                     ref={isLast ? lastEntryRef : undefined}
-                    className="dsv-entry"
-                    data-who={step.who}
-                    {...(step.gate ? { 'data-gate': '' } : {})}
-                    {...(isShown ? { 'data-shown': '' } : {})}
-                    {...(isLast ? { 'data-last': '' } : {})}
-                    {...(step.gate && isLast && waiting ? { 'data-waiting': '' } : {})}
-                  >
-                    <div className="dsv-entry-head">
-                      <span className="dsv-entry-t">{step.t}</span>
-                      <span className="dsv-entry-who">{step.who}</span>
-                      <span className="dsv-entry-title">{step.title}</span>
-                    </div>
-                    <p className="dsv-entry-detail">{step.detail}</p>
-                    {step.extra}
-                    {step.tech ? (
-                      <p className="dsv-entry-tech">
-                        <span className="dsv-tech-label">backend</span>
-                        {step.tech}
-                      </p>
-                    ) : null}
-                    {step.fail ? (
-                      <p className="dsv-entry-fail">
-                        <span className="dsv-fail-label">als het misgaat</span>
-                        {step.fail}
-                      </p>
-                    ) : null}
-                    {step.gate ? (
-                      <div className="dsv-entry-act">
-                        <button type="button" className="dsv-approve" onClick={approve}>
-                          Goedkeuren &rarr;
-                        </button>
-                        <span className="dsv-entry-wait">de pijplijn staat stil tot je klikt</span>
-                      </div>
-                    ) : null}
-                  </li>
+                    step={step}
+                    shown={isShown}
+                    last={isLast}
+                    waiting={waiting}
+                    onApprove={approve}
+                  />
                 )
               })}
             </ol>
@@ -328,7 +240,7 @@ export function RunLog({ onComplete }: { onComplete?: () => void }) {
                 type="button"
                 className="dsv-btn"
                 onClick={next}
-                disabled={waiting || shown >= RUN_TOTAL}
+                disabled={waiting || completed}
               >
                 Volgende &rarr;
               </button>
