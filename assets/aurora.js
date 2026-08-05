@@ -117,6 +117,12 @@
   var lastPaint = 0;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  // The wash's continuous animation (spinning/drifting blurred blobs behind
+  // an SVG displacement filter) is heavy on phone GPUs and stutters. Below
+  // this width it renders one static, fully bloomed frame instead — same
+  // breakpoint the layout itself already treats as "phone" (see aurora.css).
+  var narrowScreen = window.matchMedia('(max-width: 699px)');
+
   function current() { return PRESETS[state.preset] || PRESETS[0]; }
   function isLiving() { return !!current().auto; }
 
@@ -134,7 +140,7 @@
   // the loop, so it gets the finished state straight away rather than being
   // left on the opening frame forever.
   function bloom() {
-    if (reduceMotion.matches) return 1;
+    if (reduceMotion.matches || narrowScreen.matches) return 1;
     var t = Math.min(1, elapsed() / RAMP_SEC);
     return t * t * (3 - 2 * t);
   }
@@ -361,7 +367,7 @@
   // the automatic drift below, so the two feel like the same gesture.
   function switchPreset(newIndex) {
     if (newIndex === state.preset && !blend) return;
-    blend = reduceMotion.matches ? null : { from: state.preset, startElapsed: elapsed() };
+    blend = (reduceMotion.matches || narrowScreen.matches) ? null : { from: state.preset, startElapsed: elapsed() };
     state.preset = newIndex;
     state.nextSwitchAt = elapsed() + AUTO_CYCLE_SEC;
     render();
@@ -399,7 +405,7 @@
   }
 
   function shouldAnimate() {
-    return !reduceMotion.matches && document.visibilityState !== 'hidden';
+    return !reduceMotion.matches && !narrowScreen.matches && document.visibilityState !== 'hidden';
   }
 
   function syncLoop() {
@@ -420,6 +426,37 @@
   var onMotionChange = function () { render(); syncLoop(); };
   if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', onMotionChange);
   else if (reduceMotion.addListener) reduceMotion.addListener(onMotionChange);
+  if (narrowScreen.addEventListener) narrowScreen.addEventListener('change', onMotionChange);
+  else if (narrowScreen.addListener) narrowScreen.addListener(onMotionChange);
+
+  /* ---------- mobile hint -------------------------------------------------- */
+
+  // Said once per session, dismissible, and only where the wash is actually
+  // frozen — a nudge toward the fuller experience, not a nag.
+  var TOAST_KEY = 'kh-aurora-toast';
+  if (narrowScreen.matches) {
+    try {
+      if (!sessionStorage.getItem(TOAST_KEY)) {
+        sessionStorage.setItem(TOAST_KEY, '1');
+        var toast = document.createElement('div');
+        toast.className = 'aur-toast';
+        toast.setAttribute('role', 'status');
+        toast.innerHTML =
+          '<p class="aur-toast-text">Voor de volle, bewegende achtergrond is desktop mooier &mdash; hier staat hij stil voor een vlotte ervaring.</p>' +
+          '<button type="button" class="aur-toast-close" aria-label="Sluiten">&times;</button>';
+        mount.appendChild(toast);
+
+        var dismissToast = function () {
+          toast.classList.add('aur-toast--out');
+          setTimeout(function () { toast.remove(); }, 400);
+        };
+        toast.querySelector('.aur-toast-close').addEventListener('click', dismissToast);
+        setTimeout(dismissToast, 7000);
+      }
+    } catch (e) {
+      // Private mode or a full quota: skip the hint rather than repeat it forever.
+    }
+  }
 
   restoreSession();
   render();
