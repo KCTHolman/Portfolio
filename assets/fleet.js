@@ -34,6 +34,13 @@
     ? function () { return performance.now(); }
     : function () { return Date.now(); };
 
+  // Stilstaand beeld in plaats van een lopende animatie: bij reduced motion
+  // omdat het gevraagd is, op een telefoon omdat een canvas dat elke frame
+  // honderden paden trekt daar meer kost dan het oplevert.
+  function still() { return reduceMotion.matches || narrowScreen.matches; }
+
+  function ease(x) { return 1 - Math.pow(1 - x, 3); }
+
   /* ---------- willekeur met een geheugen ---------------------------------
      Dezelfde seed geeft dezelfde boot. Dat is geen detail: zonder zaad
      tekent elke paginaovergang een nét andere vloot, en dan is het een
@@ -476,8 +483,6 @@
       groupPhase.push((g * 2.399) % (Math.PI * 2));
     }
 
-    function still() { return reduceMotion.matches || narrowScreen.matches; }
-
     function measure() {
       var rect = mount.getBoundingClientRect();
       w = Math.max(1, Math.round(rect.width));
@@ -592,8 +597,6 @@
         p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30;
       }
     }
-
-    function ease(x) { return 1 - Math.pow(1 - x, 3); }
 
     function draw(now) {
       var elapsed = (now - t0) / 1000;
