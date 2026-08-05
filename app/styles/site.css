@@ -218,15 +218,11 @@ a.khnav[aria-current="page"]::after {
   min-height: 0;
   padding: 0;
 }
-.kh-now { padding: 0; }
-.kh-now-card { max-width: 560px; }
 
 @media (max-width: 1023px) {
   .kh-home-copy { gap: 20px; }
 }
 
-/* Op een telefoon is de kaart hoger (ticker van drie regels), dus de ruimte
-   eromheen krimpt mee — anders past het scherm net niet meer. */
 @media (max-width: 699px) {
   .kh-main--home {
     padding-top: 14px;
@@ -563,16 +559,6 @@ a.khnav[aria-current="page"]::after {
   text-wrap: pretty;
 }
 
-/* Small uppercase section heading, e.g. "Waar ik nu aan bouw". */
-.kh-section-label {
-  margin: 0 0 10px;
-  font-size: 11px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: rgba(180, 206, 228, 0.55);
-}
-
 .kh-link {
   color: rgba(222, 234, 247, 0.82);
   text-decoration: none;
@@ -742,60 +728,7 @@ a.khcta--ghost:hover { color: var(--kh-ink-bright); }
    de rand, de vulling en de blur weghalen maakt dat af — de wash loopt er nu
    dwars doorheen en de scheiding komt van witruimte plus, waar het krap is,
    één haarlijn erboven. .kh-panel heeft daardoor zelf geen regel meer nodig;
-   wat het blok nog krijgt, staat bij .kh-panel-grid en .kh-now-card. */
-a.khcard {
-  display: block;
-  border-radius: var(--kh-radius);
-  text-decoration: none;
-  color: inherit;
-  transition: transform .25s;
-}
-a.khcard:hover { transform: translateY(-2px); }
-
-.kh-card-kicker {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(180, 206, 228, 0.55);
-}
-
-.kh-card-title {
-  display: block;
-  margin-top: 8px;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(28px, 3.2vw, 34px);
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--kh-ink-bright);
-}
-
-/* On a panel the title is the link to the project, since the panel itself
-   can no longer be one. */
-a.kh-card-title {
-  width: fit-content;
-  text-decoration: none;
-  transition: color .2s;
-}
-a.kh-card-title:hover { color: var(--kh-teal-soft); }
-
-.kh-card-body {
-  display: block;
-  margin-top: 9px;
-  font-weight: 300;
-  font-size: 14.5px;
-  line-height: 1.5;
-  color: rgba(214, 230, 245, 0.68);
-  text-wrap: pretty;
-}
-
-/* Zonder rand heeft het project op de home nog wel een aanhechting nodig,
-   en op één scherm is er geen ruimte voor de witruimte die dat normaal doet.
-   Eén haarlijn erboven is het minimum dat werkt: een streep, geen doos. */
-.kh-now-card {
-  padding-top: 14px;
-  border-top: 1px solid var(--kh-line);
-}
+   wat het blok nog krijgt, staat bij .kh-panel-grid. */
 
 /* ---------- Over: numbered panels ------------------------------------- */
 

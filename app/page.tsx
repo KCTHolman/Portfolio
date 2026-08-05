@@ -56,21 +56,6 @@ export default function HomePage() {
               </Link>
             </div>
           </section>
-
-          <section className="kh-now">
-            <h2 className="kh-section-label">Huidig project</h2>
-
-            <div className="kh-panel kh-now-card">
-              <span className="kh-card-kicker">Project &middot; huidig</span>
-              <Link className="kh-card-title" href="/werk/">
-                de Schouw<span className="kh-accent">vloot</span>
-              </Link>
-              <span className="kh-card-body">
-                Een AI-native CI/CD-pijplijn waarin agents het werk doen en een mens op precies drie
-                plekken verschijnt. Publiek te lezen. (showcase variant)
-              </span>
-            </div>
-          </section>
         </div>
 
         {/* Honderden driehoekjes die één schouw onder zeil vormen, met kleinere

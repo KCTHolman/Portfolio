@@ -349,6 +349,11 @@ export type Particle = {
    *  eind, in pixels per seconde — pas van kracht zodra het laatste stadium
    *  (de raket) volledig gevormd is. */
   vy?: number
+  /** Hoort dit deeltje bij de raketvorm van buildRocketPuff() in plaats van
+   *  bij de boot zelf? Beide sets delen dezelfde boot-transform (p.boat),
+   *  maar draw() schaalt en tekent ze los van elkaar — zie de lancering in
+   *  use-fleet-scene.ts. */
+  rocket?: boolean
 }
 
 export type BoatSpec = {
@@ -714,6 +719,42 @@ const ROCKET_STAGE: JourneyStage = [
   spar([0.4, 0.6], [0.3, 0.74], 0.005), // vinstut (sprit-rol)
   poly([0.485, 0.09], [0.515, 0.09], [0.515, 0.12], [0.485, 0.12]), // neusbaken (flag-rol)
 ]
+
+/* ---------- hero: een boot die af en toe een raketje wordt ---------------
+   Geen journey-stadium (dat is één vorm die evolueert), maar een tweede,
+   eigen deeltjeswolk naast een gewone kleine boot: buildBoat() blijft precies
+   zoals hij was, en dit levert er losse raket-deeltjes bovenop, met een eigen
+   zaad zodat de twee wolken elkaar nooit per ongeluk overlappen qua toeval.
+   use-fleet-scene.ts kiest op willekeurige tijden één kleine boot, schaalt
+   haar gewone deeltjes naar 0 terwijl deze wolk van 0 naar 1 groeit, laat 'm
+   wegstijgen, en schaalt de boot daarna weer terug. --------------------- */
+
+/** Zelfde dichtheidsformule als buildBoat(): hoe verder weg en hoe kleiner
+ *  een boot, hoe ijler ook haar raketje. */
+export function buildRocketPuff(boat: BoatSpec, index: number, quality: number): Particle[] {
+  const rnd = rng(0x7a11 + index * 977)
+  const parts: Particle[] = []
+  const d = boat.depth
+  const detail = Math.pow(Math.min(1, boat.w / LEAD_W), 0.8) * (0.45 + d * 0.55) * quality
+
+  ROCKET_STAGE.forEach((pts, i) => {
+    const slot = SHAPES[i]
+    const out: Point[] = []
+    const edge = Math.max(6, Math.round(slot.edge * detail))
+    edgePoints(pts, edge, rnd, out)
+    if (slot.fill && d > 0.55) {
+      fillPoints(pts, Math.round(slot.fill * detail * (d - 0.35)), rnd, out)
+    }
+    for (const pt of out) {
+      const col = rnd() < 0.05 ? 4 : pick(rnd, slot.bias)
+      const p = particle(pt[0], pt[1], col, d, rnd)
+      p.rocket = true
+      parts.push(p)
+    }
+  })
+
+  return parts
+}
 
 /** Geordend: elk journey-stadium van boot tot raket. */
 export const JOURNEY_STAGES: JourneyStage[] = [
