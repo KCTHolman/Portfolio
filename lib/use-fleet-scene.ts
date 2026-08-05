@@ -32,6 +32,7 @@ import {
   buildBoat,
   buildJourneyIdentities,
   buildJourneyStage,
+  buildRocketPuff,
   deriveFormation,
   ease,
   parseHsl,
@@ -86,6 +87,30 @@ type Boat = BoatSpec & {
    *  herrekend in draw(), gelezen door de deeltjeslus om de jitter tijdens
    *  zo'n overtocht op te voeren. */
   distort: number
+  /** Mag deze boot ooit een raketje worden? Alleen de kleine hero-boten
+   *  (niet de leidende, niet ambient/journey) — zie de lancering in draw(). */
+  canLaunch: boolean
+  /** 0 = vaart gewoon, 1 = boot krimpt terwijl het raketje groeit, 2 = het
+   *  raketje stijgt en krimpt weg, 3 = de boot groeit terug. */
+  launchPhase: 0 | 1 | 2 | 3
+  /** Tijdstip (performance.now()) waarop de huidige launchPhase begon. */
+  launchStart: number
+  /** Rauwe (nog niet geëaset, nog niet per-korrel vertraagde) voortgang van
+   *  de huidige launchPhase, 0..1 — fase 1 en 3 lezen dit per deeltje uit,
+   *  op dezelfde manier als form/p.lag dat doet bij het invaren. */
+  launchRawT: number
+  /** Schaal (0..1) waarmee de raket-deeltjes (p.rocket) tijdens de vlucht
+   *  (fase 2) hun straal vermenigvuldigen — fase 1/3 rekenen dit zelf uit
+   *  per deeltje en negeren dit veld. */
+  launchRocketScale: number
+  /** Hoeveel het raketje nu al omhoog geschoven is, in pixels. */
+  launchRocketRise: number
+  /** Eén keer geloot bij het begin van de lancering: teken en sterkte van de
+   *  zijwaartse leun, als fractie van de stijghoogte. */
+  launchDriftDir: number
+  /** Hoeveel het raketje nu al opzij geschoven is, in pixels — dezelfde
+   *  tekencurve als launchRocketRise, maal launchDriftDir. */
+  launchRocketDriftX: number
 }
 
 type FleetSceneOptions = {
@@ -170,6 +195,39 @@ export function useFleetScene({
        naar de hover-status van een GitHub-link toe in plaats van te
        springen, zowel bij aankomst als bij vertrek. */
     let githubWeight = 0
+
+    /* Hero: op willekeurige tijden wordt één kleine boot even een raketje
+       (zie de launch-fase-machine in draw()). nextLaunchAt is null zolang er
+       niets te plannen valt (ambient/journey, of frozen); anders het
+       performance.now()-tijdstip van de eerstvolgende lancering. -1 op
+       launchingBoat betekent: nu even geen enkele boot onderweg. */
+    let nextLaunchAt: number | null = null
+    let launchingBoat = -1
+    /* Duur van in- en uitgroeien (boot naar raket, en later terug), en van de
+       vlucht ertussen — traag genoeg om echt te kunnen volgen, niet een knip. */
+    const LAUNCH_MORPH_SEC = 1.1
+    const LAUNCH_FLIGHT_SEC = 4
+    /* Fractie van LAUNCH_MORPH_SEC die de boot al aan het oplossen is vóór
+       het raketje voor het eerst een korrel toont — zonder deze vertraging
+       staan boot en raket op hetzelfde moment allebei op halve sterkte
+       en oogt het als een knipperende ruil in plaats van een overvloeiing. */
+    const LAUNCH_STAGGER = 0.25
+    /* Zelfde vertragingsvenster als het invaren bij het laden (zie
+       p.lag/forming hierboven): elk deeltje krimpt of groeit op een moment
+       dat een fractie van LAUNCH_MORPH_SEC na de vorige begint, in plaats
+       van als één star blok tegelijk te schakelen. */
+    const LAUNCH_LAG_SPAN = 1 - 0.45
+    /* Hoe ver een lagging deeltje (hoge p.lag) achterblijft bij de voorkant
+       van de raket, in pixels — dat gat is het spoor dat de raket achter
+       zich laat. */
+    const LAUNCH_TRAIL_PX = 120
+    /* Eerste lancering ruim binnen vijf seconden na het laden, zodat het
+       effect zich meteen een keer laat zien; daarna is het schaars — negen
+       tot achttien seconden tussen twee lanceringen, "niet te druk". */
+    const LAUNCH_FIRST_MIN_MS = 2000
+    const LAUNCH_FIRST_MAX_MS = 3000
+    const LAUNCH_NEXT_MIN_MS = 9000
+    const LAUNCH_NEXT_MAX_MS = 18000
 
     /* Tijdconstante voor de formatie-tween (zie setFormation() en de
        boot-lus in draw()): bij TAU = 2s is een overgave na ~6s voor ~95%
@@ -259,6 +317,9 @@ export function useFleetScene({
 
       parts = []
       boats = []
+      // build() vervangt de hele boats-array (mount of resize): een lopende
+      // lancering wees naar een boot die zo meteen niet meer bestaat.
+      launchingBoat = -1
 
       if (variant === 'journey') {
         // Eén evoluerende vorm, geen vloot: de lead-shape-deeltjes krijgen hun
@@ -296,6 +357,16 @@ export function useFleetScene({
           // draw(), die slot 0 altijd overslaat).
           curveSign: 1,
           distort: 0,
+          // Journey heeft al haar eigen raket-stadium; deze losse lancering
+          // is alleen voor hero (zie build() hieronder).
+          canLaunch: false,
+          launchPhase: 0,
+          launchStart: 0,
+          launchRawT: 0,
+          launchRocketScale: 0,
+          launchRocketRise: 0,
+          launchDriftDir: 0,
+          launchRocketDriftX: 0,
         })
 
         for (const p of buildJourneyIdentities(quality)) {
@@ -343,11 +414,28 @@ export function useFleetScene({
             // op. Boot 0 (de leidende) gebruikt dit nooit (zie draw()).
             curveSign: (b % 2 === 0 ? 1 : -1) * (1 + (b % 3) * 0.15),
             distort: 0,
+            // Alleen de kleine hero-boten (niet de leidende) mogen af en toe
+            // een raketje worden — zie de lancering in draw().
+            canLaunch: variant === 'hero' && b > 0,
+            launchPhase: 0,
+            launchStart: 0,
+            launchRawT: 0,
+            launchRocketScale: 0,
+            launchRocketRise: 0,
+            launchDriftDir: 0,
+            launchRocketDriftX: 0,
           })
 
           for (const made of buildBoat(spec, b, quality)) {
             made.boat = b
             parts.push(made)
+          }
+
+          if (variant === 'hero' && b > 0) {
+            for (const made of buildRocketPuff(spec, b, quality)) {
+              made.boat = b
+              parts.push(made)
+            }
           }
         })
       }
@@ -469,6 +557,27 @@ export function useFleetScene({
       })
     }
 
+    /** Straalschaal (0..1) voor één deeltje van een lancerende boot. Fase 1/3
+     *  ontleden hier per deeltje aan p.lag — dezelfde staggering als het
+     *  invaren bij het laden — zodat de boot oplost en de raket condenseert
+     *  in plaats van als twee starre blokken door elkaar te wisselen. Fase 2
+     *  blijft boot-breed: de vlucht heeft haar eigen spreiding al via het
+     *  spoor (zie de rise/drift-lag hierboven). */
+    function launchScale(o: Boat, isRocket: boolean, lag: number): number {
+      if (o.launchPhase === 1) {
+        if (isRocket) {
+          const t = Math.max(0, Math.min(1, (o.launchRawT - LAUNCH_STAGGER) / (1 - LAUNCH_STAGGER)))
+          return ease(Math.max(0, Math.min(1, (t - lag) / LAUNCH_LAG_SPAN)))
+        }
+        return 1 - ease(Math.max(0, Math.min(1, (o.launchRawT - lag) / LAUNCH_LAG_SPAN)))
+      }
+      if (o.launchPhase === 3) {
+        return isRocket ? 0 : ease(Math.max(0, Math.min(1, (o.launchRawT - lag) / LAUNCH_LAG_SPAN)))
+      }
+      if (o.launchPhase === 2) return isRocket ? o.launchRocketScale : 0
+      return isRocket ? 0 : 1
+    }
+
     function draw(now: number): void {
       const elapsed = (now - t0) / 1000
       const form = frozen ? 1 : Math.min(1, (now - t0) / formMs)
@@ -489,6 +598,74 @@ export function useFleetScene({
 
       pointer.x += (pointer.tx - pointer.x) * 0.06
       pointer.y += (pointer.ty - pointer.y) * 0.06
+
+      /* Hero: de losse raket-lancering. Geen scroll of hover stuurt dit, dus
+         de klok is de enige bron van waarheid — een geplande tijd die steeds
+         opnieuw gezet wordt zodra de vorige lancering afloopt. */
+      if (nextLaunchAt !== null) {
+        if (launchingBoat < 0 && now >= nextLaunchAt) {
+          let candidate = -1
+          let seen = 0
+          for (let bi = 0; bi < boats.length; bi++) {
+            const b = boats[bi]
+            // Onderweg of geparkeerd telt niet mee: alleen een boot die al op
+            // haar plek ligt, mag even een raketje worden.
+            if (!b.canLaunch || b.dcx > 1.1 || Math.abs(b.dcx - b.tcx) > 0.08) continue
+            seen++
+            if (Math.random() < 1 / seen) candidate = bi
+          }
+          if (candidate >= 0) {
+            launchingBoat = candidate
+            boats[candidate].launchPhase = 1
+            boats[candidate].launchStart = now
+            // Recht omhoog: geen zijwaartse leun.
+            boats[candidate].launchDriftDir = 0
+          } else {
+            // Even geen enkele boot beschikbaar (allemaal onderweg): niet
+            // wachten tot de volgende geplande beurt, gewoon snel opnieuw
+            // proberen.
+            nextLaunchAt = now + 1500
+          }
+        }
+
+        if (launchingBoat >= 0) {
+          const lb = boats[launchingBoat]
+          const phaseT = (now - lb.launchStart) / 1000
+
+          if (lb.launchPhase === 1) {
+            // Geen boot-brede schaal meer: draw() easet dit per deeltje, met
+            // elk deeltje z'n eigen p.lag als vertraging — zie daar voor de
+            // reden (dezelfde staggering als het invaren bij het laden).
+            lb.launchRawT = Math.min(1, phaseT / LAUNCH_MORPH_SEC)
+            lb.launchRocketRise = 0
+            lb.launchRocketDriftX = 0
+            if (phaseT >= LAUNCH_MORPH_SEC) {
+              lb.launchPhase = 2
+              lb.launchStart = now
+            }
+          } else if (lb.launchPhase === 2) {
+            const tt = Math.min(1, phaseT / LAUNCH_FLIGHT_SEC)
+            // Kwadratisch, geen ease(): een raket vertrekt traag en trekt pas
+            // daarna door, in plaats van meteen op volle snelheid te staan.
+            const e = tt * tt
+            lb.launchRocketRise = e * h * 0.55
+            lb.launchRocketDriftX = e * h * 0.55 * lb.launchDriftDir
+            lb.launchRocketScale = 1 - e
+            if (phaseT >= LAUNCH_FLIGHT_SEC) {
+              lb.launchPhase = 3
+              lb.launchStart = now
+              lb.launchRocketScale = 0
+            }
+          } else if (lb.launchPhase === 3) {
+            lb.launchRawT = Math.min(1, phaseT / LAUNCH_MORPH_SEC)
+            if (phaseT >= LAUNCH_MORPH_SEC) {
+              lb.launchPhase = 0
+              launchingBoat = -1
+              nextLaunchAt = now + LAUNCH_NEXT_MIN_MS + Math.random() * (LAUNCH_NEXT_MAX_MS - LAUNCH_NEXT_MIN_MS)
+            }
+          }
+        }
+      }
 
       /* Scroll-voortgang lezen, één keer per frame — niet per deeltje. Onder
          frozen geen lopende interpolatie (t = 0): dan toont het de vorm die
@@ -649,6 +826,18 @@ export function useFleetScene({
             x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
             y = o.py + o.dy + p.bx * o.sin + p.by * o.cos
             distort = o.distort
+            if (p.rocket) {
+              // Elk deeltje heeft al een eigen p.lag (0..0.45) — hergebruikt
+              // hier als achterstand op de voorkant van de raket, dus de
+              // wolk rekt uit tot een spoor in plaats van als één blok te
+              // stijgen. Dicht bij de voorkant (lage lag) volgt bijna meteen;
+              // ver naar achteren (hoge lag) blijft een tijd op de oude plek
+              // hangen voor het meetrekt.
+              const localRise = Math.max(0, o.launchRocketRise - p.lag * LAUNCH_TRAIL_PX)
+              const frac = o.launchRocketRise > 0 ? localRise / o.launchRocketRise : 0
+              y -= localRise
+              x += o.launchRocketDriftX * frac
+            }
           }
 
           if (!frozen) {
@@ -710,7 +899,19 @@ export function useFleetScene({
           x += p.ox
           y += p.oy
 
-          const r = p.r
+          // Geen aparte alpha-fade (die zou de per-groep gebundelde stroke()
+          // breken) — de lancering schaalt in plaats daarvan de straal: 0 is
+          // onzichtbaar, 1 is normaal. Het gewone geval (launchPhase 0, geen
+          // enkele boot aan het lanceren) slaat launchScale() over — geen
+          // functie-aanroep voor elk deeltje zolang er niets te doen is.
+          let r: number
+          if (p.boat < 0) {
+            r = p.r
+          } else {
+            const lo = boats[p.boat]
+            r = lo.launchPhase === 0 ? (p.rocket ? 0 : p.r) : p.r * launchScale(lo, !!p.rocket, p.lag)
+          }
+          if (r <= 0.02) continue
           const a = p.spin + (frozen ? 0 : time * 0.08)
           ctx!.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
           ctx!.lineTo(x + Math.cos(a + 2.0944) * r, y + Math.sin(a + 2.0944) * r)
@@ -865,6 +1066,13 @@ export function useFleetScene({
     setFormation(presetIndexRef.current, true)
     layout()
     t0 = performance.now()
+    // Alleen hero plant een lancering; ambient/journey en frozen (reduced
+    // motion, telefoon) blijven op null staan, dus draw() slaat de hele
+    // launch-machine dan over.
+    nextLaunchAt =
+      variant === 'hero' && !frozen
+        ? t0 + LAUNCH_FIRST_MIN_MS + Math.random() * (LAUNCH_FIRST_MAX_MS - LAUNCH_FIRST_MIN_MS)
+        : null
     sync()
     onSailing()
 
