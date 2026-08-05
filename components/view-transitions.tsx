@@ -26,7 +26,7 @@ import {
 } from 'react'
 
 /** De leesvolgorde van de hoofdnavigatie. Verder naar rechts is vooruit. */
-const ORDER = ['/', '/werk/', '/over/', '/contact/']
+const ORDER = ['/', '/werk/', '/koen-holman/']
 
 type TransitionType = 'kh-forward' | 'kh-back'
 

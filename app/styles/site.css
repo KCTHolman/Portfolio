@@ -231,10 +231,21 @@ a.khnav[aria-current="page"]::after {
   .kh-home-copy { gap: 16px; }
 }
 .kh-main--werk    { padding: 0 20px 0; }
-.kh-main--over    { padding: 76px 20px 120px; }
-.kh-main--contact { padding: 76px 20px 130px; }
 .kh-main--error   { padding: 76px 20px 130px; }
 .kh-main--logboek { padding: 52px 20px 80px; }
+
+/* Over en Contact samen: gewone doorlopende pagina, net als de andere
+   tekstpagina's — geen vastgezet deel, geen apart scrollend blok. */
+.kh-main--koen-holman { padding: 76px 20px 120px; }
+
+.kh-koen-panels {
+  margin-top: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+
+.kh-koen-panel { padding-top: 26px; border-top: 1px solid var(--kh-line); }
 
 /* ---------- Werk: scrollverhaal, vloot rechts --------------------------
    Zelfde truc als kh-home-grid/kh-home-copy: geen echte kolommen, een
@@ -727,26 +738,9 @@ a.khcta--ghost:hover { color: var(--kh-ink-bright); }
 /* Geen kaders meer. Deze blokken stonden al bewust dun over de aurora heen;
    de rand, de vulling en de blur weghalen maakt dat af — de wash loopt er nu
    dwars doorheen en de scheiding komt van witruimte plus, waar het krap is,
-   één haarlijn erboven. .kh-panel heeft daardoor zelf geen regel meer nodig;
-   wat het blok nog krijgt, staat bij .kh-panel-grid. */
+   één haarlijn erboven. */
 
-/* ---------- Over: numbered panels ------------------------------------- */
-
-/* De kolommen staan nu uit elkaar in plaats van naast elkaar in dozen: de
-   ruimte tussen twee blokken is groter dan de ruimte binnen één blok, en dat
-   is het hele scheidingsmechanisme. */
-.kh-panel-grid {
-  margin-top: 60px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  column-gap: 48px;
-  row-gap: 52px;
-}
-
-.kh-panel-grid .kh-panel {
-  padding-top: 22px;
-  border-top: 1px solid var(--kh-line);
-}
+/* ---------- Koen Holman: panelen als doorlopende lijst ------------------ */
 
 .kh-panel-num {
   margin: 0;
@@ -757,11 +751,11 @@ a.khcta--ghost:hover { color: var(--kh-ink-bright); }
 }
 
 .kh-panel-title {
-  margin: 16px 0 14px;
+  margin: 14px 0 12px;
   font-family: 'Cormorant Garamond', serif;
   font-weight: 500;
   font-style: italic;
-  font-size: clamp(32px, 3.4vw, 40px);
+  font-size: clamp(28px, 3vw, 34px);
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--kh-ink-bright);

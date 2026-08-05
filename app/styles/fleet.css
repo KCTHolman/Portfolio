@@ -70,6 +70,21 @@
 }
 .kh-journey.is-varend { opacity: 0.8; }
 
+/* ---------- /koen-holman/: vloot rechtsboven op een eigen klok ----------- */
+
+/* Nadrukkelijk aanwezig, niet decoratief op de achtergrond — dit ís het
+   tweede beeld van de pagina naast de tekst, dus een hogere opacity dan
+   ambient/journey. */
+.kh-showcase {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.kh-showcase.is-varend { opacity: 0.9; }
+
 /* ---------- Smalle schermen ---------------------------------------------
    De laag blijft schermvullend; wat verandert is hoeveel hij mag opvallen.
    Naarmate de tekst meer van het scherm inneemt, zakt het beeld terug —
@@ -80,16 +95,19 @@
 @media (max-width: 1023px) {
   .kh-home-visual.is-varend { opacity: 0.6; }
   .kh-journey.is-varend { opacity: 0.55; }
+  .kh-showcase.is-varend { opacity: 0.65; }
 }
 
 @media (max-width: 699px) {
   .kh-home-visual.is-varend { opacity: 0.3; }
   .kh-ambient.is-varend { opacity: 0.32; }
   .kh-journey.is-varend { opacity: 0.3; }
+  .kh-showcase.is-varend { opacity: 0.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .kh-home-visual,
   .kh-ambient,
-  .kh-journey { transition: none; }
+  .kh-journey,
+  .kh-showcase { transition: none; }
 }

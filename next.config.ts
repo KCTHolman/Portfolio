@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
 
   reactStrictMode: true,
+
+  /* Over en Contact zijn samengevoegd tot één pagina; bestaande links naar
+     de losse routes blijven werken via een permanente redirect. */
+  async redirects() {
+    return [
+      { source: '/over', destination: '/koen-holman', permanent: true },
+      { source: '/contact', destination: '/koen-holman', permanent: true },
+    ]
+  },
 }
 
 export default nextConfig

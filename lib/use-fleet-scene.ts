@@ -27,7 +27,15 @@ import {
   NEEDLE_SLOTS,
   RATIO,
   SETTLE,
+  SHOWCASE_BOATS,
+  SHOWCASE_COMPASS_STAGE,
+  SHOWCASE_GEAR_CLUSTER,
+  SHOWCASE_GEAR_STAGE,
+  SHOWCASE_ROCKET_STAGE,
+  SHOWCASE_STAGES,
+  SHOWCASE_VLOOT_STAGE,
   TIERS,
+  boatDetail,
   buildAmbientDust,
   buildBoat,
   buildJourneyIdentities,
@@ -41,7 +49,7 @@ import {
   type Particle,
 } from '@/lib/fleet-geometry'
 
-export type FleetVariant = 'hero' | 'ambient' | 'journey'
+export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase'
 
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
@@ -111,6 +119,12 @@ type Boat = BoatSpec & {
   /** Hoeveel het raketje nu al opzij geschoven is, in pixels — dezelfde
    *  tekencurve als launchRocketRise, maal launchDriftDir. */
   launchRocketDriftX: number
+  /** Alleen showcase: draairichting tijdens de tandwiel-scène. De "zon"
+   *  (boot 0) draait de ene kant op, alle "satellieten" (1–6) de andere —
+   *  zo grijpen ze zichtbaar in elkaar, net als een echt tandwielstelsel
+   *  waar de satellieten alleen de zon raken, niet elkaar. Ongebruikt voor
+   *  hero/ambient/journey. */
+  spinDir?: 1 | -1
 }
 
 type FleetSceneOptions = {
@@ -177,6 +191,12 @@ export function useFleetScene({
     let h = 0
     let boats: Boat[] = []
     let parts: Particle[] = []
+    /* Alleen showcase: bij welk globale parts-index de deeltjes van elke boot
+       beginnen — buildJourneyIdentities() geeft per boot een eigen, lokaal
+       genummerde reeks terug, maar layout() moet die deeltjes terugvinden in
+       de ene gedeelde parts-array. offset = start van boot b, dus lokale
+       index = globale index - offset. */
+    let boatParticleStart: number[] = []
     let frame: number | null = null
     let lastFrame = 0
     let lastDraw = 0
@@ -228,6 +248,30 @@ export function useFleetScene({
     const LAUNCH_FIRST_MAX_MS = 3000
     const LAUNCH_NEXT_MIN_MS = 9000
     const LAUNCH_NEXT_MAX_MS = 18000
+
+    /* Showcase, tandwiel-scène: hoeksnelheid in radialen/seconde — ~0,15 is
+       een volle omwenteling in ruim 40 seconden: traag genoeg om als
+       zelfverzekerd "draaien" te lezen in plaats van te spinnen. */
+    const GEAR_SPIN_SPEED = 0.15
+    /* Showcase, raketten-scène: frequentie en amplitude van de doorlopende
+       stijg-en-zak-golf. Geen ease-in/ease-out-eenmalige lancering (dat is
+       de aparte hero-machine hierboven), maar een cyclus die zolang de
+       scène duurt blijft herhalen. */
+    const ROCKET_BOB_FREQ = 0.5
+    const ROCKET_BOB_AMP_FRAC = 0.05
+    /* Showcase, elke scène-wissel: hoeveel de jitter tijdens het mengen
+       (SHOWCASE_BLEND_MS) opzwelt, in het midden van de overgang op zijn
+       hoogst en weer terug naar normaal aan beide kanten. Een rechte lerp
+       tussen twee heel verschillende silhouetten oogde als een fout, maar te
+       fors opzwellen oogde juist weer als kapot — dit is bewust getemperd. */
+    const SHOWCASE_TRANS_CHAOS = 0.8
+    /* Showcase, kompas-scène: de "zon" mag daar veel groter zijn dan haar
+       gewone bootmaat — ze deelt het kompas-moment met niemand (satellieten
+       blijven boot), dus mag ze dat moment ook nadrukkelijk domineren.
+       Alleen op showcaseCompassWeight, niet op gearWeight: de tandwiel-
+       cluster is al zorgvuldig op elkaar afgestemd (de tanden moeten
+       raken), dus die maat blijft ongemoeid. */
+    const SHOWCASE_SOLO_SCALE = 2.5
 
     /* Tijdconstante voor de formatie-tween (zie setFormation() en de
        boot-lus in draw()): bij TAU = 2s is een overgave na ~6s voor ~95%
@@ -310,13 +354,34 @@ export function useFleetScene({
       h = Math.max(1, Math.round(rect.height))
     }
 
+    /** Showcase-dichtheid per boot. Boot 0 (de "zon") is de hele tijd het
+     *  enige echt dominante silhouet (zie de solo-schaal in draw()) en
+     *  verdient dus dezelfde volle dichtheid als de enkele vorm op /werk/ —
+     *  geen korting, geen w-afhankelijke afzwakking. Satellieten blijven wél
+     *  gekort (ze zijn toch alleen zichtbaar rond de tandwiel-scène).
+     *  build() en layout() moeten hier exact dezelfde waarde uit krijgen: het
+     *  aantal deeltjes dat buildJourneyIdentities() aanmaakt en het aantal
+     *  posities dat buildJourneyStage() teruggeeft moeten één-op-één
+     *  overeenkomen, anders schuift de indexering scheef. Vandaar één
+     *  gedeelde functie in plaats van de berekening op twee plekken te
+     *  herhalen. */
+    function showcaseBoatDetail(spec: BoatSpec, index: number): number {
+      if (index === 0) return frozen ? 0.5 : 1
+      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7)
+    }
+
     function build(): void {
       let quality = frozen ? 0.5 : 1
+      // Ambient tekent een handvol verre boten tegelijk — dezelfde
+      // conservatieve korting als showcase's satellieten, uit hetzelfde
+      // prestatie-oogpunt (showcase's eigen dichtheid loopt via
+      // showcaseBoatDetail() hierboven, niet via deze `quality`).
       if (variant === 'ambient') quality *= 0.7
       measure()
 
       parts = []
       boats = []
+      boatParticleStart = []
       // build() vervangt de hele boats-array (mount of resize): een lopende
       // lancering wees naar een boot die zo meteen niet meer bestaat.
       launchingBoat = -1
@@ -373,6 +438,62 @@ export function useFleetScene({
           p.boat = 0
           parts.push(p)
         }
+      } else if (variant === 'showcase') {
+        // Een hele vloot die tegelijk van gedaante wisselt: elke boot krijgt
+        // haar eigen journey-achtige deeltjes-identiteit (met een eigen
+        // zaad, zie buildJourneyIdentities()'s seed-argument), in plaats van
+        // de vaste boot-vorm van buildBoat(). De posities per morph-stadium
+        // komen pas in layout() bij, net als bij journey.
+        SHOWCASE_BOATS.forEach((spec, b) => {
+          boats.push({
+            ...spec,
+            bobA: 0,
+            bobF: 0.22 + (b % 4) * 0.07,
+            bobP: b * 1.7,
+            rockA: 0.014 + (b % 3) * 0.008,
+            rockF: 0.17 + (b % 5) * 0.05,
+            rockP: b * 2.3,
+            swayA: 0,
+            swayF: 0.045 + (b % 5) * 0.011,
+            swayP: b * 1.9,
+            pw: 0,
+            ph: 0,
+            px: 0,
+            py: 0,
+            dx: 0,
+            dy: 0,
+            rot: 0,
+            sin: 0,
+            cos: 1,
+            tcx: spec.cx,
+            tcy: spec.cy,
+            theel: spec.heel,
+            dcx: spec.cx,
+            dcy: spec.cy,
+            dheel: spec.heel,
+            // Alle zeven boten zijn gelijkwaardig — geen leidende boot zoals
+            // bij hero/ambient — dus curveSign volgt hetzelfde om-en-om-
+            // patroon als daar, zonder uitzondering voor index 0.
+            curveSign: (b % 2 === 0 ? 1 : -1) * (1 + (b % 3) * 0.15),
+            distort: 0,
+            canLaunch: false,
+            launchPhase: 0,
+            launchStart: 0,
+            launchRawT: 0,
+            launchRocketScale: 0,
+            launchRocketRise: 0,
+            launchDriftDir: 0,
+            launchRocketDriftX: 0,
+            spinDir: b === 0 ? 1 : -1,
+          })
+
+          boatParticleStart[b] = parts.length
+          const detail = showcaseBoatDetail(spec, b)
+          for (const p of buildJourneyIdentities(detail, b + 1)) {
+            p.boat = b
+            parts.push(p)
+          }
+        })
       } else {
         specs.forEach((spec, b) => {
           boats.push({
@@ -476,8 +597,16 @@ export function useFleetScene({
          de tekst en mag hij het scherm wél vullen. */
       /* Journey staat verder naar rechts en mag daarom smaller blijven: de
          leeskolom is links smaller gemaakt zodat de twee elkaar hooguit
-         nipt raken, niet structureel overlappen. */
-      const share = narrowScreen ? 0.78 : variant === 'journey' ? 0.36 : 0.44
+         nipt raken, niet structureel overlappen. Showcase mag juist groter:
+         de tekstkolom op /koen-holman/ blijft ruim binnen 600px, en de
+         scène hoort nadrukkelijk op te vallen. */
+      const share = narrowScreen
+        ? 0.78
+        : variant === 'journey'
+          ? 0.36
+          : variant === 'showcase'
+            ? 0.5
+            : 0.44
       const lead = Math.min(w * share, (h * 0.62) / RATIO)
 
       for (const boat of boats) {
@@ -512,11 +641,44 @@ export function useFleetScene({
           ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
           : null
 
+      /* Showcase: hetzelfde idee als journeyStages hierboven, maar per boot —
+         elke boot heeft haar eigen dichtheid (zie showcaseBoatDetail() in
+         build(), hier hergebruikt zodat de telling exact klopt met wat
+         buildJourneyIdentities() daar al heeft aangemaakt) en eigen zaad,
+         dus ook haar eigen vooraf uitgerekende stadium-posities. */
+      const showcaseStagesByBoat =
+        variant === 'showcase'
+          ? SHOWCASE_BOATS.map((spec, b) =>
+              SHOWCASE_STAGES.map((stage, si) => buildJourneyStage(stage, si, showcaseBoatDetail(spec, b), b + 1)),
+            )
+          : null
+
       parts.forEach((p, i) => {
         if (journeyStages && p.boat === 0) {
           const owner = boats[0]
           p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
           p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
+
+          const ax = owner.px + p.jx[0]
+          const ay = owner.py + p.jy[0]
+          const vx = ax - w * 0.5
+          const vy = ay - h * 0.52
+          const k = 1.5 + ((i * 37) % 100) / 100
+          p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
+          p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
+          return
+        }
+
+        if (showcaseStagesByBoat && p.boat >= 0) {
+          const stages = showcaseStagesByBoat[p.boat]
+          const owner = boats[p.boat]
+          // Lokale index binnen déze boot: buildJourneyIdentities() nummert
+          // elke boot vanaf 0, maar build() heeft ze na elkaar in de ene
+          // gedeelde parts-array gezet — boatParticleStart[p.boat] is waar
+          // die boot begint.
+          const local = i - boatParticleStart[p.boat]
+          p.jx = stages.map((pts) => (pts[local][0] - 0.5) * owner.pw)
+          p.jy = stages.map((pts) => (pts[local][1] - 0.48) * owner.ph)
 
           const ax = owner.px + p.jx[0]
           const ay = owner.py + p.jy[0]
@@ -717,6 +879,107 @@ export function useFleetScene({
       }
       const liftoffRise = liftoffStart === null ? 0 : (now - liftoffStart) / 1000
 
+      /* Showcase: eigen klok, geen scroll of hover. Elke scène (vloot,
+         kompas, raketten, tandwielen) staat SHOWCASE_STAGE_MS lang stil, en
+         mengt daarna in SHOWCASE_BLEND_MS naar de volgende — in een lus van
+         vier, voor altijd. Onder frozen blijft dit vast op de vlootscène,
+         net als hero/ambient/journey daar allemaal hetzelfde
+         statische-frame-gedrag voor kennen. */
+      const SHOWCASE_STAGE_MS = 12000
+      const SHOWCASE_BLEND_MS = 1200
+      let showcaseStage = 0
+      let showcaseNext = 0
+      let showcaseT = 0
+      /* Voortgang door de huidige hold, 0..1 — los van showcaseT (dat is
+         alleen de overgang erna). Stuurt de kompas-chaos hieronder: rustig
+         het grootste deel van de hold, pas op hol tegen het einde. */
+      let showcaseHoldT = 0
+      if (variant === 'showcase' && !frozen) {
+        const period = SHOWCASE_STAGE_MS + SHOWCASE_BLEND_MS
+        const cycle = period * SHOWCASE_STAGES.length
+        const pos = (now - t0) % cycle
+        showcaseStage = Math.floor(pos / period)
+        showcaseNext = (showcaseStage + 1) % SHOWCASE_STAGES.length
+        const within = pos - showcaseStage * period
+        showcaseT = within <= SHOWCASE_STAGE_MS ? 0 : ease(Math.min(1, (within - SHOWCASE_STAGE_MS) / SHOWCASE_BLEND_MS))
+        showcaseHoldT = Math.min(1, within / SHOWCASE_STAGE_MS)
+      }
+      /* Hoe "raket"/"tandwiel" de huidige scène is, 0..1 — dezelfde soort
+         gewicht als compassWeight hierboven, nu voor de twee showcase-scènes
+         die een eigen doorlopende beweging krijgen (stijg-en-zak-lus,
+         respectievelijk continue rotatie) in plaats van alleen een vaste
+         eindvorm. `1 - showcaseT` zolang de scène zelf actief is: dat gewicht
+         moet net zo goed aflopen tijdens het wegmengen naar de volgende scène
+         als het opliep tijdens het inmengen ervan — anders blijft bijvoorbeeld
+         de raket-bob op volle sterkte doorlopen terwijl de vorm al aan het
+         tandwiel wordt, en dat gaf precies het soort verspringing dat de
+         kompas-naaldrotatie (zie showcaseCompassWeight) ook al had. */
+      const rocketWeight =
+        variant !== 'showcase'
+          ? 0
+          : showcaseStage === SHOWCASE_ROCKET_STAGE
+            ? 1 - showcaseT
+            : showcaseNext === SHOWCASE_ROCKET_STAGE
+              ? showcaseT
+              : 0
+      const gearWeight =
+        variant !== 'showcase'
+          ? 0
+          : showcaseStage === SHOWCASE_GEAR_STAGE
+            ? 1 - showcaseT
+            : showcaseNext === SHOWCASE_GEAR_STAGE
+              ? showcaseT
+              : 0
+      const gearSpinBase = time * GEAR_SPIN_SPEED
+
+      /* Kompas: alleen boot 0 (de "zon") wordt ooit een kompas — satellieten
+         slaan deze scène over (zie de per-boot stage-remap in de deeltjeslus
+         hieronder) en blijven gewoon boot. showcaseCompassWeight is dus
+         alleen relevant voor boot 0. Zelfde `1 - showcaseT`-reden als
+         hierboven: zonder die aftopping bleef de naald-rotatie op volle
+         sterkte staan terwijl de vorm al naar de raket-vinnen (dezelfde
+         sloties als de naald) aan het overvloeien was — de "vleugels
+         verspringen"-glitch die daarvan kwam. */
+      const showcaseCompassWeight =
+        variant !== 'showcase'
+          ? 0
+          : showcaseStage === SHOWCASE_COMPASS_STAGE
+            ? 1 - showcaseT
+            : showcaseNext === SHOWCASE_COMPASS_STAGE
+              ? showcaseT
+              : 0
+      // Rustige, gelijkmatige schommeling — geen chaos-fase meer.
+      const showcaseNeedleWobble = frozen || showcaseCompassWeight <= 0 ? 0 : Math.sin(time * 0.9) * 0.09 * showcaseCompassWeight
+      const showcaseNeedleCos = Math.cos(showcaseNeedleWobble)
+      const showcaseNeedleSin = Math.sin(showcaseNeedleWobble)
+
+      /* Showcase-boten hebben geen aurora-preset-formatie (zie setFormation()
+         hieronder, die de aanroep net als journey negeert): hun positie komt
+         hier zelf, elke frame opnieuw, als een lerp tussen de gewone
+         vlootpositie en de tandwiel-cluster naarmate gearWeight oploopt.
+         Direct op tcx/tcy/theel gezet, niet via de gewone dcx/dcy-tween
+         hieronder: die tween heeft haar eigen, langzamere inlooptijd
+         (POS_TAU/EXTRA_TAU, seconden), los van gearWeight — daardoor bleef
+         de boot nog naar haar plek "invaren" nadat de vorm allang weer een
+         boot was. gearWeight (afgeleid van dezelfde showcaseT als de
+         vorm-morph) is zelf al de juiste, gesynchroniseerde easing. */
+      if (variant === 'showcase') {
+        for (let bi = 0; bi < boats.length; bi++) {
+          const anchor = SHOWCASE_BOATS[bi]
+          const cluster = SHOWCASE_GEAR_CLUSTER[bi]
+          const boat = boats[bi]
+          const cx = anchor.cx + (cluster.cx - anchor.cx) * gearWeight
+          const cy = anchor.cy + (cluster.cy - anchor.cy) * gearWeight
+          const heel = anchor.heel + (cluster.heel - anchor.heel) * gearWeight
+          boat.dcx = cx
+          boat.dcy = cy
+          boat.dheel = heel
+          boat.tcx = cx
+          boat.tcy = cy
+          boat.theel = heel
+        }
+      }
+
       for (let bi = 0; bi < boats.length; bi++) {
         const boat = boats[bi]
 
@@ -724,8 +987,11 @@ export function useFleetScene({
            voor de leidende boot (die schuift altijd rechtstreeks bij, geen
            boog/vervorming — "verplaatsen", geen "wegvaren") en voor een boot
            die al (bijna) op haar plek of geparkeerd staat, oplopend naar 1
-           voor een boot die nog een heel eind moet wegvaren of aankomen. */
-        const remain = bi === 0 ? 0 : Math.abs(boat.dcx - boat.tcx)
+           voor een boot die nog een heel eind moet wegvaren of aankomen.
+           Showcase heeft geen leidende boot — alle zeven zijn gelijkwaardig
+           en mogen dus allemaal de boog/vervorming krijgen zodra ze naar de
+           tandwiel-cluster (of terug) bewegen. */
+        const remain = bi === 0 && variant !== 'showcase' ? 0 : Math.abs(boat.dcx - boat.tcx)
         const transit = Math.min(1, remain / TRANSIT_SPAN)
         boat.distort = transit
 
@@ -792,15 +1058,50 @@ export function useFleetScene({
             // hieronder (deining, jitter, opbouw, muis) is identiek aan hoe
             // hero/ambient een boot tekenen.
             const o = boats[p.boat]
-            let bx = p.jx[journeyStage] + (p.jx[journeyNext] - p.jx[journeyStage]) * journeyT
-            let by = p.jy[journeyStage] + (p.jy[journeyNext] - p.jy[journeyStage]) * journeyT
+            // Showcase heeft zijn eigen scène-klok (vier stadia, zie
+            // hierboven) in plaats van journey's scroll-voortgang (zes
+            // stadia) — verder is dit exact dezelfde lerp-tussen-twee-
+            // vormen-truc. Alleen boot 0 (de "zon") gaat ooit door de
+            // kompas-scène; elke andere boot slaat 'm over en blijft gewoon
+            // boot, dus die remapt SHOWCASE_COMPASS_STAGE naar
+            // SHOWCASE_VLOOT_STAGE — "er hoeft er maar één van te zijn".
+            const stageIdx =
+              variant !== 'showcase'
+                ? journeyStage
+                : p.boat === 0 || showcaseStage !== SHOWCASE_COMPASS_STAGE
+                  ? showcaseStage
+                  : SHOWCASE_VLOOT_STAGE
+            const nextIdx =
+              variant !== 'showcase'
+                ? journeyNext
+                : p.boat === 0 || showcaseNext !== SHOWCASE_COMPASS_STAGE
+                  ? showcaseNext
+                  : SHOWCASE_VLOOT_STAGE
+            const stageT = variant === 'showcase' ? showcaseT : journeyT
+            let bx = p.jx[stageIdx] + (p.jx[nextIdx] - p.jx[stageIdx]) * stageT
+            let by = p.jy[stageIdx] + (p.jy[nextIdx] - p.jy[stageIdx]) * stageT
+
+            // De zon is het enige zichtbare silhouet in elke scène — vloot,
+            // kompas, raket én tandwiel (satellieten blijven nu altijd
+            // onzichtbaar, zie de straal-schaling verderop) — en mag dus
+            // overal even fors groter zijn dan haar gewone bootmaat.
+            if (variant === 'showcase' && p.boat === 0) {
+              bx *= 1 + SHOWCASE_SOLO_SCALE
+              by *= 1 + SHOWCASE_SOLO_SCALE
+            }
 
             // De naald draait om de as (boot-lokale oorsprong), los van kast
             // en tikken — dezelfde reden dat het kompas 0.48 als middelpunt
-            // koos: dat valt hier al samen met (0, 0).
-            if (needleWobble !== 0 && p.slot !== undefined && NEEDLE_SLOTS.includes(p.slot)) {
-              const wx = bx * needleCos - by * needleSin
-              const wy = bx * needleSin + by * needleCos
+            // koos: dat valt hier al samen met (0, 0). Showcase heeft zijn
+            // eigen wobble (met de kompas-chaos erin) en geldt alleen voor
+            // boot 0 — journey heeft toch al maar één boot, dus de
+            // p.boat === 0-voorwaarde verandert daar niets.
+            const activeWobble = variant === 'showcase' ? showcaseNeedleWobble : needleWobble
+            if (activeWobble !== 0 && p.boat === 0 && p.slot !== undefined && NEEDLE_SLOTS.includes(p.slot)) {
+              const nc = variant === 'showcase' ? showcaseNeedleCos : needleCos
+              const ns = variant === 'showcase' ? showcaseNeedleSin : needleSin
+              const wx = bx * nc - by * ns
+              const wy = bx * ns + by * nc
               bx = wx
               by = wy
             }
@@ -814,6 +1115,23 @@ export function useFleetScene({
               by += (p.jy[rocketIndex] - by) * githubWeight
             }
 
+            // Showcase, tandwiel-scène: doorlopende rotatie om de eigen as
+            // van de boot, vóór de boot-transform hieronder — de "zon"
+            // (spinDir 1) en de "satellieten" (spinDir -1) draaien
+            // tegengesteld, zodat ze zichtbaar in elkaar grijpen. gearWeight
+            // laat dit geleidelijk intreden/uittreden met de morph zelf, in
+            // plaats van abrupt te beginnen te draaien op een nog half
+            // boot-vormige wolk.
+            if (variant === 'showcase' && gearWeight > 0) {
+              const spin = gearSpinBase * (o.spinDir ?? 1) * gearWeight
+              const sc = Math.cos(spin)
+              const ss = Math.sin(spin)
+              const rx = bx * sc - by * ss
+              const ry = bx * ss + by * sc
+              bx = rx
+              by = ry
+            }
+
             x = o.px + o.dx + bx * o.cos - by * o.sin
             y = o.py + o.dy + bx * o.sin + by * o.cos
 
@@ -821,6 +1139,16 @@ export function useFleetScene({
             // rafelt uiteen terwijl hij wegdrijft in plaats van als één blok
             // omhoog te schuiven.
             if (liftoffRise > 0) y -= liftoffRise * (p.vy ?? 70)
+
+            // Showcase, raketten-scène: geen eenmalig vertrek (dat is de
+            // aparte hero-lancering hierboven), maar een doorlopende
+            // stijg-en-zak-golf zolang deze scène duurt — elke boot op haar
+            // eigen fase (bobP), zodat de "lading" niet als één blok
+            // synchroon beweegt.
+            if (variant === 'showcase' && rocketWeight > 0) {
+              const riseWave = (1 - Math.cos(time * ROCKET_BOB_FREQ + o.bobP)) * 0.5
+              y -= riseWave * h * ROCKET_BOB_AMP_FRAC * rocketWeight * (0.6 + (p.vy ?? 70) / 140)
+            }
           } else {
             const o = boats[p.boat]
             x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
@@ -843,8 +1171,15 @@ export function useFleetScene({
           if (!frozen) {
             // Op volle overtocht buigt de jitter fors op: de boot oogt
             // onderweg als een korrelige, kokende wolk in plaats van een
-            // vast blokje dat over de rail schuift.
-            const ja = p.ja * (1 + distort * DISTORT_BOOST)
+            // vast blokje dat over de rail schuift. Showcase krijgt daar
+            // een tweede, eigen reden bovenop: tijdens elke scène-wissel
+            // zwelt de jitter op tot een piek halverwege het mengen en zakt
+            // daarna weer terug — de vorm valt zichtbaar uiteen en komt
+            // weer samen, in plaats van recht van de ene naar de andere
+            // vorm te lerpen.
+            const showcaseTransBoost =
+              variant === 'showcase' ? 1 + 4 * showcaseT * (1 - showcaseT) * SHOWCASE_TRANS_CHAOS : 1
+            const ja = p.ja * (1 + distort * DISTORT_BOOST) * showcaseTransBoost
             x += Math.sin(time * p.jf + p.jp) * ja
             y += Math.cos(time * p.jf * 0.8 + p.jp) * ja * 0.7
           }
@@ -910,6 +1245,13 @@ export function useFleetScene({
           } else {
             const lo = boats[p.boat]
             r = lo.launchPhase === 0 ? (p.rocket ? 0 : p.r) : p.r * launchScale(lo, !!p.rocket, p.lag)
+            // Showcase: de zon is in elke scène het enige zichtbare
+            // silhouet, ook bij de tandwielen — "1 tandwiel, even groot als
+            // de andere" in plaats van een zon-met-satellieten-cluster.
+            // Satellieten blijven dus altijd onzichtbaar.
+            if (variant === 'showcase' && p.boat !== 0) {
+              r = 0
+            }
           }
           if (r <= 0.02) continue
           const a = p.spin + (frozen ? 0 : time * 0.08)
@@ -931,9 +1273,10 @@ export function useFleetScene({
      *  `frozen`) springt tcx/tcy/theel meteen mee in plaats van in te lopen;
      *  layout() en draw() rekenen px/py daar zelf weer uit, dus die hoeven
      *  hier niet aangeraakt. Journey heeft geen formatie en negeert de
-     *  aanroep. */
+     *  aanroep; showcase evenmin — die stelt dcx/dcy/dheel zelf, elke frame,
+     *  in draw() (vlootpositie versus tandwiel-cluster, zie gearWeight). */
     function setFormation(index: number, snap: boolean): void {
-      if (variant === 'journey') return
+      if (variant === 'journey' || variant === 'showcase') return
 
       const formation = deriveFormation(index, variant)
       const doSnap = snap || frozen
@@ -968,9 +1311,12 @@ export function useFleetScene({
          seconde: het is een deinende achtergrond, geen animatie waar iemand
          naar zit te kijken. Journey is dat wél — die vorm hoort direct op
          scroll te reageren, dus die tekent elk frame, anders loopt de morph
-         achter de scrollpositie aan en voelt het schokkerig. */
+         achter de scrollpositie aan en voelt het schokkerig. Showcase heeft
+         geen scroll, maar wél een doorlopende rotatie en stijg-golf die op
+         30fps zichtbaar zou hakkelen, dus tekent die om dezelfde reden elk
+         frame. */
       const forming = now - t0 < formMs
-      const frameGap = variant === 'journey' ? 0 : 30
+      const frameGap = variant === 'journey' || variant === 'showcase' ? 0 : 30
       if (forming || now - lastFrame >= frameGap) {
         lastFrame = now
         if (now - lastPalette >= 220) {
