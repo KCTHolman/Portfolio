@@ -1,0 +1,78 @@
+/* ==========================================================================
+   De vloot — plaatsing van het canvas dat assets/fleet.js vult.
+
+   Twee mountpunten, allebei puur decoratief en dus buiten de leesvolgorde:
+     .kh-home-visual  de kolom naast de titel op de homepage
+     .kh-ambient      een schermvullende laag achter de inhoud elders
+
+   Alle vorm zit in het script; hier staat alleen waar het canvas hangt, hoe
+   het invaart en waar het aan de randen oplost.
+   ========================================================================== */
+
+@keyframes khFleetIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Geen masker. Een zachte rand rondom leek eerst netjes, maar juist die rand
+   verraadt waar het canvas ophoudt — en dan lees je een paneel in plaats van
+   een lucht. Het veld loopt nu gewoon door tot de schermrand, waar de
+   vignettering van de aurora het overneemt. */
+.kh-fleet-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ---------- Home: schermvullend, vloot rechts --------------------------- */
+
+/* Het beeld is geen kolom naast de tekst maar een laag over het hele scherm:
+   de boten liggen rechts, het stof drijft overal. Vast aan het beeldscherm,
+   net als de aurora eronder — de home is één scherm, dus er valt niets weg
+   te scrollen. z-index 0 binnen de main houdt het onder de leesregels
+   (.kh-home-copy staat op 1) en boven de wash. */
+.kh-home-visual {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.kh-home-visual.is-varend { opacity: 1; }
+
+/* ---------- Elders: een verre vloot achter de inhoud --------------------- */
+
+.kh-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+.kh-ambient.is-varend { opacity: 0.45; }
+
+/* ---------- Smalle schermen ---------------------------------------------
+   De laag blijft schermvullend; wat verandert is hoeveel hij mag opvallen.
+   Naarmate de tekst meer van het scherm inneemt, zakt het beeld terug —
+   want daar vecht het om dezelfde vierkante centimeters als de leesregels,
+   en die hebben voorrang.
+   -------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .kh-home-visual.is-varend { opacity: 0.6; }
+}
+
+@media (max-width: 699px) {
+  .kh-home-visual.is-varend { opacity: 0.3; }
+  .kh-ambient.is-varend { opacity: 0.32; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-home-visual,
+  .kh-ambient { transition: none; }
+}

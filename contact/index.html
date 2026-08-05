@@ -25,14 +25,18 @@
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 
-<link rel="stylesheet" href="../assets/site.css?v=51">
-<link rel="stylesheet" href="../assets/aurora.css?v=51">
-<script src="../assets/transitions.js?v=51"></script>
+<link rel="stylesheet" href="../assets/site.css?v=52">
+<link rel="stylesheet" href="../assets/aurora.css?v=52">
+<link rel="stylesheet" href="../assets/fleet.css?v=52">
+<script src="../assets/transitions.js?v=52"></script>
 </head>
 <body>
 <a class="kh-skip" href="#inhoud">Naar de inhoud</a>
 
 <div class="kh-shell">
+  <!-- Een paar verre boten achter de inhoud, in dezelfde kleuren als de
+       aurora eronder. Puur sfeer; assets/fleet.js vult het canvas. -->
+  <div class="kh-ambient" data-fleet="ambient" aria-hidden="true"></div>
   <header class="kh-header">
     <div class="kh-header-inner">
       <a class="kh-brand" href="../">
@@ -70,7 +74,8 @@
   </footer>
 </div>
 
-<script src="../assets/aurora.js?v=51" defer></script>
+<script src="../assets/aurora.js?v=52" defer></script>
+<script src="../assets/fleet.js?v=52" defer></script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
