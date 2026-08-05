@@ -35,46 +35,41 @@ export function SiteFooter() {
 
   return (
     <footer className="kh-footer">
-      <div className="kh-footer-inner">
-        {/* Open: de navigatie neemt tijdelijk de plek van merknaam + presets
-            in. Dicht: gewoon de merknaam, met de presets rechts ernaast. */}
-        <div className="kh-footer-menu">
-          <button
-            type="button"
-            className="kh-menu-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="kh-footer-nav"
-            aria-label={menuOpen ? 'Menu sluiten' : 'Menu openen'}
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span className="kh-menu-toggle-bars" aria-hidden="true" />
-          </button>
+      {/* data-menu-open stuurt alleen iets aan onder de mobiele breakpoint
+          (zie .kh-menu-toggle in site.css): op desktop staan merknaam, menu
+          en presets gewoon alle drie naast elkaar, geen hamburger nodig. */}
+      <div className="kh-footer-inner" data-menu-open={menuOpen}>
+        <button
+          type="button"
+          className="kh-menu-toggle"
+          aria-expanded={menuOpen}
+          aria-controls="kh-footer-nav"
+          aria-label={menuOpen ? 'Menu sluiten' : 'Menu openen'}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span className="kh-menu-toggle-bars" aria-hidden="true" />
+        </button>
 
-          {menuOpen ? (
-            <nav className="kh-footer-nav" id="kh-footer-nav" aria-label="Hoofdmenu">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  className="khnav"
-                  href={item.href}
-                  aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          ) : (
-            <Link className="kh-brand" href="/">
-              <span className="kh-dot" />
-              Koen Holman
-            </Link>
-          )}
+        <div className="kh-footer-menu">
+          <Link className="kh-brand" href="/">
+            <span className="kh-dot" />
+            Koen Holman
+          </Link>
+          <nav className="kh-footer-nav" id="kh-footer-nav" aria-label="Hoofdmenu">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                className="khnav"
+                href={item.href}
+                aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
-        {/* Presets rechts: elke swatch rijdt op de live accentvariabelen van
-            zijn eigen preset, zodat de rij mee blijft zwaaien. Verdwijnt
-            zolang het menu open staat, want die plek is dan voor de nav. */}
-        {!menuOpen && <AuroraSwatches />}
+        <AuroraSwatches />
       </div>
     </footer>
   )

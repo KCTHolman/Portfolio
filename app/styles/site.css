@@ -110,9 +110,12 @@ button:focus-visible,
 
 /* Klein en rond, zoals de rest van de footer-tekens. De drie streepjes
    worden er met ::before/::after bij getekend en draaien naar een kruis
-   zodra het menu open staat — geen los icoon-lettertype nodig. */
+   zodra het menu open staat — geen los icoon-lettertype nodig.
+   Alleen op mobiel: op desktop passen merknaam + menu + presets gewoon
+   naast elkaar, dus blijft dit standaard verborgen (zie media query bij
+   .kh-footer-menu hieronder). */
 .kh-menu-toggle {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   flex: none;
@@ -543,12 +546,15 @@ a.khnav[aria-current="page"]::after {
   flex-shrink: 0;
 }
 
-/* Pas als wordmark + vier nav-items zelf niet meer passen — ook niet nadat de
-   presets al zijn platgeknepen — mag het menu ook inschikken en een eigen
-   veegbare strip worden. De fade aan de rechterkant zegt dat er meer is. */
+/* Onder deze breedte passen wordmark + hoofdmenu niet meer naast de presets:
+   in plaats van alles te verdrukken tot een veegbare strip komt er een
+   hamburger. Dicht staat alleen de merknaam er, open vervangt de nav
+   tijdelijk merknaam + presets — zie data-menu-open op .kh-footer-inner. */
 @media (max-width: 859px) {
-  .kh-footer-menu {
-    flex-shrink: 1;
+  .kh-menu-toggle { display: flex; }
+
+  .kh-footer-nav {
+    display: none;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -556,9 +562,13 @@ a.khnav[aria-current="page"]::after {
     mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent 100%);
   }
-  .kh-footer-menu::-webkit-scrollbar { display: none; }
+  .kh-footer-nav::-webkit-scrollbar { display: none; }
 
   a.khnav { flex: none; }
+
+  .kh-footer-inner[data-menu-open="true"] .kh-footer-nav { display: flex; }
+  .kh-footer-inner[data-menu-open="true"] .kh-brand,
+  .kh-footer-inner[data-menu-open="true"] .aur-presets { display: none; }
 }
 
 @media (max-width: 699px) {
