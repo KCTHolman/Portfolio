@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vloot — losse proefopstelling</title>
+<!-- Werkbank voor assets/fleet.js: dezelfde code, zonder aurora en zonder
+     pagina eromheen, in een paar maten naast elkaar. Staat buiten de sitemap
+     en de navigatie; alleen om de vorm te kunnen beoordelen. -->
+<link rel="stylesheet" href="../assets/fleet.css">
+<style>
+  body { margin: 0; background: #010309; font: 11px/1.4 system-ui, sans-serif; color: #6d7f92; }
+  .row { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
+  .cell { position: relative; }
+  .cell > b { position: absolute; top: 4px; left: 6px; z-index: 2; font-weight: 400; letter-spacing: .1em; text-transform: uppercase; }
+  .box { position: relative; outline: 1px solid rgba(255,255,255,.08); }
+  .a { width: 500px; height: 800px; }
+  .b { width: 720px; height: 560px; }
+  .c { width: 340px; height: 420px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="cell"><b>500 &times; 800</b><div class="box a kh-home-visual" data-fleet="hero"></div></div>
+  <div class="cell"><b>720 &times; 560</b><div class="box b kh-home-visual" data-fleet="hero"></div></div>
+  <div class="cell"><b>340 &times; 420</b><div class="box c kh-home-visual" data-fleet="hero"></div></div>
+</div>
+<script src="../assets/fleet.js"></script>
+</body>
+</html>

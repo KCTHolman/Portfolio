@@ -30,44 +30,49 @@
     background: radial-gradient(125% 105% at 50% 0%, #050c1a 0%, #02060f 30%, #010309 54%, #000000 78%);
   }
   main { max-width: 560px; }
+  /* Zelfde afspraken als assets/site.css, hier met de hand overgenomen: het
+     amberen labeltje, een kop op schaal met negatieve spatiëring, en één
+     gevulde pil als enige actie. */
   .eyebrow {
     font-size: 11px;
-    letter-spacing: 0.36em;
+    font-weight: 500;
+    letter-spacing: 0.34em;
     text-transform: uppercase;
-    color: rgba(180, 206, 228, 0.6);
+    color: #ffb829;
   }
   h1 {
-    margin: 18px 0 0;
+    margin: 22px 0 0;
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-weight: 500;
-    font-size: clamp(40px, 8vw, 72px);
-    line-height: 1.02;
+    font-size: clamp(44px, 8.4vw, 82px);
+    letter-spacing: -0.022em;
+    line-height: 0.98;
     color: #f4f7ff;
   }
   h1 em { font-style: italic; color: #7de0d2; }
   p {
-    margin: 22px 0 30px;
+    margin: 26px 0 34px;
     font-weight: 300;
-    font-size: 17px;
-    line-height: 1.6;
+    font-size: 18px;
+    line-height: 1.55;
     color: rgba(228, 238, 250, 0.82);
   }
   a {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    padding: 13px 22px;
-    border-radius: 12px;
-    border: 1px solid rgba(125, 224, 210, 0.4);
-    background: rgba(125, 224, 210, 0.1);
-    color: #9ff0e2;
+    padding: 15px 24px;
+    border-radius: 999px;
+    background: #7de0d2;
+    color: #04120f;
     text-decoration: none;
     font-size: 11.5px;
+    font-weight: 500;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     transition: background .25s;
   }
-  a:hover { background: rgba(125, 224, 210, 0.18); }
+  a:hover { background: #9ff0e2; }
   a:focus-visible { outline: 2px solid #9ff0e2; outline-offset: 3px; }
 </style>
 </head>

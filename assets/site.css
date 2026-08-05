@@ -13,9 +13,17 @@
   --kh-ink-bright: #f4f7ff;
   --kh-teal: #7de0d2;
   --kh-teal-soft: #9ff0e2;
+  /* Eén warm accent tegenover al dat groenblauw, alleen voor de kleine
+     kapitalen boven een tekstblok en de wimpel in de vloot. Het is een
+     accent, nooit een vlak. */
+  --kh-amber: #ffb829;
+  --kh-ash: rgba(206, 222, 238, 0.6);
   --kh-line: rgba(255, 255, 255, 0.07);
   --kh-surface-line: rgba(255, 255, 255, 0.08);
   --kh-measure: 1140px;
+  /* Eén radius voor alles wat nog een vlak heeft. Pillen zijn de uitzondering
+     en zijn volledig rond. */
+  --kh-radius: 24px;
 
   /* Live aurora variables. assets/aurora.js rewrites these every frame while
      auto-evolve is on; the values here are the t=0 state of that animation —
@@ -168,25 +176,36 @@ button:focus-visible,
   a.khnav { flex: none; }
 }
 
+/* Geen omlijnde pillen meer: de rangorde komt uit de kleur alleen — grijs
+   voor de rest, licht voor waar je staat. Het menu hoort op de achtergrond
+   te liggen, niet als vier knoppen naast de wordmark. De padding blijft,
+   want dat is het aanraakvlak. */
 a.khnav {
+  position: relative;
   text-decoration: none;
   padding: 8px 13px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+  border-radius: 8px;
   font-size: 11px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(206, 222, 238, 0.6);
-  transition: color .25s, background .25s, border-color .25s;
+  color: var(--kh-ash);
+  transition: color .25s;
 }
-a.khnav:hover {
-  color: var(--kh-teal-soft);
-  background: rgba(125, 224, 210, 0.07);
-}
-a.khnav[aria-current="page"] {
-  color: var(--kh-teal-soft);
-  background: rgba(125, 224, 210, 0.1);
-  border-color: rgba(125, 224, 210, 0.35);
+a.khnav:hover { color: var(--kh-ink-bright); }
+
+a.khnav[aria-current="page"] { color: var(--kh-ink-bright); }
+
+/* Kleur alleen is genoeg om te zien waar je bent, maar niet voor iedereen:
+   een stip van twee bij twee zegt hetzelfde zonder op kleur te leunen. */
+a.khnav[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--t1, var(--kh-teal));
 }
 
 /* ---------- Main + footer -------------------------------------------- */
@@ -217,10 +236,29 @@ a.khnav[aria-current="page"] {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 24px;
-  padding-top: 18px;
-  padding-bottom: 18px;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
+
+/* Asymmetrisch: alles wat je leest staat links in één kolom, de vloot krijgt
+   de rechterhelft. Die helft was al leeg — de kaarten stoppen bij 560px — en
+   dat is precies waarom het beeld daar hoort en niet eronder. */
+.kh-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.88fr);
+  align-items: center;
+  gap: 30px;
+}
+
+.kh-home-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 600px;
+}
+
 .kh-home .kh-hero {
   min-height: 0;
   padding: 0;
@@ -228,20 +266,38 @@ a.khnav[aria-current="page"] {
 .kh-now { padding: 0; }
 .kh-now-card { max-width: 560px; }
 
-/* Op een telefoon is de kaart hoger (ticker van drie regels), dus de ruimte
-   eromheen krimpt mee — anders past het scherm net niet meer. */
+/* Tussen tablet en desktop blijft de split staan, maar krijgt de vloot een
+   smallere strook: liever een kleine boot in een eigen kolom dan een groot
+   beeld dwars achter de leesregels. */
+@media (max-width: 1023px) {
+  .kh-home-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.5fr);
+    gap: 20px;
+  }
+  .kh-home-copy { gap: 20px; }
+}
+
+/* Op een telefoon is er geen kolom meer over: het beeld zakt achter de tekst
+   (zie fleet.css) in plaats van eronder — eronder zou van deze pagina van één
+   scherm ineens twee maken. En de kaart is hier hoger (ticker van drie
+   regels), dus de ruimte eromheen krimpt mee. */
 @media (max-width: 699px) {
+  .kh-home-grid {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
   .kh-home .kh-main--home {
-    gap: 16px;
     padding-top: 14px;
     padding-bottom: 14px;
   }
+  .kh-home-copy { gap: 16px; }
 }
 .kh-main--werk    { padding: 0 20px 96px; }
-.kh-main--over    { padding: 56px 20px 110px; }
-.kh-main--contact { padding: 56px 20px 130px; }
-.kh-main--error   { padding: 56px 20px 130px; }
-.kh-main--logboek { padding: 44px 20px 80px; }
+.kh-main--over    { padding: 76px 20px 120px; }
+.kh-main--contact { padding: 76px 20px 130px; }
+.kh-main--error   { padding: 76px 20px 130px; }
+.kh-main--logboek { padding: 52px 20px 80px; }
 
 /* ---------- Logboek: run links, feiten rechts ------------------------- */
 
@@ -261,10 +317,10 @@ a.khnav[aria-current="page"] {
 .kh-back:hover { color: var(--kh-teal-soft); }
 
 .kh-logboek {
-  margin-top: 34px;
+  margin-top: 44px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 30px;
+  gap: 44px;
   /* Stretch, not start: with the list scrolling inside, the sidebar has no
      intrinsic height of its own, so the row is as tall as the run and the
      panel matches it exactly. */
@@ -276,25 +332,24 @@ a.khnav[aria-current="page"] {
    out of flow keeps it from dictating the row. */
 .kh-facts-slot { position: relative; }
 
+/* Ook hier geen doos: de kolom hangt aan één haarlijn bovenaan en verder aan
+   de ruimte tussen hem en de run. */
 .kh-facts {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 24px 26px;
-  border-radius: 18px;
-  border: 1px solid var(--kh-surface-line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  padding: 22px 0 0 4px;
+  border-top: 1px solid var(--kh-line);
 }
 
 .kh-facts-title {
   margin: 0;
   font-family: 'Cormorant Garamond', serif;
   font-weight: 500;
-  font-size: 26px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   color: var(--kh-ink-bright);
 }
@@ -406,10 +461,10 @@ a.khnav[aria-current="page"] {
     flex: none;
     width: min(78%, 300px);
     scroll-snap-align: start;
-    padding: 17px 19px;
+    padding: 19px 21px;
     border: 1px solid var(--kh-surface-line);
     border-top: 1px solid var(--kh-surface-line);
-    border-radius: 15px;
+    border-radius: var(--kh-radius);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
   }
   .kh-fact p { font-size: 13px; }
@@ -478,22 +533,31 @@ a.khnav[aria-current="page"] {
 
 /* ---------- Type ------------------------------------------------------ */
 
+/* Het label boven een tekstblok: klein, gespatieerd, amber. Eén warme regel
+   tegenover een kop van honderd pixels — dat contrast doet meer werk dan een
+   tweede grote maat zou doen. */
 .kh-eyebrow {
   margin: 0;
   font-size: 11px;
-  letter-spacing: 0.36em;
+  font-weight: 500;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: rgba(180, 206, 228, 0.6);
+  color: var(--kh-amber);
 }
-.kh-eyebrow--hero { letter-spacing: 0.42em; }
+.kh-eyebrow--hero { letter-spacing: 0.4em; }
 
+/* Groter en strakker aangesnoerd. De rangorde komt hier van de maat en de
+   negatieve spatiëring, niet van een zwaardere snede: de koppen staan op
+   500 en dat blijft zo, hoe groot ze ook worden. */
 .kh-page-title {
-  margin: 18px 0 0;
+  margin: 22px 0 0;
   font-family: 'Cormorant Garamond', serif;
   font-weight: 500;
-  font-size: clamp(36px, 5.4vw, 64px);
-  line-height: 1.02;
+  font-size: clamp(42px, 6.6vw, 82px);
+  letter-spacing: -0.022em;
+  line-height: 0.98;
   color: var(--kh-ink-bright);
+  text-wrap: balance;
 }
 
 .kh-accent {
@@ -501,22 +565,26 @@ a.khnav[aria-current="page"] {
   color: var(--kh-teal);
 }
 
+/* Lopende tekst op de lichtste snede die Space Grotesk heeft (300) en op
+   18px: luchtig lezen hoort bij deze pagina's, dus de body wordt dunner
+   gezet in plaats van dikker. */
 .kh-lead {
-  margin: 20px 0 0;
+  margin: 24px 0 0;
+  max-width: 34em;
   font-weight: 300;
-  font-size: 17px;
-  line-height: 1.6;
+  font-size: 18px;
+  line-height: 1.55;
   color: rgba(222, 234, 247, 0.74);
   text-wrap: pretty;
 }
 
 /* Small uppercase section heading, e.g. "Waar ik nu aan bouw". */
 .kh-section-label {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  font-weight: 400;
+  font-weight: 500;
   color: rgba(180, 206, 228, 0.55);
 }
 
@@ -543,12 +611,16 @@ a.khnav[aria-current="page"] {
   animation: khRise 1s ease both;
 }
 
+/* Eén maat groter dan het comfortabel is, en strak aangesnoerd. De snede
+   blijft 500 — precies dezelfde als de kaarttitels — dus alle rangorde op
+   deze pagina komt van schaal en spatiëring. */
 .kh-hero-title {
-  margin: 20px 0 0;
+  margin: 14px 0 0;
   font-family: 'Cormorant Garamond', serif;
   font-weight: 500;
-  font-size: clamp(48px, 9vw, 118px);
-  line-height: 0.94;
+  font-size: clamp(48px, 6.4vw, 100px);
+  letter-spacing: -0.028em;
+  line-height: 0.92;
   color: var(--kh-ink-bright);
   text-shadow: 0 2px 44px rgba(45, 212, 191, 0.28);
 }
@@ -564,20 +636,23 @@ a.khnav[aria-current="page"] {
 }
 
 .kh-hero-lead {
-  margin: 20px 0 0;
-  max-width: 600px;
+  margin: 18px 0 0;
+  max-width: 480px;
   font-weight: 300;
-  font-size: clamp(16px, 1.8vw, 20px);
+  font-size: clamp(16px, 1.5vw, 18px);
   line-height: 1.55;
   color: rgba(222, 234, 247, 0.78);
   text-wrap: pretty;
 }
 
+/* Ruimer dan het lijkt te hoeven: één gevulde knop naast een kale tekstlink
+   heeft die lucht nodig, anders lezen ze als een paar. */
 .kh-cta-row {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 22px;
   flex-wrap: wrap;
-  margin-top: 28px;
+  margin-top: 24px;
 }
 
 /* ---------- Rotating facts on the project card ------------------------- */
@@ -588,8 +663,8 @@ a.khnav[aria-current="page"] {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin: 14px 0 0;
-  padding-top: 12px;
+  margin: 10px 0 0;
+  padding-top: 10px;
   border-top: 1px solid var(--kh-line);
 }
 
@@ -652,7 +727,7 @@ a.khnav[aria-current="page"] {
 /* The two deep links under the project card, in the same underlined style
    as the showcase's own footer links. */
 .kh-project-links {
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 14px;
   align-items: center;
 }
@@ -710,33 +785,39 @@ a.kh-pill:hover {
   }
 }
 
+/* Precies één gevulde knop per scherm — de rest is kale tekst. Zolang er
+   maar één vlak groen op de pagina staat, hoeft niemand te zoeken wat de
+   hoofdactie is. */
 a.khcta {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 13px 22px;
-  border-radius: 12px;
   text-decoration: none;
   font-size: 11.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  transition: background .25s, border-color .25s, color .25s;
+  transition: background .25s, color .25s, opacity .25s;
 }
 a.khcta--primary {
-  border: 1px solid rgba(125, 224, 210, 0.4);
-  background: rgba(125, 224, 210, 0.1);
-  color: var(--kh-teal-soft);
+  padding: 15px 24px;
+  border-radius: 999px;
+  background: var(--kh-teal);
+  /* Donkere inkt op vol groen: de enige plek op de site waar de tekst niet
+     licht is, en juist daardoor niet te missen. */
+  color: #04120f;
+  font-weight: 500;
 }
-a.khcta--primary:hover { background: rgba(125, 224, 210, 0.18); }
+a.khcta--primary:hover {
+  background: var(--kh-teal-soft);
+  color: #04120f;
+}
 a.khcta--ghost {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(226, 238, 250, 0.78);
+  padding: 15px 2px;
+  border: 0;
+  background: none;
+  color: var(--kh-ash);
 }
-a.khcta--ghost:hover {
-  border-color: rgba(255, 255, 255, 0.26);
-  color: var(--kh-ink-bright);
-}
+a.khcta--ghost:hover { color: var(--kh-ink-bright); }
 
 /* Tijdelijk monogram tot het echte Indicia-beeldmerk klaarstaat. */
 .kh-indicia-mark {
@@ -758,42 +839,34 @@ a.khcta--ghost:hover {
    twee schermbrede knoppen lezen bovendien als een formulier. */
 @media (max-width: 699px) {
   .kh-cta-row {
-    gap: 8px;
-    margin-top: 22px;
+    gap: 16px;
+    margin-top: 24px;
     flex-wrap: nowrap;
   }
   a.khcta {
-    padding: 12px 15px;
     font-size: 10.5px;
     letter-spacing: 0.14em;
     white-space: nowrap;
   }
+  a.khcta--primary { padding: 13px 19px; }
+  a.khcta--ghost { padding: 13px 2px; }
 }
 
 /* ---------- Surfaces -------------------------------------------------- */
 
-/* Deliberately thin: these sit over the aurora, and the wash should read
-   through them rather than stop at their edge. */
-.kh-panel,
-a.khcard {
-  border-radius: 18px;
-  border: 1px solid var(--kh-surface-line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: 26px 28px;
-}
-
+/* Geen kaders meer. Deze blokken stonden al bewust dun over de aurora heen;
+   de rand, de vulling en de blur weghalen maakt dat af — de wash loopt er nu
+   dwars doorheen en de scheiding komt van witruimte plus, waar het krap is,
+   één haarlijn erboven. .kh-panel heeft daardoor zelf geen regel meer nodig;
+   wat het blok nog krijgt, staat bij .kh-panel-grid en .kh-now-card. */
 a.khcard {
   display: block;
+  border-radius: var(--kh-radius);
   text-decoration: none;
   color: inherit;
-  transition: border-color .25s, transform .25s;
+  transition: transform .25s;
 }
-a.khcard:hover {
-  border-color: rgba(125, 224, 210, 0.35);
-  transform: translateY(-2px);
-}
+a.khcard:hover { transform: translateY(-2px); }
 
 .kh-card-kicker {
   display: block;
@@ -805,9 +878,10 @@ a.khcard:hover {
 
 .kh-card-title {
   display: block;
-  margin-top: 12px;
+  margin-top: 8px;
   font-family: 'Cormorant Garamond', serif;
-  font-size: 30px;
+  font-size: clamp(28px, 3.2vw, 34px);
+  letter-spacing: -0.02em;
   line-height: 1;
   color: var(--kh-ink-bright);
 }
@@ -823,45 +897,65 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
 
 .kh-card-body {
   display: block;
-  margin-top: 11px;
+  margin-top: 9px;
   font-weight: 300;
   font-size: 14.5px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: rgba(214, 230, 245, 0.68);
   text-wrap: pretty;
 }
 
-/* A teaser, not a project page yet: dashed and dimmer, no link to follow. */
+/* Zonder rand hebben de twee projecten op de home nog wel een aanhechting
+   nodig, en op één scherm is er geen ruimte voor de witruimte die dat
+   normaal doet. Eén haarlijn erboven is het minimum dat werkt: een streep,
+   geen doos. */
+.kh-now-card,
+.kh-soon-card {
+  padding-top: 14px;
+  border-top: 1px solid var(--kh-line);
+}
+
+/* A teaser, not a project page yet: dimmer, no link to follow. */
 .kh-soon-card {
   margin-top: 14px;
   max-width: 560px;
-  border-style: dashed;
-  opacity: 0.82;
+  opacity: 0.72;
 }
 .kh-card-title--static { color: var(--kh-ink-bright); }
 
 /* ---------- Over: numbered panels ------------------------------------- */
 
+/* De kolommen staan nu uit elkaar in plaats van naast elkaar in dozen: de
+   ruimte tussen twee blokken is groter dan de ruimte binnen één blok, en dat
+   is het hele scheidingsmechanisme. */
 .kh-panel-grid {
-  margin-top: 34px;
+  margin-top: 60px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  column-gap: 48px;
+  row-gap: 52px;
+}
+
+.kh-panel-grid .kh-panel {
+  padding-top: 22px;
+  border-top: 1px solid var(--kh-line);
 }
 
 .kh-panel-num {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.32em;
   color: var(--kh-teal);
 }
 
 .kh-panel-title {
-  margin: 14px 0 12px;
+  margin: 16px 0 14px;
   font-family: 'Cormorant Garamond', serif;
   font-weight: 500;
   font-style: italic;
-  font-size: 32px;
+  font-size: clamp(32px, 3.4vw, 40px);
+  letter-spacing: -0.02em;
   line-height: 1;
   color: var(--kh-ink-bright);
 }
@@ -869,7 +963,7 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
 .kh-panel-body {
   margin: 0;
   font-weight: 300;
-  font-size: 16px;
+  font-size: 16.5px;
   line-height: 1.62;
   color: rgba(228, 238, 250, 0.82);
   text-wrap: pretty;
@@ -911,9 +1005,10 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
 /* ---------- Contact ---------------------------------------------------- */
 
 .kh-contact-lead {
-  margin: 22px 0 30px;
+  margin: 26px 0 40px;
+  max-width: 30em;
   font-weight: 300;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.6;
   color: rgba(228, 238, 250, 0.82);
   text-wrap: pretty;
@@ -921,7 +1016,7 @@ a.kh-card-title:hover { color: var(--kh-teal-soft); }
 
 .kh-link-row {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   flex-wrap: wrap;
   font-size: 15px;
 }

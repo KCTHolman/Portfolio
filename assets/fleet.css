@@ -1,0 +1,97 @@
+/* ==========================================================================
+   De vloot — plaatsing van het canvas dat assets/fleet.js vult.
+
+   Twee mountpunten, allebei puur decoratief en dus buiten de leesvolgorde:
+     .kh-home-visual  de kolom naast de titel op de homepage
+     .kh-ambient      een schermvullende laag achter de inhoud elders
+
+   Alle vorm zit in het script; hier staat alleen waar het canvas hangt, hoe
+   het invaart en waar het aan de randen oplost.
+   ========================================================================== */
+
+@keyframes khFleetIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.kh-fleet-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  /* Zacht aan alle kanten: een sterrenbeeld dat op de kolomrand wordt
+     afgesneden leest als een plaatje in een kader, en dat is het niet. Ruim
+     genoeg om de boeg en de spiegel heel te laten — het masker mag de rand
+     verzachten, niet de vorm aansnijden. */
+  mask-image: radial-gradient(98% 94% at 50% 52%, #000 64%, transparent 100%);
+  -webkit-mask-image: radial-gradient(98% 94% at 50% 52%, #000 64%, transparent 100%);
+}
+
+/* ---------- Home: de kolom naast de titel ------------------------------- */
+
+.kh-home-visual {
+  position: relative;
+  min-height: 340px;
+  /* Het canvas hangt absoluut, dus zonder dit heeft de kolom geen hoogte van
+     zichzelf en klapt de grid-rij dicht. */
+  align-self: stretch;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.kh-home-visual.is-varend { opacity: 1; }
+
+/* ---------- Elders: een verre vloot achter de inhoud --------------------- */
+
+.kh-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+.kh-ambient.is-varend { opacity: 0.45; }
+
+.kh-ambient .kh-fleet-canvas {
+  mask-image: radial-gradient(120% 100% at 50% 42%, #000 30%, transparent 92%);
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 42%, #000 30%, transparent 92%);
+}
+
+/* ---------- Smalle schermen ---------------------------------------------
+   Op een tablet houdt de vloot een eigen — smallere — kolom (zie site.css).
+   Pas op een telefoon is er niets meer naast te zetten: dan zakt hij achter
+   de inhoud, als tweede laag op de aurora. Eronder plakken zou van de home
+   van één scherm ineens twee maken.
+   -------------------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .kh-home-visual { min-height: 260px; }
+}
+
+@media (max-width: 699px) {
+  .kh-home-visual {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  /* Achter de tekst mag het beeld niet meer dan een schaduw zijn: hier vecht
+     het om dezelfde vierkante centimeters als de leesregels, en die hebben
+     voorrang. */
+  .kh-home-visual.is-varend { opacity: 0.26; }
+
+  .kh-home-visual .kh-fleet-canvas {
+    mask-image: radial-gradient(110% 92% at 50% 46%, #000 34%, transparent 94%);
+    -webkit-mask-image: radial-gradient(110% 92% at 50% 46%, #000 34%, transparent 94%);
+  }
+
+  .kh-ambient.is-varend { opacity: 0.32; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-home-visual,
+  .kh-ambient { transition: none; }
+}
