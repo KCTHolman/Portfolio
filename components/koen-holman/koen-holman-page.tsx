@@ -1,5 +1,3 @@
-'use client'
-
 /* ==========================================================================
    /koen-holman/ — Over en Contact samen.
 
@@ -13,7 +11,7 @@
    lading raketjes en een tandwiel.
    ========================================================================== */
 
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 import { GitHubIcon, InstagramIcon, LinkedInIcon } from '@/components/social-icons'
 
 import { PANELS } from './panel-data'

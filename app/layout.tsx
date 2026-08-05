@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { headers } from 'next/headers'
 import Script from 'next/script'
 import type { ReactNode } from 'react'
 
@@ -30,16 +29,26 @@ export const viewport: Viewport = {
   themeColor: '#010309',
 }
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  /* Dwingt dynamische rendering af. Dat is geen bijvangst maar de hele reden:
-     Next zet de nonce uit proxy.ts pas op z'n inline scripts als de HTML
-     per verzoek gemaakt wordt. Statisch geprerenderde HTML kan geen nonce per
-     verzoek dragen, en dan blokkeert je eigen CSP je eigen hydration. */
-  await headers()
+/* De drie subsets die de bovenste helft van elke pagina nodig heeft — de
+ * "latin-ext"-varianten (accenten buiten Latin-1) laten we aan de gewone
+ * @font-face-ontdekking over, die is nooit boven de vouw nodig. Zonder deze
+ * hint ontdekt de browser deze bestanden pas ná het parsen van fonts.css; de
+ * hero-titel (en de cursieve "Holman" erin, een apart gewicht) staat dan
+ * langer in de fallback voordat hij naar het echte font wisselt. */
+const CRITICAL_FONTS = [
+  '/assets/fonts/space-grotesk-latin.woff2',
+  '/assets/fonts/cormorant-garamond-latin.woff2',
+  '/assets/fonts/cormorant-garamond-italic-latin.woff2',
+]
 
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="nl">
       <body>
+        {CRITICAL_FONTS.map((href) => (
+          <link key={href} rel="preload" href={href} as="font" type="font/woff2" crossOrigin="anonymous" />
+        ))}
+
         <a className="kh-skip" href="#inhoud">
           Naar de inhoud
         </a>

@@ -16,7 +16,7 @@
 import { useRef, useState } from 'react'
 
 import { Link } from '@/components/link'
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 import { RUN_STEPS } from '@/components/showcase/run-data'
 import { CHECKS, METRICS, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
 import { useJourneyProgress } from '@/lib/use-journey-progress'

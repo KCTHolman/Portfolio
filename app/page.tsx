@@ -1,6 +1,6 @@
 import { Link } from '@/components/link'
 
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 import { pageMetadata } from '@/lib/metadata'
 
 export const metadata = pageMetadata({

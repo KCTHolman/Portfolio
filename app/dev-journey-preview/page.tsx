@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 
 const STAGE_NAMES = ['boot', 'kompas', 'tandwiel', 'schild', 'sleutel', 'raket']
 const STAGE_MS = 3400

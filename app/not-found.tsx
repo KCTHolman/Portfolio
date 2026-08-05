@@ -1,6 +1,6 @@
 import { Link } from '@/components/link'
 
-import { Fleet } from '@/components/fleet'
+import { Fleet } from '@/components/fleet-lazy'
 
 /* De losse 404 had z'n eigen inline stijlen omdat hij buiten de shell stond.
    Onder de App Router valt hij binnen de root layout, dus hier draait hij op
