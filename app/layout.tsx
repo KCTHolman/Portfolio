@@ -8,7 +8,6 @@ import './styles/fleet.css'
 
 import { AuroraProvider } from '@/components/aurora/aurora-provider'
 import { AuroraStage } from '@/components/aurora/aurora-stage'
-import { AuroraToast } from '@/components/aurora/aurora-toast'
 import { SiteFooter } from '@/components/site-footer'
 import { ViewTransitions } from '@/components/view-transitions'
 import { SITE_URL } from '@/lib/metadata'
@@ -59,7 +58,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <AuroraStage />
               {children}
               <SiteFooter />
-              <AuroraToast />
             </div>
           </AuroraProvider>
         </ViewTransitions>

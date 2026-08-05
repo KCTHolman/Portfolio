@@ -34,8 +34,8 @@ export function usePrefersReducedMotion(): boolean {
 
 /**
  * Telefoonbreedte — hetzelfde breekpunt dat de layout al als "telefoon"
- * behandelt. De wash en de vloot zetten hier één stilstaand beeld neer in
- * plaats van een lopende animatie.
+ * behandelt. De vloot gebruikt dit om op een smal scherm een groter aandeel
+ * van de viewport te claimen.
  */
 export function useNarrowScreen(): boolean {
   return useMediaQuery('(max-width: 699px)')

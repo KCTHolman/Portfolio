@@ -56,10 +56,11 @@ export function Fleet(props: FleetProps) {
     mountRef,
     canvasRef,
     variant,
-    /* Stilstaand beeld in plaats van een lopende animatie: bij reduced motion
-       omdat het gevraagd is, op een telefoon omdat een canvas dat elke frame
-       honderden paden trekt daar meer kost dan het oplevert. */
-    frozen: reduceMotion || narrowScreen,
+    /* Stilstaand beeld in plaats van een lopende animatie, alleen als dat
+       gevraagd is via reduced motion. De statische build en de lazy-loaded
+       vloot hebben de kosten op een telefoon al teruggebracht, dus die hoeft
+       hier niet apart bevroren te worden. */
+    frozen: reduceMotion,
     narrowScreen,
     coarsePointer,
     onSailing,

@@ -143,8 +143,9 @@ Wat daarbij bewust is toegevoegd of behouden:
 - **Toetsenbord en screenreader.** Echte `button`s met `aria-pressed` en
   `aria-current`, en een skip-link op elke pagina.
 - **`prefers-reduced-motion`** zet de aurora en de vloot stil in plaats van ze
-  te laten drijven; op telefoonbreedte gebeurt hetzelfde, omdat een canvas dat
-  elke frame honderden paden trekt daar meer kost dan het oplevert.
+  te laten drijven. Op telefoonbreedte draaien beide gewoon mee — de statische
+  build en de lazy-loaded vloot (`components/fleet-lazy.tsx`) houden de kosten
+  daar al laag genoeg.
 - **SEO en sociale kaarten**: canonicals, Open Graph, JSON-LD, sitemap,
   robots.txt, favicons en een web-manifest.
 
