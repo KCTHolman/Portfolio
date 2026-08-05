@@ -178,6 +178,16 @@
   .aur-blob--4 { top: 28%;  right: -25%; width: 125vw; height: 60vh; }
   .aur-blob--5 { bottom: -10%; left: -10%; width: 120vw; height: 55vh; }
   .aur-blob--6 { top: 8%;   left: 10%;   width: 100vw; height: 48vh; }
+
+  /* The spinning/drifting blobs sit under an SVG displacement filter, and
+     animating anything through that filter forces a full re-rasterization
+     every frame — cheap on a desktop GPU, a stutter on a phone. assets/
+     aurora.js already stops repainting colours here; this freezes the CSS
+     side of it too, leaving one static, fully bloomed frame. */
+  .aur-blob,
+  .aur-grain,
+  .aur-stage,
+  .aur-paint { animation: none; }
 }
 
 /* ---------- Preset swatches in the footer -------------------------------- */
@@ -250,4 +260,71 @@
   .aur-grain,
   .aur-stage,
   .aur-paint { animation: none; }
+}
+
+/* ---------- Mobile hint -------------------------------------------------- */
+
+/* Says once, per session, that the wash is standing still here on purpose.
+   Sits above the frozen backdrop but below nothing important — no header on
+   this site is fixed low enough to fight it. */
+.aur-toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 12px 14px 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--kh-surface-line);
+  background: rgba(10, 14, 22, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  animation: khFadeIn .3s ease both;
+  pointer-events: auto;
+}
+
+.aur-toast-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 300;
+  color: rgba(228, 238, 250, 0.88);
+}
+
+.aur-toast-close {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(228, 238, 250, 0.6);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.aur-toast-close:hover,
+.aur-toast-close:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--kh-ink-bright);
+}
+
+.aur-toast--out {
+  animation: khFadeOut .35s ease both;
+}
+
+@keyframes khFadeOut {
+  to { opacity: 0; transform: translateX(-50%) translateY(6px); }
+}
+
+@media (min-width: 700px) {
+  .aur-toast { display: none; }
 }
