@@ -3,9 +3,11 @@
 /* ==========================================================================
    De vloot — het beeldmerk van deze site.
 
-   Twee standen:
+   Drie standen:
      hero     de volle vloot, schermvullend achter de homepage
      ambient  een handvol verre boten achter de inhoud van een subpagina
+     journey  één vorm, vast rechts in beeld, die van gedaante wisselt op
+              basis van scroll-voortgang (zie /werk/)
 
    De kleuren komen uit dezelfde --t1..--t3 die de aurora op <html> schrijft,
    dus de vloot verkleurt mee met de wash erachter in plaats van ernaast te
@@ -15,14 +17,22 @@
    mountpunt over.
    ========================================================================== */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, type RefObject } from 'react'
 
+import { useAurora } from '@/components/aurora/aurora-provider'
 import { useFleetScene, type FleetVariant } from '@/lib/use-fleet-scene'
 import { useMediaQuery, useNarrowScreen, usePrefersReducedMotion } from '@/lib/use-media-query'
 
 export type { FleetVariant }
 
-export function Fleet({ variant }: { variant: FleetVariant }) {
+/** journey heeft een progressRef nodig om te weten welke vorm te tonen;
+ *  hero/ambient hebben dat niet en mogen 'm dus ook niet meekrijgen. */
+type FleetProps =
+  | { variant: 'hero' | 'ambient' }
+  | { variant: 'journey'; progressRef: RefObject<number> }
+
+export function Fleet(props: FleetProps) {
+  const { variant } = props
   const mountRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [sailing, setSailing] = useState(false)
@@ -30,6 +40,10 @@ export function Fleet({ variant }: { variant: FleetVariant }) {
   const reduceMotion = usePrefersReducedMotion()
   const narrowScreen = useNarrowScreen()
   const coarsePointer = useMediaQuery('(pointer: coarse)')
+  /* Stuurt de vlootformatie op hero/ambient; journey negeert 'm. Altijd
+     beschikbaar — AuroraProvider omvat de hele boom, dus deze hook is hier
+     nooit onveilig, ook al is de preset voor journey niet van belang. */
+  const { activePreset } = useAurora()
 
   const onSailing = useCallback(() => setSailing(true), [])
 
@@ -44,10 +58,12 @@ export function Fleet({ variant }: { variant: FleetVariant }) {
     narrowScreen,
     coarsePointer,
     onSailing,
+    progressRef: variant === 'journey' ? props.progressRef : undefined,
+    presetIndex: activePreset,
   })
 
   const className = [
-    variant === 'hero' ? 'kh-home-visual' : 'kh-ambient',
+    variant === 'hero' ? 'kh-home-visual' : variant === 'journey' ? 'kh-journey' : 'kh-ambient',
     sailing ? 'is-varend' : '',
   ]
     .filter(Boolean)

@@ -12,7 +12,7 @@
    deed via een change-listener op de media queries.
    ========================================================================== */
 
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 
 import {
   AMBIENT_BOATS,
@@ -20,12 +20,19 @@ import {
   FALLBACK_ACCENTS,
   FIXED_COLORS,
   HERO_BOATS,
+  JOURNEY_BOAT,
+  JOURNEY_STAGES,
+  JOURNEY_STAGE_COUNT,
   LEAD_W,
+  NEEDLE_SLOTS,
   RATIO,
   SETTLE,
   TIERS,
   buildAmbientDust,
   buildBoat,
+  buildJourneyIdentities,
+  buildJourneyStage,
+  deriveFormation,
   ease,
   parseHsl,
   rng,
@@ -33,7 +40,7 @@ import {
   type Particle,
 } from '@/lib/fleet-geometry'
 
-export type FleetVariant = 'hero' | 'ambient'
+export type FleetVariant = 'hero' | 'ambient' | 'journey'
 
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
@@ -57,6 +64,18 @@ type Boat = BoatSpec & {
   rot: number
   sin: number
   cos: number
+  /** Live, getweende positie/helling — wat er elke frame op het scherm
+   *  staat. Begint bij het anker (cx/cy/heel uit de spec) en schuift
+   *  daarna naar dcx/dcy/dheel toe. */
+  tcx: number
+  tcy: number
+  theel: number
+  /** Doel voor de tween: de vlootformatie van de op dat moment actieve
+   *  preset. setFormation() overschrijft dit, nooit iets anders — zie de
+   *  toelichting daar voor waarom dat precies de robuustheid is. */
+  dcx: number
+  dcy: number
+  dheel: number
 }
 
 type FleetSceneOptions = {
@@ -69,6 +88,16 @@ type FleetSceneOptions = {
   coarsePointer: boolean
   /** Aangeroepen zodra er iets te zien is, zodat de laag kan invaren. */
   onSailing: () => void
+  /** Alleen variant "journey": scroll-voortgang, 0..JOURNEY_STAGE_COUNT-1.
+   *  Een ref, geen prop-waarde — dit verandert elke scroll-frame en mag dus
+   *  nooit de effect-dependency zijn die build()/layout() opnieuw triggert.
+   *  Hetzelfde principe als pointer.tx/ty hieronder: de container (de ref)
+   *  staat stil, de inhoud verandert, draw() leest 'm elke frame vers. */
+  progressRef?: RefObject<number>
+  /** Welke aurora-preset nu actief is (hero/ambient: stuurt de
+   *  vlootformatie; journey negeert 'm). Verandert los van de rest — zie
+   *  setFormation() hieronder voor waarom dit geen effect-dependency is. */
+  presetIndex: number
 }
 
 export function useFleetScene({
@@ -79,7 +108,19 @@ export function useFleetScene({
   narrowScreen,
   coarsePointer,
   onSailing,
+  progressRef,
+  presetIndex,
 }: FleetSceneOptions): void {
+  /* setFormation leeft in de grote effect hieronder (het heeft toegang tot
+     boats/w/h/draw nodig), maar moet ook oproepbaar zijn vanuit de kleine,
+     presetIndex-effect verderop zonder dat die de grote effect meetrekt.
+     Een ref bruggen die twee werelden — zie de toelichting bij de kleine
+     effect. */
+  const sceneRef = useRef<{ setFormation: (index: number, snap: boolean) => void } | null>(null)
+  /** Laatst bekende presetIndex, voor onResize — die draait onafhankelijk
+   *  van React-renders en kan dus niet zomaar de `presetIndex`-prop lezen. */
+  const presetIndexRef = useRef(presetIndex)
+
   useEffect(() => {
     const mount = mountRef.current
     const canvas = canvasRef.current
@@ -88,8 +129,8 @@ export function useFleetScene({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const specs = variant === 'hero' ? HERO_BOATS : AMBIENT_BOATS
-    const formMs = variant === 'hero' ? 2100 : 1500
+    const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
+    const formMs = variant === 'journey' ? 2400 : 1500
 
     let w = 0
     let h = 0
@@ -105,6 +146,11 @@ export function useFleetScene({
     let t0 = performance.now()
     let repelR = 0
     let repelPush = 0
+
+    /* Tijdconstante voor de formatie-tween (zie setFormation() en de
+       boot-lus in draw()): bij TAU = 2s is een overgang na ~6s voor ~95%
+       voltooid, in de buurt van de kleur-blend (BLEND_SEC in lib/aurora.ts). */
+    const POS_TAU = 2
 
     const settle = new Array<number>(SETTLE.length)
     const groups: Particle[][] = []
@@ -174,23 +220,21 @@ export function useFleetScene({
       parts = []
       boats = []
 
-      specs.forEach((spec, b) => {
+      if (variant === 'journey') {
+        // Eén evoluerende vorm, geen vloot: de lead-shape-deeltjes krijgen hun
+        // identiteit hier (vormonafhankelijk); hun positie per stadium komt
+        // pas in layout() bij, waar de schaal van het canvas bekend is.
         boats.push({
-          ...spec,
+          ...JOURNEY_BOAT,
           bobA: 0,
-          bobF: 0.22 + (b % 4) * 0.07,
-          bobP: b * 1.7,
-          rockA: 0.014 + (b % 3) * 0.008,
-          rockF: 0.17 + (b % 5) * 0.05,
-          rockP: b * 2.3,
-          /* Overstag in plaats van doorvaren. Eerder voer een boot het beeld
-             uit en kwam er aan de andere kant weer in; dat werkte zolang de
-             randen wegvaagden, maar nu het canvas doorloopt tot de schermrand
-             zou je hem zien verspringen. Een hele trage slinger houdt de
-             beweging en laat de vloot bovendien waar hij hoort. */
+          bobF: 0.22,
+          bobP: 0,
+          rockA: 0.014,
+          rockF: 0.17,
+          rockP: 0,
           swayA: 0,
-          swayF: 0.045 + (b % 5) * 0.011,
-          swayP: b * 1.9,
+          swayF: 0.045,
+          swayP: 0,
           pw: 0,
           ph: 0,
           px: 0,
@@ -200,20 +244,71 @@ export function useFleetScene({
           rot: 0,
           sin: 0,
           cos: 1,
+          // Journey heeft geen formatie (setFormation slaat 'm over): het
+          // anker is de enige, onveranderlijke positie.
+          tcx: JOURNEY_BOAT.cx,
+          tcy: JOURNEY_BOAT.cy,
+          theel: JOURNEY_BOAT.heel,
+          dcx: JOURNEY_BOAT.cx,
+          dcy: JOURNEY_BOAT.cy,
+          dheel: JOURNEY_BOAT.heel,
         })
 
-        for (const made of buildBoat(spec, b, quality)) {
-          made.boat = b
-          parts.push(made)
+        for (const p of buildJourneyIdentities(quality)) {
+          p.boat = 0
+          parts.push(p)
         }
-      })
+      } else {
+        specs.forEach((spec, b) => {
+          boats.push({
+            ...spec,
+            bobA: 0,
+            bobF: 0.22 + (b % 4) * 0.07,
+            bobP: b * 1.7,
+            rockA: 0.014 + (b % 3) * 0.008,
+            rockF: 0.17 + (b % 5) * 0.05,
+            rockP: b * 2.3,
+            /* Overstag in plaats van doorvaren. Eerder voer een boot het beeld
+               uit en kwam er aan de andere kant weer in; dat werkte zolang de
+               randen wegvaagden, maar nu het canvas doorloopt tot de schermrand
+               zou je hem zien verspringen. Een hele trage slinger houdt de
+               beweging en laat de vloot bovendien waar hij hoort. */
+            swayA: 0,
+            swayF: 0.045 + (b % 5) * 0.011,
+            swayP: b * 1.9,
+            pw: 0,
+            ph: 0,
+            px: 0,
+            py: 0,
+            dx: 0,
+            dy: 0,
+            rot: 0,
+            sin: 0,
+            cos: 1,
+            // Startwaarde is het anker; setFormation() zet dcx/dcy/dheel
+            // (en, bij de eerste teken vóór layout(), ook tcx/tcy/theel)
+            // meteen naar de dan actieve preset.
+            tcx: spec.cx,
+            tcy: spec.cy,
+            theel: spec.heel,
+            dcx: spec.cx,
+            dcy: spec.cy,
+            dheel: spec.heel,
+          })
+
+          for (const made of buildBoat(spec, b, quality)) {
+            made.boat = b
+            parts.push(made)
+          }
+        })
+      }
 
       /* Het stof telt per oppervlak, niet per canvas: nu de laag het hele
          scherm beslaat zou een vast aantal op een breed scherm uitdunnen tot
          niets en op een telefoon een korrelig vlak worden. Wel een dak erop,
          want een 4K-scherm hoeft er geen tienduizend te tekenen. */
       const dust = buildAmbientDust(
-        Math.min(520, Math.round(((w * h) / (variant === 'hero' ? 4200 : 7000)) * quality)),
+        Math.min(520, Math.round(((w * h) / (variant === 'ambient' ? 7000 : 4200)) * quality)),
         rng(0x21f3),
       )
       parts.push(...dust)
@@ -248,8 +343,12 @@ export function useFleetScene({
       for (const boat of boats) {
         boat.pw = lead * (boat.w / LEAD_W)
         boat.ph = boat.pw * RATIO
-        boat.px = w * boat.cx
-        boat.py = h * boat.cy
+        // Live positie, niet het statische anker: draw() neemt dit elke
+        // frame over zodra de tween in setFormation() gaat lopen, maar vóór
+        // de allereerste teken-frame (o.a. de scatter-naar-binnen-intro
+        // hieronder) moet er al een geldige waarde staan.
+        boat.px = w * boat.tcx
+        boat.py = h * boat.tcy
         boat.bobA = boat.ph * 0.022
         // De voorste boot ligt bijna stil, de verste slingert het meest —
         // hetzelfde principe als bij de helderheid en de korrelgrootte.
@@ -262,7 +361,33 @@ export function useFleetScene({
       repelR = Math.max(110, Math.min(230, Math.min(w, h) * 0.19))
       repelPush = repelR * 0.44
 
+      /* Alleen journey: elk stadium (boot t/m raket) vooraf naar boot-lokale
+         pixels omgerekend, met dezelfde transform als hierboven. Dit gebeurt
+         hier — bij een maatverandering — en niet in draw(), om precies
+         dezelfde reden dat bx/by dat ook niet doen: het is duur, en de vorm
+         zelf verandert niet tussen twee resizes. */
+      const journeyQuality = frozen ? 0.5 : 1
+      const journeyStages =
+        variant === 'journey'
+          ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
+          : null
+
       parts.forEach((p, i) => {
+        if (journeyStages && p.boat === 0) {
+          const owner = boats[0]
+          p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
+          p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
+
+          const ax = owner.px + p.jx[0]
+          const ay = owner.py + p.jy[0]
+          const vx = ax - w * 0.5
+          const vy = ay - h * 0.52
+          const k = 1.5 + ((i * 37) % 100) / 100
+          p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
+          p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
+          return
+        }
+
         if (p.boat < 0) {
           p.bx = p.ux * w
           p.by = p.uy * h
@@ -280,7 +405,13 @@ export function useFleetScene({
         const ay = p.boat < 0 ? p.by : boats[p.boat].py + p.by
         const vx = ax - w * 0.5
         const vy = ay - h * 0.52
-        const k = 1.5 + ((i * 37) % 100) / 100
+        const kOut = 1.5 + ((i * 37) % 100) / 100
+        /* Links staat de leestekst: een korrel die daar moet landen, laten we
+           nauwelijks uitwaaieren — die vaart bijna stilstaand in. Rechts, waar
+           de vloot woont, mag het wél voluit exploderen. Zo blijft de hele
+           opbouw zichtbaar op de rechterkant in plaats van dwars over de
+           tekst te vliegen. */
+        const k = ax < w * 0.5 ? kOut * 0.16 : kOut
         p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
         p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
       })
@@ -303,13 +434,52 @@ export function useFleetScene({
       for (let s = 0; s < SETTLE.length; s++) {
         settle[s] = 1 - Math.exp(-dt / SETTLE[s])
       }
+      const posLerp = 1 - Math.exp(-dt / POS_TAU)
 
       pointer.x += (pointer.tx - pointer.x) * 0.06
       pointer.y += (pointer.ty - pointer.y) * 0.06
 
+      /* Scroll-voortgang lezen, één keer per frame — niet per deeltje. Onder
+         frozen geen lopende interpolatie (t = 0): dan toont het de vorm die
+         bij de dichtstbijzijnde sectie hoort, in stappen, niet vloeiend. */
+      const rawProgress = variant === 'journey' ? (progressRef?.current ?? 0) : 0
+      const clampedProgress = Math.min(JOURNEY_STAGE_COUNT - 1, Math.max(0, rawProgress))
+      const journeyStage = Math.min(
+        JOURNEY_STAGE_COUNT - 1,
+        Math.max(0, frozen ? Math.round(clampedProgress) : Math.floor(clampedProgress)),
+      )
+      const journeyNext = Math.min(JOURNEY_STAGE_COUNT - 1, journeyStage + 1)
+      const journeyT = frozen ? 0 : ease(Math.min(1, Math.max(0, clampedProgress - journeyStage)))
+
+      /* Hoe "kompas" het huidige beeld is — 0 bij de boot, 1 zodra het kompas
+         volledig gevormd is. Alleen in dat bereik mag de naald los van de
+         kast schommelen; op de boot zou hetzelfde slot (mainsail/jib) er als
+         een raar trillend zeil uitzien. */
+      const compassStageIndex = 1
+      const compassWeight =
+        variant === 'journey'
+          ? journeyStage === compassStageIndex
+            ? 1
+            : journeyNext === compassStageIndex
+              ? journeyT
+              : 0
+          : 0
+      const needleWobble = frozen || compassWeight <= 0 ? 0 : Math.sin(time * 0.9) * 0.09 * compassWeight
+      const needleCos = Math.cos(needleWobble)
+      const needleSin = Math.sin(needleWobble)
+
       for (const boat of boats) {
+        // Naar het doel toe schuiven, niet ernaartoe springen: dcx/dcy/dheel
+        // is het enige dat setFormation() ooit aanraakt, dus een nieuwe
+        // preset-klik buigt de tween gewoon bij vanaf hier — geen wachtrij.
+        boat.tcx += (boat.dcx - boat.tcx) * posLerp
+        boat.tcy += (boat.dcy - boat.tcy) * posLerp
+        boat.theel += (boat.dheel - boat.theel) * posLerp
+        boat.px = w * boat.tcx
+        boat.py = h * boat.tcy
+
         boat.dy = Math.sin(time * boat.bobF + boat.bobP) * boat.bobA + pointer.y * boat.par * 8
-        boat.rot = boat.heel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
+        boat.rot = boat.theel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
         boat.sin = Math.sin(boat.rot)
         boat.cos = Math.cos(boat.rot)
 
@@ -340,6 +510,27 @@ export function useFleetScene({
             x = p.bx + (p.vx ? p.vx * time : 0)
             y = p.by
             x = ((x % w) + w) % w
+          } else if (p.jx && p.jy) {
+            // Journey: bx/by is geen vaste waarde maar een lerp tussen het
+            // huidige en het volgende vorm-stadium — de rest van de pijplijn
+            // hieronder (deining, jitter, opbouw, muis) is identiek aan hoe
+            // hero/ambient een boot tekenen.
+            const o = boats[p.boat]
+            let bx = p.jx[journeyStage] + (p.jx[journeyNext] - p.jx[journeyStage]) * journeyT
+            let by = p.jy[journeyStage] + (p.jy[journeyNext] - p.jy[journeyStage]) * journeyT
+
+            // De naald draait om de as (boot-lokale oorsprong), los van kast
+            // en tikken — dezelfde reden dat het kompas 0.48 als middelpunt
+            // koos: dat valt hier al samen met (0, 0).
+            if (needleWobble !== 0 && p.slot !== undefined && NEEDLE_SLOTS.includes(p.slot)) {
+              const wx = bx * needleCos - by * needleSin
+              const wy = bx * needleSin + by * needleCos
+              bx = wx
+              by = wy
+            }
+
+            x = o.px + o.dx + bx * o.cos - by * o.sin
+            y = o.py + o.dy + bx * o.sin + by * o.cos
           } else {
             const o = boats[p.boat]
             x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
@@ -415,6 +606,44 @@ export function useFleetScene({
       ctx!.globalAlpha = 1
     }
 
+    /** Zet het doel voor elke boot naar de formatie van preset `index`.
+     *  Overschrijft alleen dcx/dcy/dheel — geen wachtrij, geen animatie die
+     *  hier zelf afspeelt. Bij `snap` (mount, resize, of altijd zodra
+     *  `frozen`) springt tcx/tcy/theel meteen mee in plaats van in te lopen;
+     *  layout() en draw() rekenen px/py daar zelf weer uit, dus die hoeven
+     *  hier niet aangeraakt. Journey heeft geen formatie en negeert de
+     *  aanroep. */
+    function setFormation(index: number, snap: boolean): void {
+      if (variant === 'journey') return
+
+      const formation = deriveFormation(index, variant)
+      const doSnap = snap || frozen
+
+      formation.forEach((slot, i) => {
+        const boat = boats[i]
+        if (!boat) return
+
+        boat.dcx = slot.cx
+        boat.dcy = slot.cy
+        boat.dheel = slot.heel
+
+        if (doSnap) {
+          boat.tcx = slot.cx
+          boat.tcy = slot.cy
+          boat.theel = slot.heel
+        }
+      })
+
+      /* Bij mount/resize tekent de aanroepende code toch al meteen opnieuw
+         (layout() gevolgd door sync(), of de resize-handler hieronder) — een
+         extra draw() hier zou dat gewoon dubbel doen. Alleen onder frozen
+         draait er niets vanzelf door: dan moet setFormation() zelf voor het
+         zichtbare resultaat zorgen. */
+      if (frozen) draw(t0 + formMs + 1)
+    }
+
+    sceneRef.current = { setFormation }
+
     function loop(now: number): void {
       /* Tijdens de opbouw op volle snelheid, daarna rond de 30 beelden per
          seconde: het is een deinende achtergrond, geen animatie waar iemand
@@ -432,6 +661,12 @@ export function useFleetScene({
     }
 
     function shouldAnimate(): boolean {
+      /* Journey blijft doortekenen onder frozen — niet om te bewegen (draw()
+         zet jitter/deining/opbouw allemaal op nul zodra frozen), maar omdat
+         de vorm zelf per sectie verandert terwijl er gescrold wordt. Zonder
+         een lopende lus zou reduced-motion na de eerste tekening voor altijd
+         op de boot blijven staan, ook diep in het schild-hoofdstuk. */
+      if (variant === 'journey') return document.visibilityState !== 'hidden'
       return !frozen && document.visibilityState !== 'hidden'
     }
 
@@ -441,6 +676,13 @@ export function useFleetScene({
         frame = null
       }
       if (shouldAnimate()) {
+        /* Terug van een verborgen tabblad: sommige browsers ruimen de
+           canvas-buffer op zodra hij een tijd niet zichtbaar was, met een
+           leeg canvas tot gevolg dat pas bij de eerstvolgende resize weer
+           gevuld raakt. layout() zet canvas.width/height opnieuw — dat
+           dwingt een verse buffer af — zonder de vloot zelf te laten
+           overnieuw invaren, want t0 ligt allang voorbij formMs. */
+        layout()
         frame = requestAnimationFrame(loop)
       } else {
         syncPalette()
@@ -458,6 +700,10 @@ export function useFleetScene({
            oppervlak, dus een ander formaat vraagt een andere vulling. De zaden
            liggen vast, dus de boten zelf blijven exact dezelfde. */
         build()
+        // Snapt naar de laatst bekende preset: een resize herschikt toch al
+        // alles, dus een lopende tween door de herbouw heen bewaren heeft
+        // geen zin.
+        setFormation(presetIndexRef.current, true)
         layout()
         if (!shouldAnimate()) draw(t0 + formMs + 1)
       }, 160)
@@ -495,12 +741,14 @@ export function useFleetScene({
     readAccents()
     syncPalette()
     build()
+    setFormation(presetIndexRef.current, true)
     layout()
     t0 = performance.now()
     sync()
     onSailing()
 
     return () => {
+      sceneRef.current = null
       observer.disconnect()
       window.clearTimeout(resizeTimer)
       document.removeEventListener('visibilitychange', sync)
@@ -512,5 +760,15 @@ export function useFleetScene({
       }
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [canvasRef, coarsePointer, frozen, mountRef, narrowScreen, onSailing, variant])
+    /* presetIndex leest deze effect nergens rechtstreeks (alleen via de
+       stabiele presetIndexRef), dus hoort ook niet in de dependency-lijst: een
+       preset-klik mag nooit de hele scène (canvas, deeltjes, muisstaat)
+       opnieuw opbouwen. De kleine effect hieronder zet het nieuwe doel via
+       setFormation(), zonder dit effect te raken. */
+  }, [canvasRef, coarsePointer, frozen, mountRef, narrowScreen, onSailing, progressRef, variant])
+
+  useEffect(() => {
+    presetIndexRef.current = presetIndex
+    sceneRef.current?.setFormation(presetIndex, false)
+  }, [presetIndex])
 }
