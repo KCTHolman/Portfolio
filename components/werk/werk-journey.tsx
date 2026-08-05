@@ -303,9 +303,9 @@ export function WerkJourney() {
         </div>
 
         <section style={{ padding: '24px 0 96px', maxWidth: '520px' }}>
-          <div className="kh-link-row">
+          <div className="kh-cta-row">
             <a
-              className="kh-link"
+              className="khcta khcta--ghost"
               href="https://github.com/KCTHolman/deSchouwVloot"
               target="_blank"
               rel="noopener"
@@ -317,7 +317,7 @@ export function WerkJourney() {
               Bekijk de repo
             </a>
             <a
-              className="kh-link"
+              className="khcta khcta--ghost"
               href="https://github.com/KCTHolman/deSchouwVloot/blob/main/docs/architectuur.md"
               target="_blank"
               rel="noopener"
@@ -329,7 +329,7 @@ export function WerkJourney() {
               Architectuur &amp; ontwerpkeuzes
             </a>
             <Link
-              className="kh-pill"
+              className="khcta khcta--primary"
               href="/werk/readme/"
               aria-label="Lees de README van deSchouwVloot"
               onMouseEnter={onGithubEnter}
