@@ -3,11 +3,14 @@
 /* ==========================================================================
    De vloot — het beeldmerk van deze site.
 
-   Drie standen:
-     hero     de volle vloot, schermvullend achter de homepage
-     ambient  een handvol verre boten achter de inhoud van een subpagina
-     journey  één vorm, vast rechts in beeld, die van gedaante wisselt op
-              basis van scroll-voortgang (zie /werk/)
+   Vier standen:
+     hero      de volle vloot, schermvullend achter de homepage
+     ambient   een handvol verre boten achter de inhoud van een subpagina
+     journey   één vorm, vast rechts in beeld, die van gedaante wisselt op
+               basis van scroll-voortgang (zie /werk/)
+     showcase  een hele vloot rechtsboven die op een eigen klok (geen scroll,
+               geen hover) wisselt tussen vloot, een lading raketjes en een
+               stelsel tandwielen (zie /koen-holman/)
 
    De kleuren komen uit dezelfde --t1..--t3 die de aurora op <html> schrijft,
    dus de vloot verkleurt mee met de wash erachter in plaats van ernaast te
@@ -27,10 +30,10 @@ export type { FleetVariant }
 
 /** journey heeft een progressRef nodig om te weten welke vorm te tonen, en
  *  optioneel een githubHoverRef om naar het raket-stadium te mengen en te
- *  lanceren; hero/ambient
- *  hebben geen van beide en mogen ze dus ook niet meekrijgen. */
+ *  lanceren; hero/ambient/showcase hebben geen van beide en mogen ze dus ook
+ *  niet meekrijgen — showcase draait op zijn eigen klok in useFleetScene. */
 type FleetProps =
-  | { variant: 'hero' | 'ambient' }
+  | { variant: 'hero' | 'ambient' | 'showcase' }
   | { variant: 'journey'; progressRef: RefObject<number>; githubHoverRef?: RefObject<boolean> }
 
 export function Fleet(props: FleetProps) {
@@ -66,7 +69,13 @@ export function Fleet(props: FleetProps) {
   })
 
   const className = [
-    variant === 'hero' ? 'kh-home-visual' : variant === 'journey' ? 'kh-journey' : 'kh-ambient',
+    variant === 'hero'
+      ? 'kh-home-visual'
+      : variant === 'journey'
+        ? 'kh-journey'
+        : variant === 'showcase'
+          ? 'kh-showcase'
+          : 'kh-ambient',
     sailing ? 'is-varend' : '',
   ]
     .filter(Boolean)

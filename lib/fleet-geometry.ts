@@ -517,6 +517,16 @@ function particle(ux: number, uy: number, col: number, depth: number, rnd: () =>
   }
 }
 
+/** Dichtheid hangt aan twee dingen tegelijk. Aan afstand, want verder weg
+ *  hoort ijler. En aan de maat op het scherm: dezelfde aantallen op een boot
+ *  van zeventig pixels geven een prop in plaats van een tekening. Gedeeld
+ *  door buildBoat()/buildRocketPuff() (hun eigen boot) en, voor de
+ *  showcase-vloot, door elke afzonderlijke journey-stage-boot — anders zou
+ *  een kleine boot daar op dezelfde dichtheid tekenen als de grootste. */
+export function boatDetail(boat: Pick<BoatSpec, 'w' | 'depth'>, quality: number): number {
+  return Math.pow(Math.min(1, boat.w / LEAD_W), 0.8) * (0.45 + boat.depth * 0.55) * quality
+}
+
 /** Eén boot: omtrek, vulling en een spoor van kielwater eronder. Alles komt
  *  terug in het genormaliseerde vak, zodat het bij elke maat canvas opnieuw om
  *  te rekenen is zonder de vorm opnieuw te hoeven trekken. */
@@ -524,10 +534,7 @@ export function buildBoat(boat: BoatSpec, index: number, quality: number): Parti
   const rnd = rng(0x5c40 + index * 977)
   const parts: Particle[] = []
   const d = boat.depth
-  /* Dichtheid hangt aan twee dingen tegelijk. Aan afstand, want verder weg
-     hoort ijler. En aan de maat op het scherm: dezelfde aantallen op een boot
-     van zeventig pixels geven een prop in plaats van een tekening. */
-  const detail = Math.pow(Math.min(1, boat.w / LEAD_W), 0.8) * (0.45 + d * 0.55) * quality
+  const detail = boatDetail(boat, quality)
 
   for (const shape of SHAPES) {
     const pts: Point[] = []
@@ -604,7 +611,11 @@ function circlePoly(cx: number, cy: number, rx: number, ry: number, steps: numbe
    meteen als kompas leest zodra de deeltjes zich verzamelen. */
 const KX = 0.5
 const KY = 0.48
-const COMPASS_STAGE: JourneyStage = [
+/* Geëxporteerd om dezelfde reden als GEAR_STAGE/ROCKET_STAGE: de
+   showcase-vloot laat precies één boot (de "zon") hierdoor heen, de rest
+   blijft boot — zie SHOWCASE_COMPASS_STAGE en de per-boot stage-remap in
+   use-fleet-scene.ts. */
+export const COMPASS_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.40, 0.40, 48), // kast (hull-rol)
   poly([KX, KY], [KX - 0.065, KY - 0.02], [KX, KY - 0.40], [KX + 0.065, KY - 0.02]), // noordnaald (mainsail-rol)
   poly([KX, KY], [KX - 0.05, KY + 0.018], [KX, KY + 0.27], [KX + 0.05, KY + 0.018]), // zuidnaald (jib-rol)
@@ -632,8 +643,10 @@ function gearPoly(cx: number, cy: number, rOuter: number, rInner: number, teeth:
 }
 
 /* Tandwiel, zelfde middelpunt en schaal als het kompas: lichaam, tandrand,
-   naaf, een tussenring, en drie spaken plus een boutje in het midden. */
-const GEAR_STAGE: JourneyStage = [
+   naaf, een tussenring, en drie spaken plus een boutje in het midden.
+   Geëxporteerd: de showcase-vloot (zie SHOWCASE_STAGES hieronder) hergebruikt
+   'm rechtstreeks in plaats van een eigen tandwielvorm te tekenen. */
+export const GEAR_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.34, 0.34, 40), // lichaam (hull-rol)
   gearPoly(KX, KY, 0.42, 0.34, 10), // tandrand (mainsail-rol)
   circlePoly(KX, KY, 0.16, 0.16, 28), // naaf (jib-rol)
@@ -709,7 +722,9 @@ const ROCKET_BODY = poly(
   [0.4, 0.24],
   curve([0.4, 0.24], ROCKET_NOSE, 0.12, 8),
 )
-const ROCKET_STAGE: JourneyStage = [
+/* Geëxporteerd om dezelfde reden als GEAR_STAGE hierboven: de showcase-vloot
+   hergebruikt deze vorm rechtstreeks. */
+export const ROCKET_STAGE: JourneyStage = [
   ROCKET_BODY, // romp (hull-rol)
   poly([0.4, 0.56], [0.22, 0.78], [0.4, 0.7]), // linkervin (mainsail-rol)
   poly([0.6, 0.56], [0.78, 0.78], [0.6, 0.7]), // rechtervin (jib-rol)
@@ -735,7 +750,7 @@ export function buildRocketPuff(boat: BoatSpec, index: number, quality: number):
   const rnd = rng(0x7a11 + index * 977)
   const parts: Particle[] = []
   const d = boat.depth
-  const detail = Math.pow(Math.min(1, boat.w / LEAD_W), 0.8) * (0.45 + d * 0.55) * quality
+  const detail = boatDetail(boat, quality)
 
   ROCKET_STAGE.forEach((pts, i) => {
     const slot = SHAPES[i]
@@ -775,16 +790,107 @@ export const JOURNEY_STAGE_COUNT = JOURNEY_STAGES.length
  *  vorm, geen vloot om in te schalen. */
 export const JOURNEY_BOAT: BoatSpec = { cx: 0.8, cy: 0.5, w: LEAD_W, depth: 1, par: 1, heel: 0 }
 
+/* ---------- showcase: een hele vloot die tegelijk van gedaante wisselt ----
+   /koen-holman/ herhaalt de journey-truc hierboven (BOAT_STAGE ↔ GEAR_STAGE
+   ↔ ROCKET_STAGE, hetzelfde deeltje-voor-deeltje morphen), maar dan op
+   meerdere boten tegelijk in plaats van op één vaste vorm — en verankerd
+   rechtsboven in plaats van verticaal gecentreerd. Geen nieuwe vormen, alleen
+   nieuwe posities. --------------------------------------------------------- */
+
+/** Eén grote "zon" plus acht kleinere "satellieten", verspreid over de hele
+ *  rechterkant (cy van bijna helemaal boven tot bijna helemaal onder) in
+ *  plaats van verticaal gecentreerd zoals HERO_BOATS/JOURNEY_BOAT. Gegenereerd
+ *  met een vaste seed (niet met de hand uitgeschreven zoals HERO_BOATS/
+ *  AMBIENT_BOATS): dat geeft de organische, willekeurig ogende spreiding in
+ *  positie én grootte die deze vloot vraagt, terwijl de vloot toch bij elke
+ *  laadbeurt exact hetzelfde blijft — dezelfde reden als bij rng() elders in
+ *  dit bestand. Eén band per satelliet voorkomt dat het toeval er twee te
+ *  dicht op elkaar dropt. Er is geen leidende boot in de zin van HERO_BOATS/
+ *  AMBIENT_BOATS — elke boot morft en draait gelijkwaardig mee, dus
+ *  use-fleet-scene.ts moet de leidende-boot-uitzonderingen die daar voor
+ *  boot-index 0 gelden, hier omzeilen. */
+export const SHOWCASE_SATELLITE_COUNT = 8
+
+function buildShowcaseBoats(): BoatSpec[] {
+  const rnd = rng(0xc0ffee)
+  const boats: BoatSpec[] = [
+    // Zon: groot, ruwweg verticaal gecentreerd tussen de satellieten.
+    { cx: 0.8, cy: 0.42, w: 0.3, depth: 0.85, par: 0.85, heel: -0.05 },
+  ]
+
+  const cyMin = 0.04
+  const cyMax = 0.9
+  const bandHeight = (cyMax - cyMin) / SHOWCASE_SATELLITE_COUNT
+
+  for (let i = 0; i < SHOWCASE_SATELLITE_COUNT; i++) {
+    const cy = cyMin + i * bandHeight + rnd() * bandHeight * 0.92
+    const cx = 0.55 + rnd() * 0.42
+    // Licht scheefgetrokken naar klein toe (vierkantswortel-achtige curve),
+    // met af en toe een uitschieter naar groot — "veel kleintjes, af en toe
+    // een grotere" oogt drukker dan een gelijkmatige verdeling.
+    const w = 0.06 + Math.pow(rnd(), 1.4) * 0.26
+    const depth = Math.min(0.72, Math.max(0.18, 0.18 + w * 1.6 + (rnd() - 0.5) * 0.15))
+    boats.push({ cx, cy, w, depth, par: depth, heel: (rnd() - 0.5) * 0.12 })
+  }
+
+  return boats
+}
+
+export const SHOWCASE_BOATS: BoatSpec[] = buildShowcaseBoats()
+
+/** De vier scènes van de showcase-lus: vloot, kompas (alleen de zon —
+ *  satellieten blijven boot, zie de per-boot remap in use-fleet-scene.ts),
+ *  een lading raketjes, dan tandwielen — en weer terug naar vloot.
+ *  Hergebruikt dezelfde vormen als JOURNEY_STAGES, dus de deeltjes-pariteit
+ *  die ze al met elkaar delen (zie de toelichting bovenaan dit bestand)
+ *  geldt hier net zo goed. */
+export const SHOWCASE_STAGES: JourneyStage[] = [BOAT_STAGE, COMPASS_STAGE, ROCKET_STAGE, GEAR_STAGE]
+
+export const SHOWCASE_VLOOT_STAGE = 0
+export const SHOWCASE_COMPASS_STAGE = 1
+export const SHOWCASE_ROCKET_STAGE = 2
+export const SHOWCASE_GEAR_STAGE = 3
+
+/** Doelposities tijdens de tandwiel-scène: boot 0 blijft ruwweg op haar
+ *  plek als middelpunt ("zon"), de acht andere boten schuiven naar een
+ *  achthoekige ring eromheen ("satellieten"), zodat de tandwielen straks
+ *  ongeveer in elkaar grijpen. Dit is bewust een benadering, geen exacte
+ *  tandpassing — bij de korrelige, puntsgewijze tekenstijl van deze vloot
+ *  valt dat niet op, zolang de cirkels elkaar raken. `heel` staat overal op
+ *  0: de statische scheefstand van een zeilboot heeft geen betekenis meer
+ *  zodra de vorm een tandwiel is, en de doorlopende rotatie in
+ *  use-fleet-scene.ts bouwt hier zelf op voort. */
+function buildShowcaseGearCluster(): FormationSlot[] {
+  const cx = 0.78
+  const cy = 0.44
+  const r = 0.15
+  const cluster: FormationSlot[] = [{ cx, cy, heel: 0 }]
+  for (let i = 0; i < SHOWCASE_SATELLITE_COUNT; i++) {
+    const a = (i / SHOWCASE_SATELLITE_COUNT) * Math.PI * 2
+    cluster.push({ cx: cx + Math.sin(a) * r, cy: cy - Math.cos(a) * r, heel: 0 })
+  }
+  return cluster
+}
+
+export const SHOWCASE_GEAR_CLUSTER: FormationSlot[] = buildShowcaseGearCluster()
+
 /** Identiteit van elke journey-deeltje: één keer gegenereerd, vormonafhankelijk.
  *  Dezelfde volgorde (slot voor slot, rand voor vulling) als buildJourneyStage
- *  hieronder produceert, dus index i hier is index i in elk stadium. */
-export function buildJourneyIdentities(quality: number): Particle[] {
-  const detail = quality
+ *  hieronder produceert, dus index i hier is index i in elk stadium.
+ *
+ *  `detail` is hier al de per-boot dichtheid (zie `boatDetail()`), niet meer
+ *  een vlakke kwaliteitsfactor: de enkele journey-vorm op /werk/ vult 'm nog
+ *  steeds met alleen `quality` (er is daar maar één boot, altijd op volle
+ *  `LEAD_W`), maar de showcase-vloot heeft per boot een eigen, kleinere
+ *  waarde nodig — anders tekent een kleine boot daar even dicht als de
+ *  grootste. `seed` geeft elke showcase-boot een eigen deeltjespatroon in
+ *  plaats van dat alle boten letterlijk hetzelfde toeval delen. */
+export function buildJourneyIdentities(detail: number, seed = 0): Particle[] {
   const out: Particle[] = []
   JOURNEY_SLOTS.forEach((slot, i) => {
     const edgeCount = Math.max(6, Math.round(slot.edge * detail))
     const fillCount = slot.fill ? Math.max(0, Math.round(slot.fill * detail)) : 0
-    const rnd = rng(0x4a17 + i * 131)
+    const rnd = rng(0x4a17 + seed * 7919 + i * 131)
     for (let k = 0; k < edgeCount + fillCount; k++) {
       const col = rnd() < 0.05 ? 4 : pick(rnd, slot.bias)
       const p = particle(0, 0, col, 1, rnd)
@@ -805,14 +911,13 @@ export const NEEDLE_SLOTS = [1, 2]
  *  buildJourneyIdentities. Eigen RNG-instantie per (stadium, slot) — geen
  *  gedeelde stroom — zodat rejection sampling in fillPoints() de ene slot
  *  nooit uit de pas laat lopen met een andere. */
-export function buildJourneyStage(stage: JourneyStage, stageIndex: number, quality: number): Point[] {
-  const detail = quality
+export function buildJourneyStage(stage: JourneyStage, stageIndex: number, detail: number, seed = 0): Point[] {
   const out: Point[] = []
   stage.forEach((pts, i) => {
     const slot = JOURNEY_SLOTS[i]
     const edgeCount = Math.max(6, Math.round(slot.edge * detail))
     const fillCount = slot.fill ? Math.max(0, Math.round(slot.fill * detail)) : 0
-    const rnd = rng(0x1e35 + stageIndex * 9973 + i * 131)
+    const rnd = rng(0x1e35 + seed * 7919 + stageIndex * 9973 + i * 131)
     edgePoints(pts, edgeCount, rnd, out)
     if (fillCount) fillPoints(pts, fillCount, rnd, out)
   })
