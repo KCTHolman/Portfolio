@@ -41,6 +41,13 @@
 
   function ease(x) { return 1 - Math.pow(1 - x, 3); }
 
+  // Terugkeertijden in seconden. Elke korrel valt in één van deze bakjes, en
+  // dus komt niet alles tegelijk thuis: de vorm hervindt zichzelf als een golf
+  // in plaats van in één klik. Bakjes en geen waarde per korrel, want dan
+  // hoeft de e-macht acht keer per frame berekend te worden en niet
+  // drieduizend keer.
+  var SETTLE = [0.28, 0.36, 0.44, 0.53, 0.63, 0.74, 0.87, 1.02];
+
   /* ---------- willekeur met een geheugen ---------------------------------
      Dezelfde seed geeft dezelfde boot. Dat is geen detail: zonder zaad
      tekent elke paginaovergang een nét andere vloot, en dan is het een
@@ -425,10 +432,16 @@
       jp: rnd() * Math.PI * 2,
       ja: 0.6 + rnd() * 1.5,
       lag: rnd() * 0.45,
-      // ox/oy: hoe ver deze korrel op dit moment opzij gedrukt staat door de
-      // muis. Loopt met een veer naar z'n doel toe, zodat het veld openwijkt
-      // en zich daarna weer sluit in plaats van te knippen.
+      // ox/oy: hoe ver deze korrel op dit moment uit positie geroerd is door
+      // de muis. Loopt met een veer terug, zodat de vorm zichzelf hervindt.
+      // chaos/grip: een eigen vluchtrichting en een eigen gevoeligheid, want
+      // als buren dezelfde kant op gaan schuift het vlak op in plaats van
+      // door elkaar te raken. traag: in welke terugkeersnelheid deze korrel
+      // valt — de een is eerder thuis dan de ander.
       ox: 0, oy: 0,
+      chaos: rnd() * Math.PI * 2,
+      grip: 0.45 + rnd() * 1.0,
+      traag: (rnd() * SETTLE.length) | 0,
       bx: 0, by: 0, sx: 0, sy: 0, boat: 0
     };
   }
@@ -448,6 +461,9 @@
         lag: rnd() * 0.45,
         vx: (rnd() - 0.5) * 5,
         ox: 0, oy: 0,
+        chaos: rnd() * Math.PI * 2,
+        grip: 0.45 + rnd() * 1.0,
+        traag: (rnd() * SETTLE.length) | 0,
         bx: 0, by: 0, sx: 0, sy: 0, boat: -1
       });
     }
@@ -480,6 +496,7 @@
     // vast aan het beeldscherm, dus clientX/clientY zijn hier meteen goed.
     var pointer = { x: 0, y: 0, tx: 0, ty: 0, px: 0, py: 0, on: false };
     var repelR = 0, repelPush = 0;
+    var settle = new Array(SETTLE.length);
 
     var FORM_MS = mode === 'hero' ? 2100 : 1500;
 
@@ -628,8 +645,10 @@
       // die volgt op een tabblad dat even weg is geweest.
       var dt = lastDraw ? Math.min(0.1, (now - lastDraw) / 1000) : 0.03;
       lastDraw = now;
-      var pullOpen = 1 - Math.exp(-dt / 0.10);
-      var pullShut = 1 - Math.exp(-dt / 0.32);
+      var pullStir = 1 - Math.exp(-dt / 0.09);
+      for (var s = 0; s < SETTLE.length; s++) {
+        settle[s] = 1 - Math.exp(-dt / SETTLE[s]);
+      }
 
       pointer.x += (pointer.tx - pointer.x) * 0.06;
       pointer.y += (pointer.ty - pointer.y) * 0.06;
@@ -686,38 +705,44 @@
             y = p.sy + (y - p.sy) * e;
           }
 
-          // De muis duwt de korrels opzij. Recht van de cursor vandaan, sterk
-          // in het midden en uitdovend naar de rand van het bereik — zo wijkt
-          // het veld open in plaats van in z'n geheel te verschuiven.
-          var tox = 0, toy = 0;
+          // De muis roert door het veld. Drie delen, en de verhouding ertussen
+          // is het hele punt:
+          //   draaiing  loodrecht op de cursor, voor alle korrels dezelfde
+          //             kant op — dat leest als roeren.
+          //   eigenzin  elke korrel heeft z'n eigen richting, dus buren gaan
+          //             uit elkaar in plaats van samen opzij. Dit is wat het
+          //             wanorde maakt en geen verschuiving.
+          //   afstoting klein gehouden. Een flinke radiale duw veegt de boel
+          //             uit een cirkel weg en laat een gat achter; daar is
+          //             het niet om te doen.
+          var tox = 0, toy = 0, hit = false;
           if (repel) {
             var rdx = x - pointer.px;
             var rdy = y - pointer.py;
             var d2 = rdx * rdx + rdy * rdy;
             if (d2 < repelR * repelR) {
-              var d = Math.sqrt(d2);
+              hit = true;
+              var d = Math.sqrt(d2) || 0.001;
               var k = 1 - d / repelR;
               // k * (2 - k), niet k in het kwadraat: dat laatste stopt bijna
-              // alle verplaatsing in de paar korrels pal onder de cursor, en
-              // dan zie je een speldenprik. Zo wijkt de hele omgeving mee en
-              // wordt het een gat.
-              var f = repelPush * k * (2 - k);
-              if (d > 0.5) {
-                tox = (rdx / d) * f;
-                toy = (rdy / d) * f;
-              } else {
-                // Pal onder de cursor is 'weg van het midden' richtingloos.
-                // De vaste hoek van de korrel zelf geeft dan een stabiele
-                // uitweg, in plaats van een richting die elk frame omslaat.
-                tox = Math.cos(p.spin) * f;
-                toy = Math.sin(p.spin) * f;
-              }
+              // alle beweging in de paar korrels pal onder de cursor, en dan
+              // gebeurt er zichtbaar niets.
+              var f = repelPush * k * (2 - k) * p.grip;
+              var ux = rdx / d, uy = rdy / d;
+              // De eigen richting draait langzaam mee zolang de cursor er
+              // staat, zodat het blijft borrelen in plaats van te bevriezen
+              // in één verstoorde stand.
+              var a = p.chaos + time * 0.5;
+              tox = (ux * 0.18 - uy * 0.60 + Math.cos(a) * 0.80) * f;
+              toy = (uy * 0.18 + ux * 0.60 + Math.sin(a) * 0.80) * f;
             }
           }
-          // Een veer naar dat doel toe, niet er meteen op: openwijken mag
-          // volgen op de muis, dichttrekken hoort langzamer te gaan.
-          p.ox += (tox - p.ox) * (tox ? pullOpen : pullShut);
-          p.oy += (toy - p.oy) * (toy ? pullOpen : pullShut);
+          // In de war raken gaat snel en voor iedereen even snel; terugvinden
+          // gaat traag en voor elke korrel anders. Dat verschil is precies
+          // waar je naar kijkt.
+          var pull = hit ? pullStir : settle[p.traag];
+          p.ox += (tox - p.ox) * pull;
+          p.oy += (toy - p.oy) * pull;
           x += p.ox;
           y += p.oy;
 
