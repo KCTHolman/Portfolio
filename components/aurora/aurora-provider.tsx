@@ -36,7 +36,7 @@ import {
   hsla,
   type AuroraPreset,
 } from '@/lib/aurora'
-import { useNarrowScreen, usePrefersReducedMotion } from '@/lib/use-media-query'
+import { usePrefersReducedMotion } from '@/lib/use-media-query'
 
 type AuroraContextValue = {
   presets: readonly AuroraPreset[]
@@ -84,7 +84,6 @@ function writeSession(session: StoredSession): void {
 
 export function AuroraProvider({ children }: { children: ReactNode }) {
   const reduceMotion = usePrefersReducedMotion()
-  const narrowScreen = useNarrowScreen()
 
   /* Begint deterministisch op 0 zodat server en client dezelfde HTML
      opleveren; de sessie of een willekeurige keuze komt in het mount-effect
@@ -98,10 +97,9 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   const frameRef = useRef<number | null>(null)
   const lastPaintRef = useRef(0)
 
-  /* Reduced motion en telefoons zien de loop nooit, dus die krijgen het
-     afgemaakte beeld meteen in plaats van eeuwig op het openingsframe te
-     blijven staan. */
-  const staticFrame = reduceMotion || narrowScreen
+  /* Reduced motion ziet de loop nooit, en krijgt het afgemaakte beeld meteen
+     in plaats van eeuwig op het openingsframe te blijven staan. */
+  const staticFrame = reduceMotion
 
   const paint = useCallback(() => {
     const root = document.documentElement
