@@ -1,0 +1,69 @@
+'use client'
+
+/* De wash zelf: zes zwaar geblurde blobs achter een SVG-displacementfilter,
+   met korrel en vignet erover.
+
+   Geometrie hoort bij de preset en verandert alleen als je er een kiest —
+   daarom staat ze hier declaratief in de JSX in plaats van dat een loop elk
+   frame setAttribute doet. Elke schrijf op feTurbulence/feDisplacementMap
+   dwingt een volledige her-rasterisatie van een schermvullend filter, en dat
+   is precies wat je anders als schokken ziet. De vorm blijft bewegen via de
+   blob-animaties, en die lopen op de GPU. */
+
+import type { CSSProperties } from 'react'
+
+import { BASE_GEOMETRY } from '@/lib/aurora'
+import { useAurora } from './aurora-provider'
+
+const BLOBS = [1, 2, 3, 4, 5, 6] as const
+
+export function AuroraStage() {
+  const { presets, activePreset } = useAurora()
+  const geo = presets[activePreset]?.geo ?? BASE_GEOMETRY
+
+  return (
+    <div aria-hidden="true">
+      <svg className="aur-defs" aria-hidden="true" focusable="false">
+        <filter id="kh-paint">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={`${geo.freq.toFixed(4)} ${(geo.freq * 1.35).toFixed(4)}`}
+            numOctaves={3}
+            seed={7}
+            result="n"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="n"
+            scale={geo.scale}
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+        <filter id="kh-grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} />
+        </filter>
+      </svg>
+
+      <div
+        className="aur-stage"
+        style={
+          {
+            '--soft': geo.soft.toFixed(3),
+            '--speed': geo.speed.toFixed(3),
+          } as CSSProperties
+        }
+      >
+        <div className="aur-paint">
+          {BLOBS.map((n) => (
+            <div key={n} className={`aur-blob aur-blob--${n}`} />
+          ))}
+        </div>
+        <svg className="aur-grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <rect width="100%" height="100%" filter="url(#kh-grain)" />
+        </svg>
+        <div className="aur-vignette" />
+      </div>
+    </div>
+  )
+}
