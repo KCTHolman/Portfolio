@@ -28,8 +28,8 @@ eindigt met een lancering zodra je bij "live" aankomt.
   escalatie/`needs-human`) — geen vaag "af en toe".
 - De koffie-demo (`components/demo/*`) blijft, losgekoppeld van een stappenverhaal, als
   tastbaar bewijsstuk ná de lancering.
-- `/werk/logboek/` wordt herbouwd (geen eigen route meer met dit stappenverhaal); de inhoud
-  verhuist naar `/werk/`. `/werk/readme/` blijft ongewijzigd staan als diepste laag.
+- `/werk/logboek/` vervalt als route; de inhoud (comprimeerd, niet 1-op-1) verhuist naar de
+  zes secties op `/werk/`. `/werk/readme/` blijft ongewijzigd staan als diepste laag.
 - De animatie hoort rechts, vast in beeld (`position: fixed`, zoals nu al op de homepage en
   als `ambient`-vloot), niet een kolom die meescrollt.
 - Het "morphen" moet voelen als vervorming, niet als een cut: deeltjes komen niet gelijk aan
@@ -52,7 +52,8 @@ verzinnen.
    op basis van wat al in `RUN_STEPS[7].tech` staat over de self-hosted lane).
 4. **Checks** (schild) — kernzin: zes bewakingen moeten groen zijn.
    Bron: `RUN_STEPS[8]` ("Werkt de rest nog?") + volledige `CHECKS`-lijst en `METRICS`-lijst
-   uit `technisch-data.tsx`, hergebruikt zonder herschrijven.
+   uit `technisch-data.tsx`, hergebruikt zonder herschrijven. `ROADMAP` (vandaag/morgen)
+   hoort hier ook thuis, als extra diepgang naast de checks — geen eigen sectie.
 5. **Mens beslist** (sleutel) — kernzin: precies drie soorten plekken waar jij klikt.
    Bron: `RUN_STEPS[9]` (Merge) + `RUN_STEPS[10]` (Release) + het weerkerende
    `needs-human`-escalatiepatroon dat nu al in meerdere `fail`-teksten staat, hier voor het
@@ -61,8 +62,6 @@ verzinnen.
    Bron: `RUN_STEPS[11]` ("Live"). Direct eronder: `DemoPanel`/`DemoSheet` uit
    `components/demo/*`, ongewijzigd hergebruikt, als los "probeer het zelf"-blok — niet als
    sluitstuk van een verhaal maar als bewijs.
-
-`ROADMAP` (vandaag/morgen) verhuist als extra diepgang bij sectie 3 of 4; geen eigen sectie.
 
 ## De animatie: uitbreiding van het bestaande deeltjessysteem
 
@@ -78,6 +77,14 @@ eigen `lag` uit `SETTLE`-bakjes, zodat de vorm zich als een golf opbouwt, niet a
 homepage, `ambient` als achtergrondlaag elders) en regelt `frozen` (reduced motion / smal
 scherm) en de fade-in.
 
+- **Eén evoluerende vorm, geen vloot**: de `journey`-variant toont één primaire vorm (het
+  equivalent van de voorste boot in `HERO_BOATS`), niet de kleinere achtergrondbootjes die
+  `hero`/`ambient` gebruiken voor parallax — die zijn decoratieve flair, geen dragers van
+  betekenis, en horen hier niet thuis. De bestaande losse stof (`buildAmbientDust`) blijft
+  wél meedraaien op de achtergrond. Dat is een bewuste vereenvoudiging van hoe `boats: Boat[]`
+  nu in `use-fleet-scene.ts` wordt doorlopen: `journey` itereert over één `Boat`-instantie in
+  plaats van een array, wat een kleinere aanpassing is dan het huidige meervoudige model.
+
 ### Wat erbij komt
 
 - **Nieuwe vormensets** in `fleet-geometry.ts`, in dezelfde `poly`/`curve`/`spar`-taal als de
@@ -85,10 +92,20 @@ scherm) en de fade-in.
   y: 0–~0.96) zodat ze zonder herschalen tegen elkaar over te vloeien zijn.
 - **Een derde `FleetVariant`** (werknaam `journey`) die, in plaats van één vaste `SHAPES`-set,
   een `progress`-waarde (0–1) aanneemt en per deeltje interpoleert tussen de bronvorm en de
-  doelvorm horende bij de huidige en volgende sectie. Deeltjesaantal en -toewijzing blijven
-  vast (zelfde particle-index hoort bij hetzelfde punt in beide vormen, zodat er niets
-  opnieuw opgebouwd hoeft te worden bij een overgang) — de `ux`/`uy`-doelpositie van elk
-  deeltje wordt een `lerp` tussen shape A en shape B in plaats van een vaste waarde.
+  doelvorm horende bij de huidige en volgende sectie.
+- **Open technisch risico — deeltjes-pariteit tussen vormen**: dit is nog niet opgelost en
+  moet als eerste stap van het implementatieplan uitgezocht worden, vóór alle vijf nieuwe
+  vormen getekend worden. Elke `Shape` in de huidige `SHAPES`-lijst heeft een eigen,
+  handmatig afgestemd aantal rand-/vulpunten (`HULL` 300/250, `MAST` 100/0, `FLAG` 30/0, ...),
+  en `buildBoat()` genereert dus per onderdeel een ander aantal deeltjes. Om per deeltje-index
+  te kunnen lerpen tussen vorm A en vorm B moeten beide vormen exact dezelfde, geordende
+  deeltjesset opleveren — dat valt niet gratis uit het bestaande systeem. Voorgestelde aanpak,
+  te valideren met een spike op één vorm (kompas) vóór de overige vier: geef elke nieuwe vorm
+  dezelfde onderdeel-indeling en hetzelfde vaste puntenbudget per onderdeel als de boot (acht
+  "slots" met vaste edge/fill-aantallen), zodat elk boot-deeltje een vast corresponderend
+  doelpunt in elke andere vorm heeft. Vormen met minder natuurlijke onderdelen dan de boot
+  (bv. een sleutel) vullen de resterende slots met extra rand-/vulpunten op hetzelfde silhouet
+  in plaats van ze leeg te laten.
 - **Vervorming, geen cut**: elk deeltje behoudt zijn eigen `lag`/`jitter` uit het bestaande
   systeem, toegepast op de overgang tussen vormen in plaats van (of naast) de opbouw bij het
   laden. Zo ontstaat er middenin een overgang een tijdelijk vervormde, "kokende" wolk die
