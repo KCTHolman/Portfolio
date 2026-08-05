@@ -231,7 +231,7 @@ a.khnav[aria-current="page"]::after {
 /* The home page is one screen: hero and project sit in the space between the
    header and the footer. min-height, not height, so a short viewport can
    still scroll instead of clipping. */
-.kh-home .kh-main--home {
+.kh-main--home {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
@@ -255,7 +255,7 @@ a.khnav[aria-current="page"]::after {
   max-width: 600px;
 }
 
-.kh-home .kh-hero {
+.kh-main--home .kh-hero {
   min-height: 0;
   padding: 0;
 }
@@ -269,7 +269,7 @@ a.khnav[aria-current="page"]::after {
 /* Op een telefoon is de kaart hoger (ticker van drie regels), dus de ruimte
    eromheen krimpt mee — anders past het scherm net niet meer. */
 @media (max-width: 699px) {
-  .kh-home .kh-main--home {
+  .kh-main--home {
     padding-top: 14px;
     padding-bottom: 14px;
   }
