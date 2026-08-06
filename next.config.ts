@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/over', destination: '/koen-holman', permanent: true },
       { source: '/contact', destination: '/koen-holman', permanent: true },
+      { source: '/security.txt', destination: '/.well-known/security.txt', permanent: true },
     ]
   },
 }
