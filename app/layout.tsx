@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import type { ReactNode } from 'react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 import './styles/site.css'
 import './styles/aurora.css'
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </ViewTransitions>
 
         <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />
+        <SpeedInsights />
       </body>
     </html>
   )
