@@ -293,6 +293,21 @@ a.khnav[aria-current="page"]::after {
    tekstpagina's — geen vastgezet deel, geen apart scrollend blok. */
 .kh-main--koen-holman { padding: 76px 20px 120px; }
 
+/* Intro + CTA-rij vullen het eerste scherm; de panelen erna beginnen zo
+   altijd buiten de vouw, met het scroll-pijltje ernaartoe wijzend onderin.
+   -76px/-70px trekken de padding-top van .kh-main--koen-holman en wat
+   ruimte voor de sticky footer eraf, zodat het pijltje zelf nog wél in
+   beeld staat. */
+.kh-koen-hero {
+  min-height: calc(100dvh - 76px - 90px);
+  display: flex;
+  flex-direction: column;
+}
+
+.kh-koen-hero .kh-scroll-cue {
+  margin-top: auto;
+}
+
 .kh-koen-panels {
   margin-top: 44px;
   display: flex;
@@ -314,6 +329,111 @@ a.khnav[aria-current="page"]::after {
   z-index: 1;
   max-width: 520px;
   margin: 0;
+}
+
+/* Zelfde reden en truc als .kh-koen-hero: de footer staat sticky, dus
+   altijd al onderin het scherm. Zonder deze reservering hangt het
+   scroll-pijltje af van hoeveel de intro-tekst wrapt (breedte) én de
+   schermhoogte samen — op een laag/breed venster kon het de footer gaan
+   raken. 56px is exact de padding-top van deze section hierboven. */
+.kh-werk-hero {
+  min-height: calc(100dvh - 56px - 90px);
+  display: flex;
+  flex-direction: column;
+}
+
+.kh-werk-hero .kh-scroll-cue {
+  margin-top: auto;
+}
+
+/* Scroll-hint onder de intro-alinea: gewoon in de leesstroom, geen
+   position:fixed. */
+.kh-scroll-cue {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  color: var(--kh-teal-soft);
+  /* --boost stuurt de piek-opacity van elk driehoekje aan (zie
+     khScrollSpark) — een custom property wijzigen op :hover werkt wél
+     samen met een lopende animation, een gewone :hover-regel op opacity
+     zelf zou door die animation genegeerd worden. */
+  --boost: 1;
+  transition: transform 0.35s ease;
+}
+
+.kh-scroll-cue:hover { transform: scale(1.08); --boost: 1.5; }
+
+/* Ademen, geen bounce: traag, met een lichte adem-in op de schaal in
+   plaats van een strak op-en-neer tikje. Stopt zodra de driehoekjes
+   uiteenwaaien, anders vecht de adem-beweging met dat vertrek. */
+.kh-scroll-cue-icon { animation: khScrollBreathe 3.2s ease-in-out infinite; }
+.kh-scroll-cue.is-dismissed .kh-scroll-cue-icon { animation: none; }
+
+/* Schaalt licht mee met de schermhoogte: width vast, height:auto — de
+   viewBox bepaalt dan zelf de verhouding. */
+.kh-scroll-cue-icon {
+  width: clamp(90px, 16dvh, 150px);
+  height: auto;
+}
+
+/* Op een laag scherm past de intro-tekst zelf al bijna precies boven de
+   sticky footer (getest: rond 700px hoogte raakt zelfs een klein pijltje
+   'm nog) — dan liever helemaal geen pijltje dan een die de footer raakt.
+   740px geeft ruim marge boven de geteste probleemgevallen. */
+@media (max-height: 740px) {
+  .kh-scroll-cue { display: none; }
+}
+
+@keyframes khScrollBreathe {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50%      { transform: translateY(4px) scale(1.035); opacity: 0.88; }
+}
+
+/* Elk driehoekje twinkelt licht en onafhankelijk (eigen animation-delay,
+   inline per element) tussen de helft en de volle eigen opacity (--o, ook
+   inline) — dat geeft de rand van de pijl een zacht dissolvend randje in
+   plaats van een harde omtrek.
+
+   Bij dismiss geen fade: elk driehoekje waait uiteen langs zijn eigen
+   --dx/--dy (vanaf het pijl-midden berekend, zie ARROW_CENTER in
+   scroll-cue.tsx) en krimpt naar niets — zo wordt het onderdeel van
+   dezelfde losse deeltjes als de vloot op de achtergrond, in plaats van
+   simpelweg te verdwijnen. transform-box: fill-box zorgt dat scale(0) naar
+   het eigen middelpunt van elke driehoek krimpt, niet naar de hoek van de
+   hele svg. */
+.kh-scroll-cue-mark {
+  opacity: var(--o);
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: translate(0, 0) scale(1);
+  animation: khScrollSpark 3.4s ease-in-out infinite;
+  /* Geen transform-transition hier: scroll-cue.tsx zet de repel-uitwijking
+     elk frame zelf via style.transform (met zijn eigen easing), een CSS-
+     transitie zou daar overheen vechten en alles vertragen tot moes. */
+  transition: opacity 1.6s ease-in;
+}
+
+@keyframes khScrollSpark {
+  0%, 100% { opacity: calc(var(--o) * 0.5 * var(--boost)); }
+  50%      { opacity: min(1, calc(var(--o) * var(--boost))); }
+}
+
+.kh-scroll-cue.is-dismissed .kh-scroll-cue-mark {
+  animation: none;
+  opacity: 0;
+  transform: translate(var(--dx), var(--dy)) scale(0);
+  /* Overdreven en traag: de rug van de curve (0.65 gaat eerst voorbij de
+     1) geeft elk driehoekje een klein zwiepje voordat het wegkrimpt, in
+     plaats van een nette lineaire uitvaart. Alleen hier, niet op de
+     rust-toestand — zie de comment hierboven. */
+  transition: transform 1.9s cubic-bezier(0.34, 1.4, 0.3, 1), opacity 1.6s ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-scroll-cue-icon,
+  .kh-scroll-cue-mark { animation: none; }
+  .kh-scroll-cue-mark { opacity: var(--o); transition: opacity 0.4s ease; }
+  .kh-scroll-cue.is-dismissed .kh-scroll-cue-mark { transform: none; }
 }
 
 /* Elke halte krijgt een eigen scherm-achtig ritme — de tekst scrollt weg
