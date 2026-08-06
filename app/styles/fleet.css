@@ -49,8 +49,9 @@
 .kh-home-visual.is-varend { opacity: 1; }
 
 /* Geen transitie tijdens het slepen zelf — zie dezelfde regel bij
-   .kh-home-copy in site.css, dit is de andere kant van hetzelfde gordijn. */
-.kh-home-grid.kh-swipe-dragging .kh-home-visual { transition: none; }
+   .kh-home-copy in site.css, dit is de andere kant van hetzelfde gordijn.
+   De klasse komt op <main> te staan (zie components/home-hero.tsx). */
+.kh-main--home.kh-swipe-dragging .kh-home-visual { transition: none; }
 
 /* ---------- Elders: een verre vloot achter de inhoud --------------------- */
 
