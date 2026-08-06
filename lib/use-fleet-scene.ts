@@ -51,6 +51,11 @@ import {
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
+/** cos/sin van 120°: de optelformules in draw()'s korrel-driehoekje leunen
+ *  hierop om twee hoekpunten uit het derde af te leiden zonder extra
+ *  Math.cos/sin-aanroepen. */
+const SQRT3_2 = Math.sqrt(3) / 2
+
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
 type Boat = BoatSpec & {
@@ -154,6 +159,37 @@ type FleetSceneOptions = {
   presetIndex: number
 }
 
+/* ---------- prestatiebewaking: automatisch terugschakelen op trage machines
+   ----------------------------------------------------------------------
+   Lighthouse meet laadprestatie, niet of duizenden korrels 30x per seconde
+   opnieuw tekenen soepel blijft op een oude of drukbezette machine. In
+   plaats van voor iedereen alvast minder deeltjes te bouwen (zichtbaar
+   armoediger, voor de overgrote meerderheid voor niks), meet de scène de
+   eigen tekentijd een paar tellen nadat de instap voorbij is: is die
+   structureel te hoog, dan bouwt hij zichzelf één keer opnieuw op met minder
+   deeltjes en een lagere pixelverhouding. Onthouden in localStorage — geen
+   machine wordt sneller tussen twee bezoeken, dus een volgend bezoek start
+   direct op het lagere niveau in plaats van de terugval opnieuw te laten
+   zien. ---------------------------------------------------------------- */
+const QUALITY_STORE_KEY = 'kh-fleet-quality'
+
+function readReducedQuality(): boolean {
+  try {
+    return localStorage.getItem(QUALITY_STORE_KEY) === 'reduced'
+  } catch {
+    // Privémodus of een volle quota: dit bezoek meet dan gewoon opnieuw.
+    return false
+  }
+}
+
+function writeReducedQuality(): void {
+  try {
+    localStorage.setItem(QUALITY_STORE_KEY, 'reduced')
+  } catch {
+    // Zie readReducedQuality().
+  }
+}
+
 export function useFleetScene({
   mountRef,
   canvasRef,
@@ -185,7 +221,6 @@ export function useFleetScene({
     if (!ctx) return
 
     const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
-    const formMs = variant === 'journey' ? 2400 : 1500
     /** journey (scroll-gedreven, zie /werk/) en de drie homepage-scènes
      *  hieronder (kompas/tandwiel/raket) delen dezelfde "één evoluerende vorm
      *  uit JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang
@@ -193,12 +228,54 @@ export function useFleetScene({
      *  scènes. */
     const journeyLike =
       variant === 'journey' || variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
+    /** Iets langer voor de journey-achtige varianten: daar is de vorm het
+     *  hele beeld (geen vloot ernaast), dus mag het rustiger op gang komen —
+     *  zie entryPos()/de forming-stap in draw() voor de rest van de
+     *  "ademende" instap. */
+    const formMs = journeyLike ? 2600 : 1800
+    /** Alleen relevant voor journeyLike: welk stadium hoort bij de allereerste
+     *  tekenbeurt van déze variant. journey start altijd bij de boot (scroll
+     *  begint boven), maar de drie homepage-scènes staan meteen op hun eigen,
+     *  vaste stadium (zie de rawProgress-toewijzing in draw()) — entryPos()
+     *  moet daarom vanaf de JUISTE vorm beginnen, niet altijd vanaf de boot,
+     *  anders oogt het laden als "boot verandert na een paar tellen in een
+     *  kompas/tandwiel", in plaats van die vorm die zelf scherp wordt. Zelfde
+     *  indices als de rawProgress-toewijzing in draw() hieronder (kompas 1,
+     *  tandwiel 2, raket het laatste stadium) — JOURNEY_STAGES' eigen
+     *  volgorde, niet showcase's afwijkende SHOWCASE_STAGES-volgorde. */
+    const initialJourneyStage =
+      variant === 'home-compass' ? 1 : variant === 'home-gear' ? 2 : variant === 'home-rocket' ? JOURNEY_STAGE_COUNT - 1 : 0
     /** De drie homepage-alternatieven voor hero, die components/home-
      *  scene.tsx bij het laden loot. Op een telefoon is er geen aparte
      *  tekstkolom naast de vorm (zie de anker-override in build() en de
      *  bredere share hieronder in layout()) — de vorm mag daar groter en
      *  gecentreerd achter de tekst liggen in plaats van rechts ernaast. */
     const soloHomeVariant = variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
+
+    /* Terugval-niveau: 1 is vol, QUALITY_DEGRADE_FACTOR is wat perfCheck()
+       hieronder ervoor in de plaats zet zodra tekenen structureel te lang
+       duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
+       terugval al vaststelde — zie readReducedQuality(). dprCap volgt mee:
+       op een tragere machine weegt de extra scherpte van devicePixelRatio 2
+       zwaarder dan wat hij oplevert. */
+    const QUALITY_DEGRADE_FACTOR = 0.55
+    let qualityScale = readReducedQuality() ? QUALITY_DEGRADE_FACTOR : 1
+    let dprCap = qualityScale < 1 ? 1 : 2
+    /* Meet pas een paar tellen nadat de instap voorbij is (die kost door de
+       forming-lerp toch al iets meer) en pas dan gericht: één venster van
+       samples, één keer een oordeel, geen continue meting die zelf weer
+       prestatie kost. Het echte interval tussen twee getekende frames — niet
+       de tijd die draw() zelf in JS doorbrengt — is de maat: op
+       GPU-versnelde canvas kan het echte rasterwerk buiten de JS-call om
+       gebeuren, dus alleen draw() opstoppen zou trager-dan-bedoeld tekenen op
+       een zwak GPU volledig missen. perfDone start al waar als dit bezoek de
+       terugval al kende — dan is er niets meer te meten. */
+    const PERF_SAMPLE_TARGET = 40
+    const PERF_BUDGET_MS = journeyLike || variant === 'showcase' ? 40 : 60
+    const PERF_WARMUP_MS = 600
+    let perfSamples = 0
+    let perfSum = 0
+    let perfDone = qualityScale < 1
 
     let w = 0
     let h = 0
@@ -390,8 +467,8 @@ export function useFleetScene({
      *  gedeelde functie in plaats van de berekening op twee plekken te
      *  herhalen. */
     function showcaseBoatDetail(spec: BoatSpec, index: number): number {
-      if (index === 0) return frozen ? 0.5 : 1
-      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7)
+      if (index === 0) return (frozen ? 0.5 : 1) * qualityScale
+      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7 * qualityScale)
     }
 
     /** Nul snelheid aan beide kanten van een stuk, in plaats van de constante
@@ -417,7 +494,9 @@ export function useFleetScene({
     }
 
     function build(): void {
-      let quality = frozen ? 0.5 : 1
+      // qualityScale: 1 tenzij perfCheck() hieronder al vaststelde (dit
+      // bezoek of een vorig) dat deze machine minder aankan.
+      let quality = (frozen ? 0.5 : 1) * qualityScale
       // Ambient tekent een handvol verre boten tegelijk — dezelfde
       // conservatieve korting als showcase's satellieten, uit hetzelfde
       // prestatie-oogpunt (showcase's eigen dichtheid loopt via
@@ -635,7 +714,10 @@ export function useFleetScene({
      *  opnieuw; de vorm zelf blijft staan, alleen de schaal verschuift. */
     function layout(): void {
       measure()
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      // dprCap zakt naar 1 zodra perfCheck() deze machine als traag
+      // aanmerkt — minder pixels om te vullen weegt zwaarder dan de extra
+      // scherpte, en de deeltjes zelf blijven op volle grootte.
+      const dpr = Math.min(dprCap, window.devicePixelRatio || 1)
 
       canvas!.width = Math.round(w * dpr)
       canvas!.height = Math.round(h * dpr)
@@ -720,20 +802,19 @@ export function useFleetScene({
 
       /* Instap bij het laden. Eerder vloog élke korrel bij het eerste tekenen
          van ver weg naar binnen — een fors "explosie-naar-vorm"-effect, en
-         net op het moment dat de pagina toch al druk is met opstarten, wat op
-         tragere machines zwaar oogde. Nu staat het gros meteen op zijn eigen
-         plek (de laag zelf vaart nog wel in via CSS-opacity, zie fleet.css)
-         en krijgt alleen een klein deel nog een hele zachte inzwaai, zodat
-         het geheel niet als een kille "aan"-knop aanvoelt maar wel merkbaar
-         rustiger is dan de oude, voluit exploderende opbouw. */
-      const ENTRY_ANIMATE_SHARE = 0.15
-      const ENTRY_K = 1.12
-      function entryPos(i: number, ax: number, ay: number, mute: boolean): [number, number] {
-        if ((i * 71) % 100 >= ENTRY_ANIMATE_SHARE * 100) return [ax, ay]
-        const vx = ax - w * 0.5
-        const vy = ay - h * 0.52
-        const k = mute ? 1 + (ENTRY_K - 1) * 0.16 : ENTRY_K
-        return [w * 0.5 + vx * k + ((i * 53) % 60) - 30, h * 0.52 + vy * k + ((i * 29) % 60) - 30]
+         voor de journey-achtige varianten bovendien altíjd vanaf de bootvorm
+         (stadium 0) in plaats van de eigen beginvorm, wat op de homepage-
+         scènes als een rare "boot verandert na een paar tellen in een
+         kompas/tandwiel"-sprong oogde. Nu begint elke korrel vlak bij haar
+         eigen, echte beginpositie met een kleine, lokale eigen afwijking —
+         geen gericht naar-binnen-vliegen meer — en lost dat op in een paar
+         rustige tellen (zie de smoothstep-easing in draw()): een wazige wolk
+         die scherp wordt, geen zwerm die van ver komt aanzetten en geen vorm
+         die van gedaante lijkt te wisselen. */
+      const ENTRY_JITTER_PX = 55
+      const ENTRY_SPAN = ENTRY_JITTER_PX * 2 + 1
+      function entryPos(i: number, ax: number, ay: number): [number, number] {
+        return [ax + (((i * 53) % ENTRY_SPAN) - ENTRY_JITTER_PX), ay + (((i * 29) % ENTRY_SPAN) - ENTRY_JITTER_PX)]
       }
 
       parts.forEach((p, i) => {
@@ -742,9 +823,9 @@ export function useFleetScene({
           p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
           p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
 
-          const ax = owner.px + p.jx[0]
-          const ay = owner.py + p.jy[0]
-          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
+          const ax = owner.px + p.jx[initialJourneyStage]
+          const ay = owner.py + p.jy[initialJourneyStage]
+          ;[p.sx, p.sy] = entryPos(i, ax, ay)
           return
         }
 
@@ -759,9 +840,12 @@ export function useFleetScene({
           p.jx = stages.map((pts) => (pts[local][0] - 0.5) * owner.pw)
           p.jy = stages.map((pts) => (pts[local][1] - 0.48) * owner.ph)
 
+          // Showcase's eigen klok begint altijd bij SHOWCASE_VLOOT_STAGE (0,
+          // de boot) — zie showcaseStage's beginwaarde in draw() — dus hier
+          // is stadium 0 wél de juiste beginvorm, anders dan bij journeyLike.
           const ax = owner.px + p.jx[0]
           const ay = owner.py + p.jy[0]
-          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
+          ;[p.sx, p.sy] = entryPos(i, ax, ay)
           return
         }
 
@@ -776,16 +860,9 @@ export function useFleetScene({
              genormaliseerde vak. */
           p.by = (p.uy - 0.48) * owner.ph
         }
-        // Startpositie van de opbouw: vanaf buiten het beeld naar binnen voor
-        // het kleine deel dat nog inzwaait (zie entryPos hierboven).
         const ax = p.boat < 0 ? p.bx : boats[p.boat].px + p.bx
         const ay = p.boat < 0 ? p.by : boats[p.boat].py + p.by
-        /* Links staat de leestekst: een korrel die daar moet landen, laten we
-           nauwelijks uitwaaieren — die vaart bijna stilstaand in. Rechts, waar
-           de vloot woont, mag de inzwaai voluit. Zo blijft de hele opbouw
-           zichtbaar op de rechterkant in plaats van dwars over de tekst te
-           vliegen. */
-        ;[p.sx, p.sy] = entryPos(i, ax, ay, ax < w * 0.5)
+        ;[p.sx, p.sy] = entryPos(i, ax, ay)
       })
     }
 
@@ -1293,7 +1370,12 @@ export function useFleetScene({
           }
 
           if (forming) {
-            const e = ease(Math.min(1, Math.max(0, (form - p.lag) / (1 - 0.45))))
+            // smoothstep, geen ease(): die laatste trekt hard van start (drie
+            // kwart van de reis zit al in de eerste helft van de tijd), en
+            // dat is precies het "snelle sprong"-gevoel dat hier niet meer
+            // moet. smoothstep begint en eindigt allebei traag — de korrel
+            // komt tot rust in plaats van af te remmen uit volle vaart.
+            const e = smoothstep((form - p.lag) / (1 - 0.45))
             x = p.sx + (x - p.sx) * e
             y = p.sy + (y - p.sy) * e
           }
@@ -1363,9 +1445,19 @@ export function useFleetScene({
           }
           if (r <= 0.02) continue
           const a = p.spin + (frozen ? 0 : time * 0.08)
-          ctx!.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
-          ctx!.lineTo(x + Math.cos(a + 2.0944) * r, y + Math.sin(a + 2.0944) * r)
-          ctx!.lineTo(x + Math.cos(a + 4.1888) * r, y + Math.sin(a + 4.1888) * r)
+          // Twee trig-calls, geen zes: de andere twee hoekpunten liggen op
+          // +120°/+240°, en cos/sin daarvan volgen uit ca/sa via de
+          // optelformules (cos120 = -0.5, sin120 = √3/2) — zelfde driehoek,
+          // een derde van de Math.cos/sin-aanroepen per korrel per frame.
+          const ca = Math.cos(a)
+          const sa = Math.sin(a)
+          const cb = -0.5 * ca - SQRT3_2 * sa
+          const sb = SQRT3_2 * ca - 0.5 * sa
+          const cc = -0.5 * ca + SQRT3_2 * sa
+          const sc = -SQRT3_2 * ca - 0.5 * sa
+          ctx!.moveTo(x + ca * r, y + sa * r)
+          ctx!.lineTo(x + cb * r, y + sb * r)
+          ctx!.lineTo(x + cc * r, y + sc * r)
           ctx!.closePath()
         }
 
@@ -1414,6 +1506,37 @@ export function useFleetScene({
 
     sceneRef.current = { setFormation }
 
+    /** Bouwt de scène in het huidige mount eenmalig opnieuw op met minder
+     *  deeltjes en een lagere pixelverhouding — het antwoord van perfCheck()
+     *  hieronder op een machine die de volle vloot niet soepel bijhoudt.
+     *  Alleen ooit omlaag, nooit weer omhoog: heen-en-weer schakelen tijdens
+     *  hetzelfde bezoek zou zelf weer als een hapering ogen. */
+    function degradeQuality(): void {
+      if (qualityScale >= 1) {
+        qualityScale = QUALITY_DEGRADE_FACTOR
+        dprCap = 1
+        writeReducedQuality()
+        build()
+        setFormation(presetIndexRef.current, true)
+        layout()
+      }
+    }
+
+    /** Eén oordeel, een paar tellen na de instap: hoe lang er gemiddeld
+     *  écht tussen twee getekende frames zit — niet hoe lang draw() zelf in
+     *  JS bezig is (zie de toelichting bij PERF_BUDGET_MS hierboven). Geen
+     *  doorlopende meting (die zou zelf weer prestatie kosten) — een venster
+     *  van PERF_SAMPLE_TARGET frames, dan klaar. Ligt het gemiddelde boven
+     *  PERF_BUDGET_MS, dan haalt deze machine de bedoelde snelheid niet,
+     *  ongeacht wat Lighthouse over de laadtijd zegt — dat meet iets anders. */
+    function perfCheck(gap: number): void {
+      perfSum += gap
+      perfSamples++
+      if (perfSamples < PERF_SAMPLE_TARGET) return
+      perfDone = true
+      if (perfSum / perfSamples > PERF_BUDGET_MS) degradeQuality()
+    }
+
     function loop(now: number): void {
       /* Tijdens de opbouw op volle snelheid, daarna rond de 30 beelden per
          seconde: het is een deinende achtergrond, geen animatie waar iemand
@@ -1422,10 +1545,19 @@ export function useFleetScene({
          achter de scrollpositie aan en voelt het schokkerig. Showcase heeft
          geen scroll, maar wél een doorlopende rotatie en stijg-golf die op
          30fps zichtbaar zou hakkelen, dus tekent die om dezelfde reden elk
-         frame. */
+         frame — al hoeft dat "elk frame" niet meer dan zo'n 60 keer per
+         seconde te zijn: op een 120/144Hz-scherm scheelt die kaap fors in
+         rekenwerk zonder dat iemand het verschil ziet. */
       const forming = now - t0 < formMs
-      const frameGap = journeyLike || variant === 'showcase' ? 0 : 30
+      const frameGap = journeyLike || variant === 'showcase' ? 15 : 30
       if (forming || now - lastFrame >= frameGap) {
+        // Vóór lastFrame wordt overschreven: het interval tussen dít en het
+        // vorige getekende frame is de prestatiemeting. Alleen na de instap
+        // en zijn warmup geteld — forming zelf tekent bewust vaker dan de
+        // gewone cadans, dat zou de meting scheeftrekken.
+        if (!perfDone && !forming && lastFrame > 0 && now - t0 > formMs + PERF_WARMUP_MS) {
+          perfCheck(now - lastFrame)
+        }
         lastFrame = now
         if (now - lastPalette >= 220) {
           lastPalette = now
@@ -1547,7 +1679,16 @@ export function useFleetScene({
        stabiele presetIndexRef), dus hoort ook niet in de dependency-lijst: een
        preset-klik mag nooit de hele scène (canvas, deeltjes, muisstaat)
        opnieuw opbouwen. De kleine effect hieronder zet het nieuwe doel via
-       setFormation(), zonder dit effect te raken. */
+       setFormation(), zonder dit effect te raken.
+
+       githubHoverRef hoort om dezelfde reden niet in deze lijst, ook al leest
+       draw() 'm rechtstreeks (regel ~1018): het is een RefObject, dus
+       React.useRef geeft elke render hetzelfde, stabiele object terug — de
+       waarde die verandert zit in .current, en die leest draw() vers in elk
+       animatieframe, niet als een dichtgetimmerde closure-snapshot van het
+       moment waarop dit effect opnieuw zou draaien. 'm toevoegen zou dus
+       nooit een her-run triggeren (het object verandert nooit) en verhult
+       alleen dat een linter dit niet als ref herkent — geen echte bug. */
   }, [canvasRef, coarsePointer, frozen, mountRef, narrowScreen, onSailing, progressRef, variant])
 
   useEffect(() => {

@@ -312,5 +312,3 @@ export const RUN_STEPS: RunStep[] = [
       'Eén tik voor een grote koffie, “twee kleine” tegen je telefoon kunnen zeggen, en ’s avonds zien hoeveel het er waren.',
   },
 ]
-
-export const RUN_TOTAL = RUN_STEPS.length
