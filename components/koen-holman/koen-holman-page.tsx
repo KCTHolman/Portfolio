@@ -12,6 +12,7 @@
    ========================================================================== */
 
 import { Fleet } from '@/components/fleet-lazy'
+import { ScrollCue } from '@/components/scroll-cue'
 import { GitHubIcon, InstagramIcon, LinkedInIcon } from '@/components/social-icons'
 
 import { PANELS } from './panel-data'
@@ -29,42 +30,46 @@ export function KoenHolmanPage() {
 
       <main className="kh-main kh-main--koen-holman" id="inhoud">
         <section style={{ maxWidth: '600px' }}>
-          <p className="kh-eyebrow">Over &amp; contact</p>
-          <h1 className="kh-page-title">
-            Bouwen, en het <span className="kh-accent">waarom</span> erbij
-          </h1>
-          <p className="kh-contact-lead">
-            Altijd in voor een goed gesprek over software, AI en alles ertussenin.
-          </p>
+          <div className="kh-koen-hero">
+            <p className="kh-eyebrow">Over &amp; contact</p>
+            <h1 className="kh-page-title">
+              Bouwen, en het <span className="kh-accent">waarom</span> erbij
+            </h1>
+            <p className="kh-contact-lead">
+              Altijd in voor een goed gesprek over software, AI en alles ertussenin.
+            </p>
 
-          <div className="kh-cta-row">
-            {LINKS.map(({ href, label, Icon }) => (
+            <div className="kh-cta-row">
+              {LINKS.map(({ href, label, Icon }) => (
+                <a
+                  key={href}
+                  className="khcta khcta--ghost"
+                  href={href}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={label}
+                >
+                  <Icon />
+                  {label}
+                </a>
+              ))}
+              {/* Indicia-logo volgt zodra Koen het aanlevert; tot die tijd een
+                  monogram in dezelfde knop-stijl. */}
               <a
-                key={href}
                 className="khcta khcta--ghost"
-                href={href}
+                href="https://indicia.nl/"
                 target="_blank"
                 rel="noopener"
-                aria-label={label}
+                aria-label="Indicia"
               >
-                <Icon />
-                {label}
+                <span className="kh-indicia-mark" aria-hidden="true">
+                  I
+                </span>
+                Indicia
               </a>
-            ))}
-            {/* Indicia-logo volgt zodra Koen het aanlevert; tot die tijd een
-                monogram in dezelfde knop-stijl. */}
-            <a
-              className="khcta khcta--ghost"
-              href="https://indicia.nl/"
-              target="_blank"
-              rel="noopener"
-              aria-label="Indicia"
-            >
-              <span className="kh-indicia-mark" aria-hidden="true">
-                I
-              </span>
-              Indicia
-            </a>
+            </div>
+
+            <ScrollCue />
           </div>
 
           <div className="kh-koen-panels">

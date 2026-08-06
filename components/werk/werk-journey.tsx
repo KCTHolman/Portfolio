@@ -17,6 +17,7 @@ import { useRef, useState } from 'react'
 
 import { Link } from '@/components/link'
 import { Fleet } from '@/components/fleet-lazy'
+import { ScrollCue } from '@/components/scroll-cue'
 import { RUN_STEPS } from '@/components/showcase/run-data'
 import { CHECKS, METRICS, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
 import { useJourneyProgress } from '@/lib/use-journey-progress'
@@ -51,7 +52,7 @@ export function WerkJourney() {
       <Fleet variant="journey" progressRef={progressRef} githubHoverRef={githubHoverRef} />
 
       <main className="kh-main kh-main--werk" id="inhoud">
-        <section style={{ padding: '56px 0 0', maxWidth: '520px' }}>
+        <section className="kh-werk-hero" style={{ padding: '56px 0 0', maxWidth: '520px' }}>
           <p className="kh-eyebrow">Huidige AI-projecten</p>
           <h1 className="kh-page-title">
             Een pijplijn die <span className="kh-accent">zichzelf</span> bewaakt
@@ -88,6 +89,7 @@ export function WerkJourney() {
             De kernzinnen hieronder staan er sowieso. Deze knop voegt per stap de achtergrond toe:
             welk bestand of script het regelt, en wat er gebeurt als het misgaat.
           </p>
+          <ScrollCue />
         </section>
 
         <div className="kh-werk-grid">
