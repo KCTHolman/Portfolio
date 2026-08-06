@@ -278,7 +278,11 @@ export function useFleetScene({
        Zie homeRocketAltitude() hieronder. 16 seconden voor de volle cyclus
        is traag genoeg om als "landen", niet als "stuiteren" te lezen. */
     const HOME_ROCKET_CYCLE_SEC = 16
-    const HOME_ROCKET_LIFT_FRAC = 0.34
+    /* Op een telefoon staat de raket al hoog in beeld (zie het anker in
+       build()) om onder de tekst te passen — een even hoge stijging als op
+       desktop zou de neus dan voorbij de bovenrand duwen. Lager op smalle
+       schermen houdt 'm binnen beeld, ook op het hoogste punt van de lus. */
+    const HOME_ROCKET_LIFT_FRAC = narrowScreen ? 0.16 : 0.34
     /* Showcase, elke scène-wissel: hoeveel de jitter tijdens het mengen
        (SHOWCASE_BLEND_MS) opzwelt, in het midden van de overgang op zijn
        hoogst en weer terug naar normaal aan beide kanten. Een rechte lerp
@@ -435,11 +439,13 @@ export function useFleetScene({
         //
         // Journey's eigen anker (cx 0.8, rechts in beeld) gaat ervan uit dat
         // er een aparte leeskolom naast staat — op /werk/ ligt die er ook
-        // altijd, in elk schermformaat. De homepage-scènes stapelen op een
-        // telefoon onder de tekst in plaats van ernaast, dus daar mag de
-        // vorm gecentreerd en groter achter de hele tekstkolom liggen (zie
-        // ook de bredere `share` hieronder in layout()).
-        const anchor = soloHomeVariant && narrowScreen ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.5 } : JOURNEY_BOAT
+        // altijd, in elk schermformaat. Op de homepage staan tekst en vorm op
+        // een telefoon niet naast maar bóven elkaar (zie de narrow-screen
+        // regels bij .kh-main--home in site.css, die de tekst naar de
+        // onderkant duwen): de vorm hoort dus gecentreerd en in het bovenste
+        // deel van het scherm, niet op het middelpunt waar de tekst anders
+        // zou overlappen.
+        const anchor = soloHomeVariant && narrowScreen ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.32 } : JOURNEY_BOAT
         boats.push({
           ...anchor,
           bobA: 0,
@@ -652,12 +658,13 @@ export function useFleetScene({
          scène hoort nadrukkelijk op te vallen. Het kompas, tandwiel en de
          raket op de homepage zelf mogen nog groter: dat zijn geen bijvangst
          naast de gewone vloot maar het hele-grote alternatief ervoor. Op een
-         telefoon geldt dat nog sterker (zie ook de gecentreerde anker-
-         override in build()): geen leeskolom om rekening mee te houden, dus
-         mag de vorm bijna de volle breedte claimen. */
+         telefoon staan ze bovenin, boven de tekst (zie de gecentreerde,
+         hoger geplaatste anker-override in build()) — daar juist wat
+         kleiner dan op desktop, anders is er geen lucht meer over voor de
+         tekst eronder en de raket haar eigen stijg-lus. */
       const share = narrowScreen
         ? soloHomeVariant
-          ? 0.92
+          ? 0.6
           : 0.78
         : variant === 'journey'
           ? 0.36

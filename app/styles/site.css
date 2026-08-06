@@ -260,23 +260,6 @@ a.khnav[aria-current="page"]::after {
   flex-direction: column;
   gap: 22px;
   max-width: 600px;
-  /* Sleepgordijn (zie lib/use-swipe-reveal.ts): --kh-swipe is 0 tot een
-     veeg 'm zet, dus dit is op een groot scherm altijd een no-op. */
-  transform: translateY(var(--kh-swipe, 0px));
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Tijdens het slepen zelf geen transitie: de tekst moet de vinger op de
-   voet volgen, niet er met vertraging achteraan lopen. Ná loslaten (de
-   klasse gaat er dan af) mag de terugval naar 0 of naar SWIPE_REVEAL_PX wél
-   de transition hierboven gebruiken — dat is de "snap". De klasse komt op
-   <main> te staan (zie components/home-hero.tsx), niet op .kh-home-grid:
-   dat laatste krimpt naar de hoogte van de tekst, <main> dekt altijd het
-   hele scherm. */
-.kh-main--home.kh-swipe-dragging .kh-home-copy { transition: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  .kh-home-copy { transition: none; }
 }
 
 .kh-main--home .kh-hero {
@@ -289,9 +272,16 @@ a.khnav[aria-current="page"]::after {
 }
 
 @media (max-width: 699px) {
+  /* Op een telefoon staan tekst en scène niet naast elkaar (daar is geen
+     breedte voor) maar boven elkaar: de scène (zie het hoger geplaatste
+     anker voor kompas/tandwiel/raket in lib/use-fleet-scene.ts) vult het
+     bovenste deel van het scherm, de tekst duwt hier naar de onderkant toe
+     in plaats van in het midden te blijven staan — zo blijft er lucht
+     tussen de twee in plaats van dat ze over elkaar heen vallen. */
   .kh-main--home {
+    justify-content: flex-end;
     padding-top: 14px;
-    padding-bottom: 14px;
+    padding-bottom: 28px;
   }
   .kh-home-copy { gap: 16px; }
 }
