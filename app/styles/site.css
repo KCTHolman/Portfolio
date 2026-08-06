@@ -94,17 +94,11 @@ button:focus-visible,
   position: relative;
   /* Een kolom over de volle schermhoogte: de main rekt uit, dus de footer
      staat op élke pagina onderaan het scherm — ook als de inhoud korter is
-     dan één beeldscherm. 100vh als terugval voor browsers zonder svh.
-     Bewust svh, niet dvh: dvh herrekent live zodra Safari's adresbalk in-
-     of uitklapt, en dat gebeurt al bij een kleine aanraking dicht bij de
-     rand — met .kh-main--home's justify-content:center erbovenop (zie
-     verderop) sprong de hele hero + de sticky footer dan zichtbaar op en
-     neer, alsof het menu los zat. svh is de kleinste, stabiele hoogte: die
-     verandert nooit tijdens het scrollen, dus geen sprong meer. */
+     dan één beeldscherm. 100vh als terugval voor browsers zonder dvh. */
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   /* clip, not hidden: overflow-x:hidden turns this into a scroll container,
      and .kh-footer's position:sticky would then stick to a scrollport that
      never scrolls — i.e. the footer would scroll away with the page. */
@@ -305,7 +299,7 @@ a.khnav[aria-current="page"]::after {
    ruimte voor de sticky footer eraf, zodat het pijltje zelf nog wél in
    beeld staat. */
 .kh-koen-hero {
-  min-height: calc(100svh - 76px - 90px);
+  min-height: calc(100dvh - 76px - 90px);
   display: flex;
   flex-direction: column;
 }
@@ -343,7 +337,7 @@ a.khnav[aria-current="page"]::after {
    schermhoogte samen — op een laag/breed venster kon het de footer gaan
    raken. 56px is exact de padding-top van deze section hierboven. */
 .kh-werk-hero {
-  min-height: calc(100svh - 56px - 90px);
+  min-height: calc(100dvh - 56px - 90px);
   display: flex;
   flex-direction: column;
 }
@@ -378,7 +372,7 @@ a.khnav[aria-current="page"]::after {
 /* Schaalt licht mee met de schermhoogte: width vast, height:auto — de
    viewBox bepaalt dan zelf de verhouding. */
 .kh-scroll-cue-icon {
-  width: clamp(90px, 16svh, 150px);
+  width: clamp(90px, 16dvh, 150px);
   height: auto;
 }
 
@@ -646,10 +640,8 @@ a.khnav[aria-current="page"]::after {
   bottom: 0;
   z-index: 10;
   /* Being sticky, it can never be allowed to outgrow the screen: past that it
-     would cover the page instead of sitting under it. svh, not dvh — same
-     reason as .kh-shell: a stable bound instead of one that recalculates
-     mid-scroll. */
-  max-height: 100svh;
+     would cover the page instead of sitting under it. */
+  max-height: 100dvh;
   overflow-y: auto;
   border-top: 1px solid var(--kh-line);
   background: rgba(3, 7, 16, 0.62);
