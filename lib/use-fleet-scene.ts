@@ -753,25 +753,39 @@ export function useFleetScene({
          leeskolom is links smaller gemaakt zodat de twee elkaar hooguit
          nipt raken, niet structureel overlappen. Showcase mag juist groter:
          de tekstkolom op /koen-holman/ blijft ruim binnen 600px, en de
-         scène hoort nadrukkelijk op te vallen. Het kompas, tandwiel en de
-         raket op de homepage zelf mogen nog groter: dat zijn geen bijvangst
-         naast de gewone vloot maar het hele-grote alternatief ervoor. Op een
-         telefoon staan ze bovenin, boven de tekst (zie de gecentreerde,
-         hoger geplaatste anker-override in build()) — daar juist wat
-         kleiner dan op desktop, anders is er geen lucht meer over voor de
-         tekst eronder en de raket haar eigen stijg-lus. */
+         scène hoort nadrukkelijk op te vallen. De vier homepage-scènes (de
+         gewone vloot én het kompas/tandwiel/raket-alternatief) mogen het
+         nadrukkelijkst: dat is de enige illustratie op de pagina en mag zo
+         groot als kan zonder de leeskolom te raken. Op een telefoon staan de
+         drie solo-vormen bovenin, boven de tekst (zie de gecentreerde, hoger
+         geplaatste anker-override in build()) — daar juist wat kleiner dan
+         op desktop, anders is er geen lucht meer over voor de tekst eronder
+         en de raket haar eigen stijg-lus. */
       const share = narrowScreen
         ? soloHomeVariant
-          ? 0.6
-          : 0.78
+          ? 0.72
+          : variant === 'hero'
+            ? 0.86
+            : 0.78
         : variant === 'journey'
           ? 0.36
           : variant === 'showcase'
             ? 0.5
             : soloHomeVariant
-              ? 0.6
-              : 0.44
-      const lead = Math.min(w * share, (h * 0.62) / RATIO)
+              ? 0.8
+              : variant === 'hero'
+                ? 0.56
+                : 0.44
+      /* Alleen de homepage-scènes krijgen ook verticaal meer ruimte — elders
+         (journey/showcase/ambient) blijft de bestaande, conservatievere kap
+         staan; die lay-outs zijn er niet op ingericht om te groeien. De raket
+         blijft dichter bij de oude kap: die klimt op haar hoogste punt al
+         zonder extra marge tot vlak bij de bovenrand (zie
+         HOME_ROCKET_LIFT_FRAC hierboven) — een even grote sprong als kompas/
+         tandwiel zou de neus daar laten afsnijden. */
+      const isHomeScene = soloHomeVariant || variant === 'hero'
+      const heightShare = variant === 'home-rocket' ? 0.68 : isHomeScene ? 0.84 : 0.62
+      const lead = Math.min(w * share, (h * heightShare) / RATIO)
 
       for (const boat of boats) {
         boat.pw = lead * (boat.w / LEAD_W)
