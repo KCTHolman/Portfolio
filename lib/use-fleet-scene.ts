@@ -711,6 +711,24 @@ export function useFleetScene({
             )
           : null
 
+      /* Instap bij het laden. Eerder vloog élke korrel bij het eerste tekenen
+         van ver weg naar binnen — een fors "explosie-naar-vorm"-effect, en
+         net op het moment dat de pagina toch al druk is met opstarten, wat op
+         tragere machines zwaar oogde. Nu staat het gros meteen op zijn eigen
+         plek (de laag zelf vaart nog wel in via CSS-opacity, zie fleet.css)
+         en krijgt alleen een klein deel nog een hele zachte inzwaai, zodat
+         het geheel niet als een kille "aan"-knop aanvoelt maar wel merkbaar
+         rustiger is dan de oude, voluit exploderende opbouw. */
+      const ENTRY_ANIMATE_SHARE = 0.15
+      const ENTRY_K = 1.12
+      function entryPos(i: number, ax: number, ay: number, mute: boolean): [number, number] {
+        if ((i * 71) % 100 >= ENTRY_ANIMATE_SHARE * 100) return [ax, ay]
+        const vx = ax - w * 0.5
+        const vy = ay - h * 0.52
+        const k = mute ? 1 + (ENTRY_K - 1) * 0.16 : ENTRY_K
+        return [w * 0.5 + vx * k + ((i * 53) % 60) - 30, h * 0.52 + vy * k + ((i * 29) % 60) - 30]
+      }
+
       parts.forEach((p, i) => {
         if (journeyStages && p.boat === 0) {
           const owner = boats[0]
@@ -719,11 +737,7 @@ export function useFleetScene({
 
           const ax = owner.px + p.jx[0]
           const ay = owner.py + p.jy[0]
-          const vx = ax - w * 0.5
-          const vy = ay - h * 0.52
-          const k = 1.5 + ((i * 37) % 100) / 100
-          p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
-          p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
+          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
           return
         }
 
@@ -740,11 +754,7 @@ export function useFleetScene({
 
           const ax = owner.px + p.jx[0]
           const ay = owner.py + p.jy[0]
-          const vx = ax - w * 0.5
-          const vy = ay - h * 0.52
-          const k = 1.5 + ((i * 37) % 100) / 100
-          p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
-          p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
+          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
           return
         }
 
@@ -759,21 +769,16 @@ export function useFleetScene({
              genormaliseerde vak. */
           p.by = (p.uy - 0.48) * owner.ph
         }
-        // Startpositie van de opbouw: vanaf buiten het beeld naar binnen,
-        // zodat de vloot zich verzamelt in plaats van te verschijnen.
+        // Startpositie van de opbouw: vanaf buiten het beeld naar binnen voor
+        // het kleine deel dat nog inzwaait (zie entryPos hierboven).
         const ax = p.boat < 0 ? p.bx : boats[p.boat].px + p.bx
         const ay = p.boat < 0 ? p.by : boats[p.boat].py + p.by
-        const vx = ax - w * 0.5
-        const vy = ay - h * 0.52
-        const kOut = 1.5 + ((i * 37) % 100) / 100
         /* Links staat de leestekst: een korrel die daar moet landen, laten we
            nauwelijks uitwaaieren — die vaart bijna stilstaand in. Rechts, waar
-           de vloot woont, mag het wél voluit exploderen. Zo blijft de hele
-           opbouw zichtbaar op de rechterkant in plaats van dwars over de
-           tekst te vliegen. */
-        const k = ax < w * 0.5 ? kOut * 0.16 : kOut
-        p.sx = w * 0.5 + vx * k + ((i * 53) % 60) - 30
-        p.sy = h * 0.52 + vy * k + ((i * 29) % 60) - 30
+           de vloot woont, mag de inzwaai voluit. Zo blijft de hele opbouw
+           zichtbaar op de rechterkant in plaats van dwars over de tekst te
+           vliegen. */
+        ;[p.sx, p.sy] = entryPos(i, ax, ay, ax < w * 0.5)
       })
     }
 
