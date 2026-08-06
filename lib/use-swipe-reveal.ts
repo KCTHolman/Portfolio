@@ -2,10 +2,18 @@
 
 /* ==========================================================================
    Op een telefoon staat de tekst boven op de scène (zie components/home-
-   hero.tsx). Slepen schuift de tekst naar beneden en de scène naar boven,
-   als een gordijn dat opzij gaat — en op de terugweg weer dicht. Alleen
+   hero.tsx). Slepen schuift de tekst en de scène tegengesteld uit elkaar —
+   als een gordijn dat opzij gaat — en weer terug. Dat werkt in allebei de
+   richtingen: omhoog vegen schuift de tekst omlaag en de scène omhoog,
+   omlaag vegen precies andersom (tekst omhoog, scène omlaag). Alleen
    relevant op smalle schermen: op een groter scherm staan tekst en scène al
    naast elkaar, dus daar doet dit niets.
+
+   Drie rust-standen, geen twee: phase -1 (omlaag geveegd), 0 (normaal), 1
+   (omhoog geveegd). --kh-swipe is steeds phase * SWIPE_REVEAL_PX; de CSS
+   (site.css/fleet.css) leest hetzelfde teken voor de tekst en het
+   omgekeerde teken voor de scène, dus welke kant "open" ook is, ze bewegen
+   altijd tegengesteld.
 
    Handmatige addEventListener met { passive: false } voor touchmove, niet
    React's onTouchMove-prop: die abonneert passief, waardoor preventDefault()
@@ -16,15 +24,16 @@
    keer per seconde hertekenen voor een sleepbeweging is nergens voor nodig.
    De voortgang gaat rechtstreeks als CSS-variabele op het element, hetzelfde
    "per frame imperatief" principe als de aurora-loop. Alleen de eindstand
-   (geopend/dicht) is React-state: die wisselt maar twee keer per veeg.
+   (welke van de drie standen) is React-state: die wisselt maar twee keer
+   per veeg.
    ========================================================================== */
 
 import { useEffect, useRef, useState } from 'react'
 
 import { useNarrowScreen } from '@/lib/use-media-query'
 
-/** Hoeveel de tekst omlaag en de scène omhoog schuiven, in pixels — genoeg
- *  om overduidelijk te zijn zonder de tekst van het scherm te drukken. */
+/** Hoeveel de tekst en de scène uit elkaar schuiven, in pixels — genoeg om
+ *  overduidelijk te zijn zonder de tekst van het scherm te drukken. */
 export const SWIPE_REVEAL_PX = 190
 
 /** Hoeveel beweging nodig is voordat een aanraking als "slepen" telt, in
@@ -32,6 +41,9 @@ export const SWIPE_REVEAL_PX = 190
  *  gewone tik op de knoppen in .kh-home-copy per ongeluk een (nul-pixel)
  *  sleep. */
 const START_SLOP = 8
+
+/** -1, 0 of 1 — welke van de drie rust-standen actief is. */
+type Phase = -1 | 0 | 1
 
 type TouchState = {
   id: number
@@ -42,27 +54,35 @@ type TouchState = {
   deciding: boolean
 }
 
+/** Rondt naar de dichtstbijzijnde rust-stand, geklemd tussen -1 en 1 — zowel
+ *  voor loslaten tijdens het slepen als voor het terugvallen na een
+ *  afgebroken aanraking. */
+function nearestPhase(px: number): Phase {
+  const raw = Math.round(px / SWIPE_REVEAL_PX)
+  return Math.min(1, Math.max(-1, raw)) as Phase
+}
+
 export function useSwipeReveal<T extends HTMLElement>() {
   const narrowScreen = useNarrowScreen()
   const narrowScreenRef = useRef(narrowScreen)
   const areaRef = useRef<T>(null)
-  const [revealed, setRevealed] = useState(false)
-  const revealedRef = useRef(false)
+  const [phase, setPhase] = useState<Phase>(0)
+  const phaseRef = useRef<Phase>(0)
   const offsetRef = useRef(0)
 
   useEffect(() => {
     narrowScreenRef.current = narrowScreen
     // Terug naar een breed scherm terwijl de tekst weggeschoven stond: geen
     // scène meer om voor weg te schuiven, dus terug naar normaal.
-    if (!narrowScreen && revealedRef.current) setRevealed(false)
+    if (!narrowScreen && phaseRef.current !== 0) setPhase(0)
   }, [narrowScreen])
 
   useEffect(() => {
-    revealedRef.current = revealed
-    const px = revealed ? SWIPE_REVEAL_PX : 0
+    phaseRef.current = phase
+    const px = phase * SWIPE_REVEAL_PX
     offsetRef.current = px
     areaRef.current?.style.setProperty('--kh-swipe', `${px}px`)
-  }, [revealed])
+  }, [phase])
 
   useEffect(() => {
     const el = areaRef.current
@@ -115,7 +135,10 @@ export function useSwipeReveal<T extends HTMLElement>() {
       // verticale scroll (op een device waar de pagina toch iets langer is
       // dan de viewport) gewoon mogelijk.
       e.preventDefault()
-      setOffset(Math.min(SWIPE_REVEAL_PX, Math.max(0, touch.base - dy)))
+      // Vinger omhoog (dy < 0) duwt het gordijn naar +SWIPE_REVEAL_PX (tekst
+      // omlaag, scène omhoog); vinger omlaag (dy > 0) duwt 'm naar het
+      // spiegelbeeld aan de andere kant, -SWIPE_REVEAL_PX.
+      setOffset(Math.min(SWIPE_REVEAL_PX, Math.max(-SWIPE_REVEAL_PX, touch.base - dy)))
     }
 
     const onEnd = () => {
@@ -123,7 +146,7 @@ export function useSwipeReveal<T extends HTMLElement>() {
       touch = null
       if (!wasDragging) return
       el.classList.remove('kh-swipe-dragging')
-      setRevealed(offsetRef.current >= SWIPE_REVEAL_PX / 2)
+      setPhase(nearestPhase(offsetRef.current))
     }
 
     const onCancel = () => {
@@ -131,7 +154,7 @@ export function useSwipeReveal<T extends HTMLElement>() {
       touch = null
       if (!wasDragging) return
       el.classList.remove('kh-swipe-dragging')
-      setOffset(revealedRef.current ? SWIPE_REVEAL_PX : 0)
+      setOffset(phaseRef.current * SWIPE_REVEAL_PX)
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
@@ -147,5 +170,5 @@ export function useSwipeReveal<T extends HTMLElement>() {
     }
   }, [])
 
-  return { areaRef, revealed }
+  return { areaRef, phase }
 }
