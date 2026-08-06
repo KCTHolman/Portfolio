@@ -185,7 +185,6 @@ export function useFleetScene({
     if (!ctx) return
 
     const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
-    const formMs = variant === 'journey' ? 2400 : 1500
     /** journey (scroll-gedreven, zie /werk/) en de drie homepage-scènes
      *  hieronder (kompas/tandwiel/raket) delen dezelfde "één evoluerende vorm
      *  uit JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang
@@ -193,6 +192,23 @@ export function useFleetScene({
      *  scènes. */
     const journeyLike =
       variant === 'journey' || variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
+    /** Iets langer voor de journey-achtige varianten: daar is de vorm het
+     *  hele beeld (geen vloot ernaast), dus mag het rustiger op gang komen —
+     *  zie entryPos()/de forming-stap in draw() voor de rest van de
+     *  "ademende" instap. */
+    const formMs = journeyLike ? 2600 : 1800
+    /** Alleen relevant voor journeyLike: welk stadium hoort bij de allereerste
+     *  tekenbeurt van déze variant. journey start altijd bij de boot (scroll
+     *  begint boven), maar de drie homepage-scènes staan meteen op hun eigen,
+     *  vaste stadium (zie de rawProgress-toewijzing in draw()) — entryPos()
+     *  moet daarom vanaf de JUISTE vorm beginnen, niet altijd vanaf de boot,
+     *  anders oogt het laden als "boot verandert na een paar tellen in een
+     *  kompas/tandwiel", in plaats van die vorm die zelf scherp wordt. Zelfde
+     *  indices als de rawProgress-toewijzing in draw() hieronder (kompas 1,
+     *  tandwiel 2, raket het laatste stadium) — JOURNEY_STAGES' eigen
+     *  volgorde, niet showcase's afwijkende SHOWCASE_STAGES-volgorde. */
+    const initialJourneyStage =
+      variant === 'home-compass' ? 1 : variant === 'home-gear' ? 2 : variant === 'home-rocket' ? JOURNEY_STAGE_COUNT - 1 : 0
     /** De drie homepage-alternatieven voor hero, die components/home-
      *  scene.tsx bij het laden loot. Op een telefoon is er geen aparte
      *  tekstkolom naast de vorm (zie de anker-override in build() en de
@@ -720,20 +736,19 @@ export function useFleetScene({
 
       /* Instap bij het laden. Eerder vloog élke korrel bij het eerste tekenen
          van ver weg naar binnen — een fors "explosie-naar-vorm"-effect, en
-         net op het moment dat de pagina toch al druk is met opstarten, wat op
-         tragere machines zwaar oogde. Nu staat het gros meteen op zijn eigen
-         plek (de laag zelf vaart nog wel in via CSS-opacity, zie fleet.css)
-         en krijgt alleen een klein deel nog een hele zachte inzwaai, zodat
-         het geheel niet als een kille "aan"-knop aanvoelt maar wel merkbaar
-         rustiger is dan de oude, voluit exploderende opbouw. */
-      const ENTRY_ANIMATE_SHARE = 0.15
-      const ENTRY_K = 1.12
-      function entryPos(i: number, ax: number, ay: number, mute: boolean): [number, number] {
-        if ((i * 71) % 100 >= ENTRY_ANIMATE_SHARE * 100) return [ax, ay]
-        const vx = ax - w * 0.5
-        const vy = ay - h * 0.52
-        const k = mute ? 1 + (ENTRY_K - 1) * 0.16 : ENTRY_K
-        return [w * 0.5 + vx * k + ((i * 53) % 60) - 30, h * 0.52 + vy * k + ((i * 29) % 60) - 30]
+         voor de journey-achtige varianten bovendien altíjd vanaf de bootvorm
+         (stadium 0) in plaats van de eigen beginvorm, wat op de homepage-
+         scènes als een rare "boot verandert na een paar tellen in een
+         kompas/tandwiel"-sprong oogde. Nu begint elke korrel vlak bij haar
+         eigen, echte beginpositie met een kleine, lokale eigen afwijking —
+         geen gericht naar-binnen-vliegen meer — en lost dat op in een paar
+         rustige tellen (zie de smoothstep-easing in draw()): een wazige wolk
+         die scherp wordt, geen zwerm die van ver komt aanzetten en geen vorm
+         die van gedaante lijkt te wisselen. */
+      const ENTRY_JITTER_PX = 55
+      const ENTRY_SPAN = ENTRY_JITTER_PX * 2 + 1
+      function entryPos(i: number, ax: number, ay: number): [number, number] {
+        return [ax + (((i * 53) % ENTRY_SPAN) - ENTRY_JITTER_PX), ay + (((i * 29) % ENTRY_SPAN) - ENTRY_JITTER_PX)]
       }
 
       parts.forEach((p, i) => {
@@ -742,9 +757,9 @@ export function useFleetScene({
           p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
           p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
 
-          const ax = owner.px + p.jx[0]
-          const ay = owner.py + p.jy[0]
-          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
+          const ax = owner.px + p.jx[initialJourneyStage]
+          const ay = owner.py + p.jy[initialJourneyStage]
+          ;[p.sx, p.sy] = entryPos(i, ax, ay)
           return
         }
 
@@ -759,9 +774,12 @@ export function useFleetScene({
           p.jx = stages.map((pts) => (pts[local][0] - 0.5) * owner.pw)
           p.jy = stages.map((pts) => (pts[local][1] - 0.48) * owner.ph)
 
+          // Showcase's eigen klok begint altijd bij SHOWCASE_VLOOT_STAGE (0,
+          // de boot) — zie showcaseStage's beginwaarde in draw() — dus hier
+          // is stadium 0 wél de juiste beginvorm, anders dan bij journeyLike.
           const ax = owner.px + p.jx[0]
           const ay = owner.py + p.jy[0]
-          ;[p.sx, p.sy] = entryPos(i, ax, ay, false)
+          ;[p.sx, p.sy] = entryPos(i, ax, ay)
           return
         }
 
@@ -776,16 +794,9 @@ export function useFleetScene({
              genormaliseerde vak. */
           p.by = (p.uy - 0.48) * owner.ph
         }
-        // Startpositie van de opbouw: vanaf buiten het beeld naar binnen voor
-        // het kleine deel dat nog inzwaait (zie entryPos hierboven).
         const ax = p.boat < 0 ? p.bx : boats[p.boat].px + p.bx
         const ay = p.boat < 0 ? p.by : boats[p.boat].py + p.by
-        /* Links staat de leestekst: een korrel die daar moet landen, laten we
-           nauwelijks uitwaaieren — die vaart bijna stilstaand in. Rechts, waar
-           de vloot woont, mag de inzwaai voluit. Zo blijft de hele opbouw
-           zichtbaar op de rechterkant in plaats van dwars over de tekst te
-           vliegen. */
-        ;[p.sx, p.sy] = entryPos(i, ax, ay, ax < w * 0.5)
+        ;[p.sx, p.sy] = entryPos(i, ax, ay)
       })
     }
 
@@ -1293,7 +1304,12 @@ export function useFleetScene({
           }
 
           if (forming) {
-            const e = ease(Math.min(1, Math.max(0, (form - p.lag) / (1 - 0.45))))
+            // smoothstep, geen ease(): die laatste trekt hard van start (drie
+            // kwart van de reis zit al in de eerste helft van de tijd), en
+            // dat is precies het "snelle sprong"-gevoel dat hier niet meer
+            // moet. smoothstep begint en eindigt allebei traag — de korrel
+            // komt tot rust in plaats van af te remmen uit volle vaart.
+            const e = smoothstep((form - p.lag) / (1 - 0.45))
             x = p.sx + (x - p.sx) * e
             y = p.sy + (y - p.sy) * e
           }
