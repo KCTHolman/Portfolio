@@ -26,6 +26,30 @@
 }
 @keyframes khFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+/* Bouwwerk-preset: traag opzwellen, dan sneller instorten dan de opbouw duurde —
+   de asymmetrie zit in waar de piek in de keyframe-percentages valt, niet in de
+   timing-function. khTearDown is dezelfde vorm in tegenfase, zodat de ene blob
+   nog groeit terwijl de andere al inzakt. Elke vorm heeft ook een kort venster
+   (48–55% resp. 50–58%) waarin de stap veel groter is dan de omliggende stappen
+   — dezelfde easing, maar over zo'n smal deel van de cyclus dat het oog het als
+   een korte versnelling leest, niet als een knik. Blob 3/5 en 4/6 lopen elk op
+   hun eigen duur en delay, dus die versnelling valt nooit voor iedereen tegelijk. */
+@keyframes khBuildUp {
+  0%   { transform: translate(-2%, 6%) scale(0.5); }
+  48%  { transform: translate(1%, -2%) scale(1.02); }
+  55%  { transform: translate(2%, -6%) scale(1.45); }
+  70%  { transform: translate(3%, -8%) scale(1.55); }
+  100% { transform: translate(-2%, 6%) scale(0.5); }
+}
+@keyframes khTearDown {
+  0%   { transform: translate(2%, -6%) scale(1.5); }
+  30%  { transform: translate(3%, -2%) scale(1.15); }
+  50%  { transform: translate(2%, 1%) scale(1.05); }
+  58%  { transform: translate(-1%, 4%) scale(0.55); }
+  65%  { transform: translate(-2%, 6%) scale(0.45); }
+  100% { transform: translate(2%, -6%) scale(1.5); }
+}
+
 /* The wash's own breath: a slow brighten-and-dim independent of the colour
    walk/sway in aurora.js, so the backdrop never sits at one fixed exposure. */
 @keyframes khBreathe {
@@ -142,6 +166,30 @@
   animation-duration: calc(24s / var(--speed));
 }
 
+/* Bouwwerk: blob 3 en 5 bouwen op, 4 en 6 breken af — de spinnende 1 en 2
+   blijven op hun gewone zwaai, zodat niet alles tegelijk pompt. Specificity
+   (twee classes) ligt boven de losse .aur-blob--n hierboven, dus dit wint
+   altijd zodra .aur-stage--build actief is. */
+.aur-stage--build .aur-blob--3 {
+  animation: khBuildUp 30s cubic-bezier(.22, .7, .36, 1) infinite;
+  animation-duration: calc(30s / var(--speed));
+}
+.aur-stage--build .aur-blob--5 {
+  animation: khBuildUp 42s cubic-bezier(.22, .7, .36, 1) infinite;
+  animation-duration: calc(42s / var(--speed));
+  animation-delay: -20s;
+}
+.aur-stage--build .aur-blob--4 {
+  animation: khTearDown 36s cubic-bezier(.22, .7, .36, 1) infinite;
+  animation-duration: calc(36s / var(--speed));
+  animation-delay: -12s;
+}
+.aur-stage--build .aur-blob--6 {
+  animation: khTearDown 26s cubic-bezier(.22, .7, .36, 1) infinite;
+  animation-duration: calc(26s / var(--speed));
+  animation-delay: -6s;
+}
+
 .aur-grain {
   position: absolute;
   inset: -6%;
@@ -250,6 +298,7 @@
    (assets/aurora.js checks the same query before starting its loop). */
 @media (prefers-reduced-motion: reduce) {
   .aur-blob,
+  .aur-stage--build .aur-blob,
   .aur-grain,
   .aur-stage,
   .aur-paint { animation: none; }

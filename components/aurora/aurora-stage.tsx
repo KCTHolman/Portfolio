@@ -19,7 +19,9 @@ const BLOBS = [1, 2, 3, 4, 5, 6] as const
 
 export function AuroraStage() {
   const { presets, activePreset } = useAurora()
-  const geo = presets[activePreset]?.geo ?? BASE_GEOMETRY
+  const preset = presets[activePreset]
+  const geo = preset?.geo ?? BASE_GEOMETRY
+  const stageClassName = preset?.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage'
 
   return (
     <div aria-hidden="true">
@@ -46,7 +48,7 @@ export function AuroraStage() {
       </svg>
 
       <div
-        className="aur-stage"
+        className={stageClassName}
         style={
           {
             '--soft': geo.soft.toFixed(3),

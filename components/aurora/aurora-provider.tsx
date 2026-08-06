@@ -34,6 +34,7 @@ import {
   bloomAt,
   computeFrame,
   hsla,
+  type AuroraFrame,
   type AuroraPreset,
 } from '@/lib/aurora'
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
@@ -93,7 +94,11 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   const presetRef = useRef(0)
   const startedAtRef = useRef(0)
   const nextSwitchAtRef = useRef(AUTO_CYCLE_SEC)
-  const blendRef = useRef<{ from: number; startElapsed: number } | null>(null)
+  const blendRef = useRef<{ fromFrame: AuroraFrame; startElapsed: number } | null>(null)
+  /* Het laatst getekende frame — de blend vertrekt hiervandaan in plaats van
+     vanaf de rauwe preset, anders springt de kleur naar de schone bronkleur
+     zodra een nieuwe keuze een nog lopende overvloei onderbreekt. */
+  const lastFrameRef = useRef<AuroraFrame | null>(null)
   const frameRef = useRef<number | null>(null)
   const lastPaintRef = useRef(0)
 
@@ -112,9 +117,11 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     if (blend) {
       const t = Math.min(1, (elapsed - blend.startElapsed) / BLEND_SEC)
       const k = t * t * (3 - 2 * t)
-      frame = blendFrames(computeFrame(blend.from, elapsed, bloom), frame, k)
+      frame = blendFrames(blend.fromFrame, frame, k)
       if (t >= 1) blendRef.current = null
     }
+
+    lastFrameRef.current = frame
 
     root.style.setProperty('--aur-paint-op', frame.paintOp.toFixed(3))
     frame.cols.forEach((c, i) => {
@@ -130,7 +137,14 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
       if (index === presetRef.current && !blendRef.current) return
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
-      blendRef.current = staticFrame ? null : { from: presetRef.current, startElapsed: elapsed }
+      if (staticFrame) {
+        blendRef.current = null
+      } else {
+        // Valt terug op de rauwe preset alleen als er nog nooit geschilderd is —
+        // in de praktijk staat lastFrameRef altijd al vanaf de mount-paint.
+        const fromFrame = lastFrameRef.current ?? computeFrame(presetRef.current, elapsed, bloomAt(elapsed))
+        blendRef.current = { fromFrame, startElapsed: elapsed }
+      }
       presetRef.current = index
       /* Een handmatige keuze duwt de automatische drift een volle cyclus
          vooruit, zodat die de keuze niet meteen overruled. */
