@@ -49,7 +49,7 @@ import {
   type BoatSpec,
   type Particle,
 } from '@/lib/fleet-geometry'
-import { readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
+import { isIOSWebKit, readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
@@ -254,16 +254,26 @@ export function useFleetScene({
     /* Terugval-niveau: 1 is vol, QUALITY_DEGRADE_FACTOR is wat perfCheck()
        hieronder ervoor in de plaats zet zodra tekenen structureel te lang
        duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
-       terugval al vaststelde — zie readReducedQuality(). dprCap volgt mee:
-       op een tragere machine weegt de extra scherpte van devicePixelRatio 2
-       zwaarder dan wat hij oplevert.
+       terugval al vaststelde — zie readReducedQuality() — of als dit WebKit
+       op iOS is: zelfde redenering als isIOSWebKit() in aurora-provider.tsx,
+       hier toegepast op het canvas in plaats van het SVG-filter. perfCheck()
+       oordeelt pas na formMs (1,8–2,6s) + PERF_WARMUP_MS + veertig samples —
+       op een iPhone is dát venster, op volle deeltjesdichtheid en
+       devicePixelRatio 2, precies de hapering die de terugval juist moet
+       voorkomen. Niet wachten op de meting scheelt 'm dus meteen, in plaats
+       van 'm één keer te laten zien voor hij verdwijnt. dprCap volgt mee: op
+       een tragere machine (of structureel op iOS) weegt de extra scherpte van
+       devicePixelRatio 2 zwaarder dan wat hij oplevert.
 
        De overstap zelf mag niet te zien zijn: degradeQuality() verwijdert
        niet in één klap een deel van de korrels (dat is precies de zichtbare
        "pop" die een bezoeker wél zou opvallen), maar laat het teveel over
        FADE_MS wegkrimpen tot niets — zie de fade-krimp in draw() en
        pruneFadedParticles() hieronder, die pas ná die tijd de inmiddels
-       onzichtbare korrels daadwerkelijk uit de array haalt. */
+       onzichtbare korrels daadwerkelijk uit de array haalt. Bij een meteen
+       toegepaste terugval (readReducedQuality() of isIOSWebKit(), hierboven)
+       is er nog niets getekend om af te bouwen, dus qualityScale staat dan
+       al laag vóór build() de deeltjes voor het eerst aanmaakt. */
     /* Showcase heeft, in tegenstelling tot de andere varianten, geen ene
        vorm/vloot maar de "zon" plus acht satellieten tegelijk — bij dezelfde
        0.55 als de rest bleef die scène op een trage machine nog steeds
@@ -272,7 +282,7 @@ export function useFleetScene({
        varianten aan te raken. */
     const QUALITY_DEGRADE_FACTOR = variant === 'showcase' ? 0.35 : 0.55
     const FADE_MS = 1600
-    let qualityScale = readReducedQuality() ? QUALITY_DEGRADE_FACTOR : 1
+    let qualityScale = readReducedQuality() || isIOSWebKit() ? QUALITY_DEGRADE_FACTOR : 1
     let dprCap = qualityScale < 1 ? 1 : 2
     /* Meet pas een paar tellen nadat de instap voorbij is (die kost door de
        forming-lerp toch al iets meer) en pas dan gericht: één venster van
