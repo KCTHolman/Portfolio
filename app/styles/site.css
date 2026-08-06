@@ -269,8 +269,11 @@ a.khnav[aria-current="page"]::after {
 /* Tijdens het slepen zelf geen transitie: de tekst moet de vinger op de
    voet volgen, niet er met vertraging achteraan lopen. Ná loslaten (de
    klasse gaat er dan af) mag de terugval naar 0 of naar SWIPE_REVEAL_PX wél
-   de transition hierboven gebruiken — dat is de "snap". */
-.kh-home-grid.kh-swipe-dragging .kh-home-copy { transition: none; }
+   de transition hierboven gebruiken — dat is de "snap". De klasse komt op
+   <main> te staan (zie components/home-hero.tsx), niet op .kh-home-grid:
+   dat laatste krimpt naar de hoogte van de tekst, <main> dekt altijd het
+   hele scherm. */
+.kh-main--home.kh-swipe-dragging .kh-home-copy { transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .kh-home-copy { transition: none; }
