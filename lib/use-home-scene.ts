@@ -1,8 +1,8 @@
 'use client'
 
 /* ==========================================================================
-   Welke van de drie homepage-scènes (vloot, kompas, raket) dit bezoek
-   toont. Zelfde patroon als useAurora() in components/aurora/aurora-
+   Welke van de vier homepage-scènes (vloot, kompas, tandwiel, raket) dit
+   bezoek toont. Zelfde patroon als useAurora() in components/aurora/aurora-
    provider.tsx: begint deterministisch zodat server en client dezelfde HTML
    opleveren, loot pas in het mount-effect, en onthoudt de keuze in
    sessionStorage — navigeren binnen hetzelfde tabblad wisselt zo niet
@@ -12,13 +12,13 @@
 
 import { useEffect, useState } from 'react'
 
-export type HomeScene = 'fleet' | 'compass' | 'rocket'
+export type HomeScene = 'fleet' | 'compass' | 'gear' | 'rocket'
 
-const SCENES: readonly HomeScene[] = ['fleet', 'compass', 'rocket']
+const SCENES: readonly HomeScene[] = ['fleet', 'compass', 'gear', 'rocket']
 const STORE_KEY = 'kh-home-scene'
 
 function isHomeScene(value: unknown): value is HomeScene {
-  return value === 'fleet' || value === 'compass' || value === 'rocket'
+  return value === 'fleet' || value === 'compass' || value === 'gear' || value === 'rocket'
 }
 
 function readSession(): HomeScene | null {
