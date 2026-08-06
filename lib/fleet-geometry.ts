@@ -354,6 +354,11 @@ export type Particle = {
    *  maar draw() schaalt en tekent ze los van elkaar — zie de lancering in
    *  use-fleet-scene.ts. */
   rocket?: boolean
+  /** Alleen gezet tijdens een kwaliteitsterugval (zie degradeQuality() in
+   *  use-fleet-scene.ts): performance.now() waarop dit deeltje begon te
+   *  vervagen, op weg naar verwijdering. Onbepaald betekent: gewoon
+   *  zichtbaar, geen terugval aan de gang voor dit deeltje. */
+  fadeStart?: number
 }
 
 export type BoatSpec = {

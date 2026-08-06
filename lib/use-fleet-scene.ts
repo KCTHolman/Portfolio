@@ -257,8 +257,16 @@ export function useFleetScene({
        duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
        terugval al vaststelde — zie readReducedQuality(). dprCap volgt mee:
        op een tragere machine weegt de extra scherpte van devicePixelRatio 2
-       zwaarder dan wat hij oplevert. */
+       zwaarder dan wat hij oplevert.
+
+       De overstap zelf mag niet te zien zijn: degradeQuality() verwijdert
+       niet in één klap een deel van de korrels (dat is precies de zichtbare
+       "pop" die een bezoeker wél zou opvallen), maar laat het teveel over
+       FADE_MS wegkrimpen tot niets — zie de fade-krimp in draw() en
+       pruneFadedParticles() hieronder, die pas ná die tijd de inmiddels
+       onzichtbare korrels daadwerkelijk uit de array haalt. */
     const QUALITY_DEGRADE_FACTOR = 0.55
+    const FADE_MS = 1600
     let qualityScale = readReducedQuality() ? QUALITY_DEGRADE_FACTOR : 1
     let dprCap = qualityScale < 1 ? 1 : 2
     /* Meet pas een paar tellen nadat de instap voorbij is (die kost door de
@@ -273,6 +281,14 @@ export function useFleetScene({
     const PERF_SAMPLE_TARGET = 40
     const PERF_BUDGET_MS = journeyLike || variant === 'showcase' ? 40 : 60
     const PERF_WARMUP_MS = 600
+    /* Eén losse hapering (een GC-pauze, een zware taak elders op de pagina)
+       mag de hele meting niet in zijn eentje kapen — zonder dak zou één rare
+       frame van bijvoorbeeld 500ms een gemiddelde optrekken dat 39 verder
+       prima frames tegenspreekt. sync() zet lastFrame bovendien terug op 0
+       zodra de lus na een verborgen tabblad hervat: die overgang zelf slaat
+       perfCheck() dan al over (zie de lastFrame > 0-voorwaarde in loop()),
+       dus dit dak vangt alleen de kleinere, wél-representatieve haperingen op. */
+    const PERF_SAMPLE_CAP_MS = 200
     let perfSamples = 0
     let perfSum = 0
     let perfDone = qualityScale < 1
@@ -1453,6 +1469,13 @@ export function useFleetScene({
               r = 0
             }
           }
+          // Kwaliteitsterugval: dit deeltje is aangewezen om te verdwijnen
+          // (zie degradeQuality()) en krimpt over FADE_MS naar niets, in
+          // plaats van in één klap weg te vallen — pruneFadedParticles()
+          // haalt 'm daarna pas echt uit de array.
+          if (p.fadeStart !== undefined) {
+            r *= 1 - smoothstep((now - p.fadeStart) / FADE_MS)
+          }
           if (r <= 0.02) continue
           const a = p.spin + (frozen ? 0 : time * 0.08)
           // Twee trig-calls, geen zes: de andere twee hoekpunten liggen op
@@ -1516,20 +1539,46 @@ export function useFleetScene({
 
     sceneRef.current = { setFormation }
 
-    /** Bouwt de scène in het huidige mount eenmalig opnieuw op met minder
-     *  deeltjes en een lagere pixelverhouding — het antwoord van perfCheck()
-     *  hieronder op een machine die de volle vloot niet soepel bijhoudt.
-     *  Alleen ooit omlaag, nooit weer omhoog: heen-en-weer schakelen tijdens
-     *  hetzelfde bezoek zou zelf weer als een hapering ogen. */
+    /** Haalt de inmiddels op nul gekrompen korrels (zie degradeQuality()
+     *  hieronder) daadwerkelijk uit parts/groups, en past dprCap toe op het
+     *  canvas. Geen enkel overblijvend deeltje verandert van identiteit of
+     *  positie — jx/jy/bx/by liggen al vast per object, dus verwijderen kan
+     *  zonder iets opnieuw op te bouwen of te herindexeren (en dus zonder het
+     *  risico dat build() opnieuw aanroepen gaf: journey-achtige stadia die
+     *  uit de pas gaan lopen als de identiteiten- en positie-array niet meer
+     *  hetzelfde aantal punten per rol tellen). */
+    function pruneFadedParticles(): void {
+      parts = parts.filter((p) => p.fadeStart === undefined)
+      for (const group of groups) group.length = 0
+      for (const p of parts) groups[p.col * TIERS + p.tier].push(p)
+      layout()
+    }
+
+    /** Antwoord van perfCheck() hieronder op een machine die de volle vloot
+     *  niet soepel bijhoudt: geen instant herbouw (dat zou zelf de zichtbare
+     *  hapering zijn die dit juist moet voorkomen), maar een deel van de
+     *  korrels — verspreid over de hele vloot, niet uit één hoek — laat
+     *  draw() vanaf nu wegkrimpen. Zodra dat klaar is haalt
+     *  pruneFadedParticles() ze pas echt weg. Alleen ooit omlaag, nooit weer
+     *  omhoog: heen-en-weer schakelen tijdens hetzelfde bezoek zou zelf weer
+     *  als een hapering ogen. */
     function degradeQuality(): void {
-      if (qualityScale >= 1) {
-        qualityScale = QUALITY_DEGRADE_FACTOR
-        dprCap = 1
-        writeReducedQuality()
-        build()
-        setFormation(presetIndexRef.current, true)
-        layout()
+      if (qualityScale < 1) return
+      qualityScale = QUALITY_DEGRADE_FACTOR
+      dprCap = 1
+      writeReducedQuality()
+
+      const fadeStart = performance.now()
+      const fadeShare = 1 - QUALITY_DEGRADE_FACTOR
+      for (const p of parts) {
+        // p.chaos is al een uniform verdeeld, stabiel eigen randomgetal
+        // (0..2π) — hergebruikt als lotnummer voor de terugval, zodat de
+        // te verwijderen korrels gelijkmatig over elke boot, elk stof en elk
+        // journey-stadium vallen in plaats van uit één plek te verdwijnen.
+        if (p.chaos / (Math.PI * 2) < fadeShare) p.fadeStart = fadeStart
       }
+
+      window.setTimeout(pruneFadedParticles, FADE_MS + 150)
     }
 
     /** Eén oordeel, een paar tellen na de instap: hoe lang er gemiddeld
@@ -1540,7 +1589,7 @@ export function useFleetScene({
      *  PERF_BUDGET_MS, dan haalt deze machine de bedoelde snelheid niet,
      *  ongeacht wat Lighthouse over de laadtijd zegt — dat meet iets anders. */
     function perfCheck(gap: number): void {
-      perfSum += gap
+      perfSum += Math.min(gap, PERF_SAMPLE_CAP_MS)
       perfSamples++
       if (perfSamples < PERF_SAMPLE_TARGET) return
       perfDone = true
@@ -1601,6 +1650,15 @@ export function useFleetScene({
            dwingt een verse buffer af — zonder de vloot zelf te laten
            overnieuw invaren, want t0 ligt allang voorbij formMs. */
         layout()
+        /* lastFrame terug op 0: zonder dit zou loop()'s eerstvolgende
+           aanroep now - lastFrame over de hele verborgen periode meten (soms
+           minuten) en dat als één prestatiesample doorgeven aan perfCheck().
+           Eén zo'n uitschieter kan een verder prima machine ten onrechte
+           laten terugvallen. lastFrame > 0 is precies de voorwaarde die
+           loop() al gebruikt om de allereerste tekenbeurt van de meting uit
+           te sluiten — dit hergebruikt 'm om elke hervatting hetzelfde te
+           behandelen als een eerste start. */
+        lastFrame = 0
         frame = requestAnimationFrame(loop)
       } else {
         syncPalette()
