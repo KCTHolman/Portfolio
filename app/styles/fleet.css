@@ -105,6 +105,23 @@
   .kh-showcase.is-varend { opacity: 0.35; }
 }
 
+/* ---------- Home, kompas/tandwiel/raket: groter en zichtbaarder op een
+   telefoon --------------------------------------------------------------
+   Deze drie zijn zelf de content van het moment, niet bijvangst naast de
+   vloot (zie lib/use-fleet-scene.ts: gecentreerd anker + bredere share op
+   narrowScreen) — de opacity mag daarom een stuk hoger dan hero's eigen
+   telefoon-waarden hierboven, anders oogt een groter, gecentreerd silhouet
+   juist wázig in plaats van nadrukkelijk. Hogere specificiteit dan
+   .kh-home-visual.is-varend hierboven (drie klassen tegen twee), dus dit
+   wint ongeacht bronvolgorde. */
+@media (max-width: 1023px) {
+  .kh-home-visual.kh-home-solo.is-varend { opacity: 0.75; }
+}
+
+@media (max-width: 699px) {
+  .kh-home-visual.kh-home-solo.is-varend { opacity: 0.55; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kh-home-visual,
   .kh-ambient,

@@ -58,10 +58,11 @@ export default function HomePage() {
           </section>
         </div>
 
-        {/* Willekeurig één van drie scènes: de vloot (honderden driehoekjes
-            die één schouw onder zeil vormen), een heel groot kompas, of een
-            hele grote raket die opstijgt en weer landt. Puur decoratief, dus
-            buiten de leesvolgorde — zie components/home-scene.tsx. */}
+        {/* Willekeurig één van vier scènes: de vloot (honderden driehoekjes
+            die één schouw onder zeil vormen), een heel groot kompas, een
+            traag draaiend tandwiel, of een hele grote raket die opstijgt en
+            weer landt. Puur decoratief, dus buiten de leesvolgorde — zie
+            components/home-scene.tsx. */}
         <HomeScene />
       </div>
     </main>

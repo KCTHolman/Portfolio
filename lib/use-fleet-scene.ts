@@ -49,7 +49,7 @@ import {
   type Particle,
 } from '@/lib/fleet-geometry'
 
-export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket'
+export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
@@ -186,11 +186,19 @@ export function useFleetScene({
 
     const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
     const formMs = variant === 'journey' ? 2400 : 1500
-    /** journey (scroll-gedreven, zie /werk/) en de twee homepage-scènes
-     *  hieronder (kompas/raket) delen dezelfde "één evoluerende vorm uit
-     *  JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang verschilt:
-     *  scroll bij journey, een vaste stand bij de homepage-scènes. */
-    const journeyLike = variant === 'journey' || variant === 'home-compass' || variant === 'home-rocket'
+    /** journey (scroll-gedreven, zie /werk/) en de drie homepage-scènes
+     *  hieronder (kompas/tandwiel/raket) delen dezelfde "één evoluerende vorm
+     *  uit JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang
+     *  verschilt: scroll bij journey, een vaste stand bij de homepage-
+     *  scènes. */
+    const journeyLike =
+      variant === 'journey' || variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
+    /** De drie homepage-alternatieven voor hero, die components/home-
+     *  scene.tsx bij het laden loot. Op een telefoon is er geen aparte
+     *  tekstkolom naast de vorm (zie de anker-override in build() en de
+     *  bredere share hieronder in layout()) — de vorm mag daar groter en
+     *  gecentreerd achter de tekst liggen in plaats van rechts ernaast. */
+    const soloHomeVariant = variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
 
     let w = 0
     let h = 0
@@ -424,8 +432,16 @@ export function useFleetScene({
         // Eén evoluerende vorm, geen vloot: de lead-shape-deeltjes krijgen hun
         // identiteit hier (vormonafhankelijk); hun positie per stadium komt
         // pas in layout() bij, waar de schaal van het canvas bekend is.
+        //
+        // Journey's eigen anker (cx 0.8, rechts in beeld) gaat ervan uit dat
+        // er een aparte leeskolom naast staat — op /werk/ ligt die er ook
+        // altijd, in elk schermformaat. De homepage-scènes stapelen op een
+        // telefoon onder de tekst in plaats van ernaast, dus daar mag de
+        // vorm gecentreerd en groter achter de hele tekstkolom liggen (zie
+        // ook de bredere `share` hieronder in layout()).
+        const anchor = soloHomeVariant && narrowScreen ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.5 } : JOURNEY_BOAT
         boats.push({
-          ...JOURNEY_BOAT,
+          ...anchor,
           bobA: 0,
           bobF: 0.22,
           bobP: 0,
@@ -446,12 +462,12 @@ export function useFleetScene({
           cos: 1,
           // Journey heeft geen formatie (setFormation slaat 'm over): het
           // anker is de enige, onveranderlijke positie.
-          tcx: JOURNEY_BOAT.cx,
-          tcy: JOURNEY_BOAT.cy,
-          theel: JOURNEY_BOAT.heel,
-          dcx: JOURNEY_BOAT.cx,
-          dcy: JOURNEY_BOAT.cy,
-          dheel: JOURNEY_BOAT.heel,
+          tcx: anchor.cx,
+          tcy: anchor.cy,
+          theel: anchor.heel,
+          dcx: anchor.cx,
+          dcy: anchor.cy,
+          dheel: anchor.heel,
           // Ongebruikt: journey vaart nooit weg/aan (zie de boot-lus in
           // draw(), die slot 0 altijd overslaat).
           curveSign: 1,
@@ -633,16 +649,21 @@ export function useFleetScene({
          leeskolom is links smaller gemaakt zodat de twee elkaar hooguit
          nipt raken, niet structureel overlappen. Showcase mag juist groter:
          de tekstkolom op /koen-holman/ blijft ruim binnen 600px, en de
-         scène hoort nadrukkelijk op te vallen. Het kompas en de raket op de
-         homepage zelf mogen nog groter: dat zijn geen bijvangst naast de
-         gewone vloot maar het hele-grote alternatief ervoor. */
+         scène hoort nadrukkelijk op te vallen. Het kompas, tandwiel en de
+         raket op de homepage zelf mogen nog groter: dat zijn geen bijvangst
+         naast de gewone vloot maar het hele-grote alternatief ervoor. Op een
+         telefoon geldt dat nog sterker (zie ook de gecentreerde anker-
+         override in build()): geen leeskolom om rekening mee te houden, dus
+         mag de vorm bijna de volle breedte claimen. */
       const share = narrowScreen
-        ? 0.78
+        ? soloHomeVariant
+          ? 0.92
+          : 0.78
         : variant === 'journey'
           ? 0.36
           : variant === 'showcase'
             ? 0.5
-            : variant === 'home-compass' || variant === 'home-rocket'
+            : soloHomeVariant
               ? 0.6
               : 0.44
       const lead = Math.min(w * share, (h * 0.62) / RATIO)
@@ -869,19 +890,21 @@ export function useFleetScene({
       /* Scroll-voortgang lezen, één keer per frame — niet per deeltje. Onder
          frozen geen lopende interpolatie (t = 0): dan toont het de vorm die
          bij de dichtstbijzijnde sectie hoort, in stappen, niet vloeiend. */
-      /* Kompas/raket op de homepage kennen geen scroll: ze staan vast op het
-         stadium van hun eigen scène — het kompas altijd volledig gevormd,
-         de raket altijd op het laatste (raket-)stadium. De op-en-neer
-         beweging van die laatste komt verderop uit een eigen klok
-         (HOME_ROCKET_CYCLE_SEC), niet uit een stadium-overgang. */
+      /* Kompas/tandwiel/raket op de homepage kennen geen scroll: ze staan
+         vast op het stadium van hun eigen scène — kompas en tandwiel altijd
+         volledig gevormd, de raket altijd op het laatste (raket-)stadium.
+         De doorlopende beweging van tandwiel (rotatie) en raket (op-en-neer)
+         komt verderop uit een eigen klok, niet uit een stadium-overgang. */
       const rawProgress =
         variant === 'journey'
           ? (progressRef?.current ?? 0)
           : variant === 'home-compass'
             ? 1
-            : variant === 'home-rocket'
-              ? JOURNEY_STAGE_COUNT - 1
-              : 0
+            : variant === 'home-gear'
+              ? 2
+              : variant === 'home-rocket'
+                ? JOURNEY_STAGE_COUNT - 1
+                : 0
       const clampedProgress = Math.min(JOURNEY_STAGE_COUNT - 1, Math.max(0, rawProgress))
       const journeyStage = Math.min(
         JOURNEY_STAGE_COUNT - 1,
@@ -1183,6 +1206,20 @@ export function useFleetScene({
             // boot-vormige wolk.
             if (variant === 'showcase' && gearWeight > 0) {
               const spin = gearSpinBase * (o.spinDir ?? 1) * gearWeight
+              const sc = Math.cos(spin)
+              const ss = Math.sin(spin)
+              const rx = bx * sc - by * ss
+              const ry = bx * ss + by * sc
+              bx = rx
+              by = ry
+            }
+
+            // Home-gear: hetzelfde idee als showcase's tandwiel hierboven,
+            // maar voor één vast tandwiel op volle sterkte (geen gearWeight
+            // dat op- of afbouwt) — onder frozen staat 'm stil op hoek 0 in
+            // plaats van op een willekeurige hoek te blijven hangen.
+            if (variant === 'home-gear' && !frozen) {
+              const spin = gearSpinBase
               const sc = Math.cos(spin)
               const ss = Math.sin(spin)
               const rx = bx * sc - by * ss
