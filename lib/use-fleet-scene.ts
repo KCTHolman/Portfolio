@@ -252,6 +252,23 @@ export function useFleetScene({
      *  gecentreerd achter de tekst liggen in plaats van rechts ernaast. */
     const soloHomeVariant = variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
 
+    /* Alleen de homepage, alleen op een telefoon: daar mag de scène
+       merkbaar "magnetisch" meebewegen met een aanraking — een subtiele,
+       trage leun in de richting die je aanraakt, bovenop de gewone
+       plaatselijke afstoting (zie `repel` in draw()). Elders (ambient,
+       journey, showcase, of gewoon een muis op desktop) blijft de bestaande,
+       kleinere pointer.par-leun ongemoeid — dat is nooit gevraagd en zou
+       daar een ongevraagde gedragswijziging zijn. */
+    const homeMobileMagnet = narrowScreen && (variant === 'hero' || soloHomeVariant)
+    /* Trager dan de gewone 0.06: een muis die continu beweegt mag vlot
+       volgen, maar een enkele tik hoort rustig aan te komen en weer rustig
+       weg te ebben, niet te knikkeren. */
+    const POINTER_EASE = homeMobileMagnet ? 0.035 : 0.06
+    /* Iets steviger dan de bestaande 12/8 zodat een tik ook echt voelbaar
+       is op een klein scherm, maar nog altijd een leun, geen sprong. */
+    const MAGNET_X = homeMobileMagnet ? 18 : 12
+    const MAGNET_Y = homeMobileMagnet ? 12 : 8
+
     /* Terugval-niveau: 1 is vol, QUALITY_DEGRADE_FACTOR is wat perfCheck()
        hieronder ervoor in de plaats zet zodra tekenen structureel te lang
        duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
@@ -1027,8 +1044,8 @@ export function useFleetScene({
         settle[s] = 1 - Math.exp(-dt / SETTLE[s])
       }
 
-      pointer.x += (pointer.tx - pointer.x) * 0.06
-      pointer.y += (pointer.ty - pointer.y) * 0.06
+      pointer.x += (pointer.tx - pointer.x) * POINTER_EASE
+      pointer.y += (pointer.ty - pointer.y) * POINTER_EASE
 
       /* Hero: de losse raket-lancering. Geen scroll of hover stuurt dit, dus
          de klok is de enige bron van waarheid — een geplande tijd die steeds
@@ -1299,7 +1316,7 @@ export function useFleetScene({
 
         boat.dy =
           Math.sin(time * boat.bobF + boat.bobP) * boat.bobA +
-          pointer.y * boat.par * 8 +
+          pointer.y * boat.par * MAGNET_Y +
           boat.curveSign * CURVE_AMP * h * bulge
 
         // Home-rocket: rigide op- en neerbeweging bovenop de gewone
@@ -1317,7 +1334,7 @@ export function useFleetScene({
 
         // Elke frame opnieuw uit de tijd gerekend, niet opgeteld: opgeteld
         // loopt de boot weg zodra er een frame overslaat.
-        boat.dx = Math.sin(time * boat.swayF + boat.swayP) * boat.swayA + pointer.x * boat.par * 12
+        boat.dx = Math.sin(time * boat.swayF + boat.swayP) * boat.swayA + pointer.x * boat.par * MAGNET_X
       }
 
       ctx!.clearRect(0, 0, w, h)
@@ -1814,6 +1831,15 @@ export function useFleetScene({
        laatste stand staan tot de muis terugkomt. */
     function releasePointer(): void {
       pointer.on = false
+      // Alleen homeMobileMagnet: de magnetische leun hoort na een tik weer
+      // rustig naar het midden te ebben (via dezelfde POINTER_EASE als de
+      // leun zelf), niet scheef te blijven hangen tot de volgende
+      // aanraking. Elders blijft tx/ty ongemoeid — dat gedrag stond hier al
+      // en is niet wat gevraagd is.
+      if (homeMobileMagnet) {
+        pointer.tx = 0
+        pointer.ty = 0
+      }
     }
 
     /* Vinger optillen sluit het gat meteen — anders bleef de laatste tik
