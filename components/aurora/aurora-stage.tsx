@@ -18,10 +18,17 @@ import { useAurora } from './aurora-provider'
 const BLOBS = [1, 2, 3, 4, 5, 6] as const
 
 export function AuroraStage() {
-  const { presets, activePreset } = useAurora()
+  const { presets, activePreset, reducedQuality } = useAurora()
   const preset = presets[activePreset]
   const geo = preset?.geo ?? BASE_GEOMETRY
   const stageClassName = preset?.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage'
+  /* Op een machine die dit al niet bijhoudt (zie de framegat-meting in
+     aurora-provider.tsx) laat de duurste losse laag weg: het
+     SVG-vervormingsfilter dwingt een volledige software-rasterisatie van de
+     hele, schermvullende laag af, telkens als een kleurwissel 'm herschildert.
+     De zes geblurde, drijvende blobs zelf blijven gewoon staan — alleen de
+     verf-textuur erover valt weg. */
+  const paintClassName = reducedQuality ? 'aur-paint aur-paint--lite' : 'aur-paint'
 
   return (
     <div aria-hidden="true">
@@ -56,7 +63,7 @@ export function AuroraStage() {
           } as CSSProperties
         }
       >
-        <div className="aur-paint">
+        <div className={paintClassName}>
           {BLOBS.map((n) => (
             <div key={n} className={`aur-blob aur-blob--${n}`} />
           ))}

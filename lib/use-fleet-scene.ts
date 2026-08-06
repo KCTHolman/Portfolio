@@ -49,6 +49,7 @@ import {
   type BoatSpec,
   type Particle,
 } from '@/lib/fleet-geometry'
+import { readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
@@ -171,25 +172,6 @@ type FleetSceneOptions = {
    machine wordt sneller tussen twee bezoeken, dus een volgend bezoek start
    direct op het lagere niveau in plaats van de terugval opnieuw te laten
    zien. ---------------------------------------------------------------- */
-const QUALITY_STORE_KEY = 'kh-fleet-quality'
-
-function readReducedQuality(): boolean {
-  try {
-    return localStorage.getItem(QUALITY_STORE_KEY) === 'reduced'
-  } catch {
-    // Privémodus of een volle quota: dit bezoek meet dan gewoon opnieuw.
-    return false
-  }
-}
-
-function writeReducedQuality(): void {
-  try {
-    localStorage.setItem(QUALITY_STORE_KEY, 'reduced')
-  } catch {
-    // Zie readReducedQuality().
-  }
-}
-
 export function useFleetScene({
   mountRef,
   canvasRef,
@@ -282,7 +264,13 @@ export function useFleetScene({
        FADE_MS wegkrimpen tot niets — zie de fade-krimp in draw() en
        pruneFadedParticles() hieronder, die pas ná die tijd de inmiddels
        onzichtbare korrels daadwerkelijk uit de array haalt. */
-    const QUALITY_DEGRADE_FACTOR = 0.55
+    /* Showcase heeft, in tegenstelling tot de andere varianten, geen ene
+       vorm/vloot maar de "zon" plus acht satellieten tegelijk — bij dezelfde
+       0.55 als de rest bleef die scène op een trage machine nog steeds
+       merkbaar zwaarder dan hero/journey/ambient met hun eigen 0.55. Een
+       stevigere terugval hier snijdt recht in dat verschil, zonder de andere
+       varianten aan te raken. */
+    const QUALITY_DEGRADE_FACTOR = variant === 'showcase' ? 0.35 : 0.55
     const FADE_MS = 1600
     let qualityScale = readReducedQuality() ? QUALITY_DEGRADE_FACTOR : 1
     let dprCap = qualityScale < 1 ? 1 : 2
