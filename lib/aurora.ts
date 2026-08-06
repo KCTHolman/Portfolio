@@ -38,6 +38,10 @@ export type AuroraPreset = {
   name: string
   /** De levende preset wandelt door de tint in plaats van te zwaaien. */
   auto?: boolean
+  /** 'build': een deel van de blobs zwelt traag op en stort dan sneller in,
+   *  in plaats van de standaard khDrift-zwaai — zie aur-stage--build in
+   *  aurora.css. */
+  motion?: 'build'
   geo: AuroraGeometry
   drift?: AuroraDrift
   /** Vijf blobs. Alleen afwezig op de levende preset, die ze afleidt. */
@@ -109,6 +113,15 @@ export const PRESETS: readonly AuroraPreset[] = [
     drift: { amp: 20, period: 30 },
     cols: [[210, 88, 52, 0.70], [262, 84, 54, 0.62], [160, 84, 48, 0.56], [196, 88, 56, 0.58], [232, 86, 50, 0.62]],
     tcols: [[186, 94, 82], [253, 95, 85], [187, 92, 69]] },
+
+  /* Testpreset: een deel van de blobs zwelt op en stort weer in in plaats van
+     te zwaaien — zie motion: 'build' hierboven en .aur-stage--build in
+     aurora.css. */
+  { name: 'Bouwwerk', motion: 'build',
+    geo: { scale: 26, freq: 0.014, soft: 1.2, speed: 0.42 },
+    drift: { amp: 10, period: 60 },
+    cols: [[38, 90, 54, 0.70], [16, 88, 48, 0.64], [206, 30, 46, 0.56], [44, 70, 60, 0.60], [24, 80, 40, 0.62]],
+    tcols: [[38, 92, 66], [16, 86, 60], [206, 40, 70]] },
 ]
 
 export const BASE_GEOMETRY = PRESETS[0].geo
