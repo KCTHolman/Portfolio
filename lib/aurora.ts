@@ -13,10 +13,10 @@
    wandelt door de tint.
    ========================================================================== */
 
-export type Hsl = readonly [hue: number, saturation: number, lightness: number]
-export type Hsla = readonly [hue: number, saturation: number, lightness: number, alpha: number]
+type Hsl = readonly [hue: number, saturation: number, lightness: number]
+type Hsla = readonly [hue: number, saturation: number, lightness: number, alpha: number]
 
-export type AuroraGeometry = {
+type AuroraGeometry = {
   /** Swirl-sterkte — de scale van de displacement map. */
   scale: number
   /** Brushstroke-detail — de baseFrequency van de turbulentie. */
@@ -138,7 +138,7 @@ const LIGHTS = [58, 56, 56, 58, 56]
 const ALPHAS = [0.72, 0.68, 0.62, 0.62, 0.64]
 
 /** De intro: de pagina opent bijna-zwart en blauw, en bloeit dan open. */
-export const RAMP_SEC = 16
+const RAMP_SEC = 16
 const DIM = { sat: 38, light: 24, alpha: 0.16, paint: 0.34 }
 const FULL_PAINT = 0.62
 
@@ -166,7 +166,7 @@ export function bloomAt(elapsed: number): number {
   return t * t * (3 - 2 * t)
 }
 
-export function hueAt(elapsed: number): number {
+function hueAt(elapsed: number): number {
   return (HUE_START + elapsed * HUE_PER_SEC) % 360
 }
 

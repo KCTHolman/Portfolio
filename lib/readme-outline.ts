@@ -17,5 +17,3 @@ export const OUTLINE = [
   { id: 'wat-er-bewust-wél-in-staat', label: 'Wat er wél in staat', depth: 3 },
   { id: 'zelf-draaien', label: 'Zelf draaien', depth: 2 },
 ] as const
-
-export type OutlineItem = (typeof OUTLINE)[number]
