@@ -88,6 +88,21 @@
   animation: khBreathe 26s ease-in-out infinite;
 }
 
+/* Trage machine (zie de framegat-meting in aurora-provider.tsx): dezelfde
+   zes blobs, dezelfde beweging, maar zonder het SVG-vervormingsfilter — dat
+   dwingt op elke kleurwissel een volledige software-rasterisatie van deze
+   hele, schermvullende laag af, en is verreweg de duurste losse regel hier.
+   khBreatheLite is dezelfde ademhaling zonder de url()-referentie erin, want
+   de keyframes zelf zouden anders bij elke cyclus het filter terugzetten. */
+.aur-paint--lite {
+  filter: none;
+  animation: khBreatheLite 26s ease-in-out infinite;
+}
+@keyframes khBreatheLite {
+  0%, 100% { filter: brightness(0.88) saturate(0.94); }
+  50%      { filter: brightness(1.16) saturate(1.1); }
+}
+
 .aur-blob {
   position: absolute;
   mix-blend-mode: screen;

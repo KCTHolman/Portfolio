@@ -37,12 +37,18 @@ import {
   type AuroraFrame,
   type AuroraPreset,
 } from '@/lib/aurora'
+import { readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
 
 type AuroraContextValue = {
   presets: readonly AuroraPreset[]
   activePreset: number
   selectPreset: (index: number) => void
+  /** True zodra deze of een eerdere pagina op dit apparaat vaststelde dat het
+   *  de zes geblurde, met een SVG-filter vervormde lagen niet soepel bijhoudt
+   *  — zie de framegat-meting in de loop hieronder. AuroraStage laat dan het
+   *  SVG-vervormingsfilter weg, de duurste losse laag. */
+  reducedQuality: boolean
 }
 
 const AuroraContext = createContext<AuroraContextValue | null>(null)
@@ -90,6 +96,10 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
      opleveren; de sessie of een willekeurige keuze komt in het mount-effect
      hieronder. */
   const [activePreset, setActivePreset] = useState(0)
+  /* Zelfde reden als activePreset hierboven: begint deterministisch op false
+     zodat server en client gelijk renderen, en pas ná mount leest een los
+     effect hieronder de opgeslagen vlag terug. */
+  const [reducedQuality, setReducedQuality] = useState(false)
 
   const presetRef = useRef(0)
   const startedAtRef = useRef(0)
@@ -161,6 +171,14 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     [paint, staticFrame],
   )
 
+  /* Alleen lezen — de vlag zelf wordt hieronder in de loop of door de
+     vloot-canvas (lib/use-fleet-scene.ts) geschreven. Los van de
+     sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk te
+     maken heeft, niet met welke preset actief is. */
+  useEffect(() => {
+    if (readReducedQuality()) setReducedQuality(true)
+  }, [])
+
   /* ---------- sessie oppakken -------------------------------------------- */
 
   useEffect(() => {
@@ -218,8 +236,41 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false
 
+    /* ---------- prestatiebewaking, hetzelfde idee als de vloot-canvas -----
+       paint() zelf is triviaal (een paar custom properties zetten) — de
+       kosten zitten in wat de browser daarna moet rasterizen: zes geblurde
+       lagen achter een SVG-vervormingsfilter (zie aurora-stage.tsx). Dat werk
+       vertraagt de eerstvolgende requestAnimationFrame-aanroep net zo goed
+       als een zware JS-taak dat zou doen, dus het echte gat tussen twee ticks
+       is de juiste maat — niet hoe lang paint() zelf duurt. Zelfde gedeelde
+       vlag als de vloot (lib/perf-quality.ts): wie het eerst een trage
+       machine vaststelt, schrijft 'm weg, en beide lezen 'm terug. */
+    const PERF_SAMPLE_TARGET = 40
+    const PERF_BUDGET_MS = 40
+    const PERF_WARMUP_MS = 1000
+    const PERF_SAMPLE_CAP_MS = 200
+    let perfSamples = 0
+    let perfSum = 0
+    let perfDone = readReducedQuality()
+    let lastTick = 0
+
     const tick = (now: number) => {
       if (cancelled) return
+
+      if (!perfDone) {
+        if (lastTick > 0 && now - startedAtRef.current > PERF_WARMUP_MS) {
+          perfSum += Math.min(now - lastTick, PERF_SAMPLE_CAP_MS)
+          perfSamples++
+          if (perfSamples >= PERF_SAMPLE_TARGET) {
+            perfDone = true
+            if (perfSum / perfSamples > PERF_BUDGET_MS) {
+              writeReducedQuality()
+              setReducedQuality(true)
+            }
+          }
+        }
+        lastTick = now
+      }
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
       if (!reduceMotion && elapsed >= nextSwitchAtRef.current) {
@@ -242,6 +293,13 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
     const start = () => {
       if (frameRef.current !== null || document.visibilityState === 'hidden') return
+      /* Terug van een verborgen tabblad: zonder deze reset zou de eerste tick
+         na het hervatten het hele verborgen interval (soms minuten) als één
+         framegat doorgeven aan de meting hierboven, en dat kan een verder
+         prima machine onterecht als traag bestempelen. lastTick > 0 is
+         precies de voorwaarde die de meting al gebruikt om de eerste tick na
+         een (her)start uit te sluiten. */
+      lastTick = 0
       frameRef.current = requestAnimationFrame(tick)
     }
 
@@ -267,8 +325,8 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   }, [paint, reduceMotion, staticFrame])
 
   const value = useMemo<AuroraContextValue>(
-    () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset }),
-    [activePreset, switchPreset],
+    () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset, reducedQuality }),
+    [activePreset, switchPreset, reducedQuality],
   )
 
   return <AuroraContext.Provider value={value}>{children}</AuroraContext.Provider>
