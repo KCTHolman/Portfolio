@@ -782,8 +782,18 @@ export function useFleetScene({
          pixels omgerekend, met dezelfde transform als hierboven. Dit gebeurt
          hier — bij een maatverandering — en niet in draw(), om precies
          dezelfde reden dat bx/by dat ook niet doen: het is duur, en de vorm
-         zelf verandert niet tussen twee resizes. */
-      const journeyQuality = frozen ? 0.5 : 1
+         zelf verandert niet tussen twee resizes.
+
+         Moet exact dezelfde waarde zijn als de `quality` waarmee build()
+         hierboven buildJourneyIdentities() aanroept: beide lopen over
+         dezelfde JOURNEY_SLOTS en tellen per slot edge/fill-punten aan de
+         hand van diezelfde `detail`-factor. Lopen ze uiteen (zoals hier
+         tijdelijk het geval was toen qualityScale wél in build()'s quality
+         zat maar niet hier), dan krijgt elk slot een ander aantal punten in
+         de identiteiten- versus de stadium-array, en schuift de indexering
+         binnen een boot volledig scheef zodra qualityScale ooit onder 1 zakt
+         — precies het uiteengevallen kompas/tandwiel/raket dat dat gaf. */
+      const journeyQuality = (frozen ? 0.5 : 1) * qualityScale
       const journeyStages = journeyLike
         ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
         : null
