@@ -599,7 +599,7 @@ const JOURNEY_SLOTS = SHAPES.map((s) => ({ edge: s.edge, fill: s.fill, bias: s.b
 
 /** De boot als journey-stadium 0 — dezelfde acht polygonen als hierboven,
  *  hier alleen herverpakt in het vormonafhankelijke formaat. */
-export const BOAT_STAGE: JourneyStage = SHAPES.map((s) => s.pts)
+const BOAT_STAGE: JourneyStage = SHAPES.map((s) => s.pts)
 
 function circlePoly(cx: number, cy: number, rx: number, ry: number, steps: number): Point[] {
   const pts: Point[] = []
@@ -616,11 +616,11 @@ function circlePoly(cx: number, cy: number, rx: number, ry: number, steps: numbe
    meteen als kompas leest zodra de deeltjes zich verzamelen. */
 const KX = 0.5
 const KY = 0.48
-/* Geëxporteerd om dezelfde reden als GEAR_STAGE/ROCKET_STAGE: de
-   showcase-vloot laat precies één boot (de "zon") hierdoor heen, de rest
-   blijft boot — zie SHOWCASE_COMPASS_STAGE en de per-boot stage-remap in
-   use-fleet-scene.ts. */
-export const COMPASS_STAGE: JourneyStage = [
+/* Zelfde reden als GEAR_STAGE/ROCKET_STAGE hieronder: de showcase-vloot
+   (SHOWCASE_STAGES verderop in dit bestand) laat precies één boot (de "zon")
+   hierdoor heen, de rest blijft boot — zie SHOWCASE_COMPASS_STAGE en de
+   per-boot stage-remap in use-fleet-scene.ts. */
+const COMPASS_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.40, 0.40, 48), // kast (hull-rol)
   poly([KX, KY], [KX - 0.065, KY - 0.02], [KX, KY - 0.40], [KX + 0.065, KY - 0.02]), // noordnaald (mainsail-rol)
   poly([KX, KY], [KX - 0.05, KY + 0.018], [KX, KY + 0.27], [KX + 0.05, KY + 0.018]), // zuidnaald (jib-rol)
@@ -648,10 +648,10 @@ function gearPoly(cx: number, cy: number, rOuter: number, rInner: number, teeth:
 }
 
 /* Tandwiel, zelfde middelpunt en schaal als het kompas: lichaam, tandrand,
-   naaf, een tussenring, en drie spaken plus een boutje in het midden.
-   Geëxporteerd: de showcase-vloot (zie SHOWCASE_STAGES hieronder) hergebruikt
-   'm rechtstreeks in plaats van een eigen tandwielvorm te tekenen. */
-export const GEAR_STAGE: JourneyStage = [
+   naaf, een tussenring, en drie spaken plus een boutje in het midden. De
+   showcase-vloot (zie SHOWCASE_STAGES hieronder) hergebruikt 'm rechtstreeks
+   in plaats van een eigen tandwielvorm te tekenen. */
+const GEAR_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.34, 0.34, 40), // lichaam (hull-rol)
   gearPoly(KX, KY, 0.42, 0.34, 10), // tandrand (mainsail-rol)
   circlePoly(KX, KY, 0.16, 0.16, 28), // naaf (jib-rol)
@@ -727,9 +727,9 @@ const ROCKET_BODY = poly(
   [0.4, 0.24],
   curve([0.4, 0.24], ROCKET_NOSE, 0.12, 8),
 )
-/* Geëxporteerd om dezelfde reden als GEAR_STAGE hierboven: de showcase-vloot
-   hergebruikt deze vorm rechtstreeks. */
-export const ROCKET_STAGE: JourneyStage = [
+/* Zelfde reden als GEAR_STAGE hierboven: de showcase-vloot hergebruikt deze
+   vorm rechtstreeks. */
+const ROCKET_STAGE: JourneyStage = [
   ROCKET_BODY, // romp (hull-rol)
   poly([0.4, 0.56], [0.22, 0.78], [0.4, 0.7]), // linkervin (mainsail-rol)
   poly([0.6, 0.56], [0.78, 0.78], [0.6, 0.7]), // rechtervin (jib-rol)
@@ -814,7 +814,7 @@ export const JOURNEY_BOAT: BoatSpec = { cx: 0.8, cy: 0.5, w: LEAD_W, depth: 1, p
  *  AMBIENT_BOATS — elke boot morft en draait gelijkwaardig mee, dus
  *  use-fleet-scene.ts moet de leidende-boot-uitzonderingen die daar voor
  *  boot-index 0 gelden, hier omzeilen. */
-export const SHOWCASE_SATELLITE_COUNT = 8
+const SHOWCASE_SATELLITE_COUNT = 8
 
 function buildShowcaseBoats(): BoatSpec[] {
   const rnd = rng(0xc0ffee)
