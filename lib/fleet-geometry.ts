@@ -354,6 +354,22 @@ export type Particle = {
    *  maar draw() schaalt en tekent ze los van elkaar — zie de lancering in
    *  use-fleet-scene.ts. */
   rocket?: boolean
+  /** Hoort dit deeltje bij het uitlaatspoor van buildHomeRocketTrail() in
+   *  plaats van bij de raketvorm zelf? Net als p.rocket hierboven een eigen,
+   *  los gerenderde wolk op dezelfde boot-transform — zie de vlam-branch in
+   *  draw() in use-fleet-scene.ts. */
+  flame?: boolean
+  /** Alleen vlam-deeltjes: waar in de doorlopende stroom dit korrel bij t=0
+   *  begint (0 vlak bij de vlam, oplopend naar 1 aan de staart) en hoe snel
+   *  het die stroom doorloopt — samen bepalen ze elke frame opnieuw hoe ver
+   *  "naar beneden" het korrel nu staat, zie draw(). */
+  flamePhase?: number
+  flameSpeed?: number
+  /** Alleen vlam-deeltjes: vaste zijwaartse baan (-1..1) binnen de kegel van
+   *  het spoor — elke frame verbreedt draw() dit met hoe ver het korrel al
+   *  gestroomd is, zodat het spoor uitwaaiert in plaats van een strak lijntje
+   *  te blijven. */
+  flameLane?: number
   /** Alleen gezet tijdens een kwaliteitsterugval (zie degradeQuality() in
    *  use-fleet-scene.ts): performance.now() waarop dit deeltje begon te
    *  vervagen, op weg naar verwijdering. Onbepaald betekent: gewoon
@@ -772,6 +788,41 @@ export function buildRocketPuff(boat: BoatSpec, index: number, quality: number):
       parts.push(p)
     }
   })
+
+  return parts
+}
+
+/* ---------- home-rocket: een doorlopend uitlaatspoor ----------------------
+   De statische "vlam"-driehoek in ROCKET_STAGE (slot 3) leest van dichtbij
+   als vuur, maar is te klein om als "spoor" te lezen zodra de raket op de
+   homepage haar eigen stijg-en-zak-lus draait (zie homeRocketAltitude() in
+   use-fleet-scene.ts). Dit levert een aparte wolk vonken die continu vanaf
+   de vlam naar beneden stroomt en onderweg oplost — los van de raketvorm
+   zelf, net als buildRocketPuff() hierboven een eigen wolk is naast de
+   gewone boot. --------------------------------------------------------- */
+
+/** Hoeveel vonken het spoor krijgt. Geen boot-afhankelijke dichtheid nodig
+ *  zoals buildBoat()/buildRocketPuff(): er is maar één raket, altijd op
+ *  volle grootte (zie soloHomeVariant in use-fleet-scene.ts), dus alleen
+ *  quality (de kwaliteit-terugval daar) schaalt mee. */
+export function buildHomeRocketTrail(quality: number): Particle[] {
+  const rnd = rng(0xf1a4e)
+  const count = Math.round(140 * quality)
+  const parts: Particle[] = []
+
+  for (let i = 0; i < count; i++) {
+    // Verschil van twee worpen, geen enkele: dat geeft een driehoekige
+    // verdeling, dichter bij het hart van het spoor dan aan de rand — zoals
+    // een echte vlam, niet een gelijkmatig gevulde baan.
+    const lane = rnd() - rnd()
+    const col = rnd() < 0.7 ? 4 : 5
+    const p = particle(0.5 + lane * 0.02, 0.74, col, 0.85, rnd)
+    p.flame = true
+    p.flamePhase = rnd()
+    p.flameSpeed = 0.3 + rnd() * 0.55
+    p.flameLane = lane
+    parts.push(p)
+  }
 
   return parts
 }

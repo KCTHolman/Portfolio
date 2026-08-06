@@ -38,6 +38,7 @@ import {
   boatDetail,
   buildAmbientDust,
   buildBoat,
+  buildHomeRocketTrail,
   buildJourneyIdentities,
   buildJourneyStage,
   buildRocketPuff,
@@ -589,6 +590,19 @@ export function useFleetScene({
           p.boat = 0
           parts.push(p)
         }
+
+        // Home-rocket: een los, doorlopend uitlaatspoor bovenop de vaste
+        // raketvorm hierboven — zie buildHomeRocketTrail() voor waarom dat
+        // een eigen wolk is en geen onderdeel van de vorm zelf. Na de
+        // identiteiten toegevoegd (niet ertussen): layout() hieronder herkent
+        // ze aan p.flame en slaat de per-stadium jx/jy-toewijzing voor ze
+        // over, dus de volgorde binnen de array maakt verder niet uit.
+        if (variant === 'home-rocket') {
+          for (const p of buildHomeRocketTrail(quality)) {
+            p.boat = 0
+            parts.push(p)
+          }
+        }
       } else if (variant === 'showcase') {
         // Een hele vloot die tegelijk van gedaante wisselt: elke boot krijgt
         // haar eigen journey-achtige deeltjes-identiteit (met een eigen
@@ -858,7 +872,13 @@ export function useFleetScene({
       }
 
       parts.forEach((p, i) => {
-        if (journeyStages && p.boat === 0) {
+        // Vlam-deeltjes (zie buildHomeRocketTrail()) horen niet bij een
+        // journey-stadium — ze zitten niet eens in de arrays die
+        // buildJourneyStage() teruggeeft, dus pts[i] zou hier stuklopen.
+        // draw() geeft ze elke frame een eigen, dynamisch berekende positie;
+        // de gewone p.bx/p.by-tak hieronder (via p.ux/p.uy) levert alleen
+        // hun startpunt voor de intro-invaar.
+        if (journeyStages && p.boat === 0 && !p.flame) {
           const owner = boats[0]
           p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
           p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
@@ -1181,6 +1201,15 @@ export function useFleetScene({
         }
       }
 
+      /* Home-rocket: hoe fel de vlam nu brandt (0..1, met een idle-bodem op
+         de grond) en hoe ver het spoor daardoor reikt — buiten de boot-lus
+         gezet omdat de deeltjeslus verderop ze ook nodig heeft, ver na afloop
+         van die lus. Standaardwaarden zijn de rust-op-de-grond-stand, voor het
+         onwaarschijnlijke geval dat de lus hieronder om wat voor reden dan
+         ook nooit voor boot 0 draait. */
+      let homeRocketFlameIntensity = 0.25
+      let homeRocketFlameLen = 0.34
+
       for (let bi = 0; bi < boats.length; bi++) {
         const boat = boats[bi]
 
@@ -1224,9 +1253,15 @@ export function useFleetScene({
         // deining, één waarde voor de hele vorm (niet per korrel zoals
         // hero's lancering) — de raket blijft zo altijd herkenbaar één
         // silhouet, ook halverwege het opstijgen of landen.
-        if (variant === 'home-rocket' && !frozen) {
-          const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
-          boat.dy -= homeRocketAltitude(cyclePos) * h * HOME_ROCKET_LIFT_FRAC
+        if (variant === 'home-rocket') {
+          const cyclePos = frozen ? 0 : (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
+          const altitude = homeRocketAltitude(cyclePos)
+          if (!frozen) boat.dy -= altitude * h * HOME_ROCKET_LIFT_FRAC
+          // De vlam is nooit helemaal uit (een bodem van 0.25 — idle op de
+          // grond, net zichtbaar) en zwelt aan tot vol tijdens het stijgen/
+          // hangen/landen, in plaats van aan/uit te klikken op elke fase.
+          homeRocketFlameIntensity = 0.25 + altitude * 0.75
+          homeRocketFlameLen = 0.34 + homeRocketFlameIntensity * 0.58
         }
 
         boat.rot = boat.theel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
@@ -1258,6 +1293,10 @@ export function useFleetScene({
           // Hoe "vervormd" deze korrel oogt: alleen een boot-eigen boot heeft
           // een distort-waarde, los stof (p.boat < 0) blijft er gewoon buiten.
           let distort = 0
+          // Alleen vlam-deeltjes (zie hieronder): hoever "naar beneden" in
+          // het spoor dit korrel nu staat, 0 vlak bij de vlam tot 1 aan de
+          // staart — de straal-berekening verderop dooft het korrel hiermee.
+          let flameDown = 0
 
           if (p.boat < 0) {
             x = p.bx + (p.vx ? p.vx * time : 0)
@@ -1374,6 +1413,29 @@ export function useFleetScene({
               const riseWave = (1 - Math.cos(time * ROCKET_BOB_FREQ + o.bobP)) * 0.5
               y -= riseWave * h * ROCKET_BOB_AMP_FRAC * rocketWeight * (0.6 + (p.vy ?? 70) / 140)
             }
+          } else if (p.flame) {
+            // Home-rocket: het uitlaatspoor. Geen vaste p.bx/p.by zoals de
+            // rest van de vorm — elk korrel stroomt continu vanaf de vlam
+            // naar beneden (p.flamePhase is waar het bij t=0 in die stroom
+            // zit, p.flameSpeed hoe snel het 'm doorloopt) en springt terug
+            // naar het begin zodra het de staart haalt, zodat het spoor nooit
+            // opraakt. homeRocketFlameLen (buiten deze lus berekend, uit de
+            // huidige stijghoogte) bepaalt hoe ver dat "naar beneden" reikt —
+            // een korter, rustiger spoor in rust, een lang spoor tijdens het
+            // stijgen/hangen/landen.
+            const o = boats[p.boat]
+            flameDown = ((p.flamePhase ?? 0) + time * (p.flameSpeed ?? 0.4)) % 1
+            // Waaiert uit naarmate het verder stroomt, net als echte rook —
+            // een strak lijntje zou als een liniaal ogen, geen vlam.
+            const spread = (0.035 + flameDown * 0.12) * o.pw
+            const fx = (p.flameLane ?? 0) * spread
+            // -0.48, dezelfde vaste offset als de "else" tak hieronder voor
+            // gewone boot-deeltjes gebruikt (zie de opmerking bij p.by in
+            // layout()) — zonder die correctie begint het spoor 0.48*ph te
+            // laag, los van de raketvorm die wél met die offset tekent.
+            const fy = (0.74 - 0.48 + flameDown * homeRocketFlameLen) * o.ph
+            x = o.px + o.dx + fx * o.cos - fy * o.sin
+            y = o.py + o.dy + fx * o.sin + fy * o.cos
           } else {
             const o = boats[p.boat]
             x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
@@ -1472,6 +1534,11 @@ export function useFleetScene({
           let r: number
           if (p.boat < 0) {
             r = p.r
+          } else if (p.flame) {
+            // Dooft uit richting de staart (flameDown → 1) en ademt mee met
+            // hoe fel de vlam nu brandt — vol tijdens stijgen/hangen/landen,
+            // een fractie daarvan als rustige idle-flikkering op de grond.
+            r = p.r * homeRocketFlameIntensity * (1 - flameDown * 0.85)
           } else {
             const lo = boats[p.boat]
             r = lo.launchPhase === 0 ? (p.rocket ? 0 : p.r) : p.r * launchScale(lo, !!p.rocket, p.lag)
