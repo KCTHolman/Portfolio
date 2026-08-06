@@ -1679,7 +1679,16 @@ export function useFleetScene({
        stabiele presetIndexRef), dus hoort ook niet in de dependency-lijst: een
        preset-klik mag nooit de hele scène (canvas, deeltjes, muisstaat)
        opnieuw opbouwen. De kleine effect hieronder zet het nieuwe doel via
-       setFormation(), zonder dit effect te raken. */
+       setFormation(), zonder dit effect te raken.
+
+       githubHoverRef hoort om dezelfde reden niet in deze lijst, ook al leest
+       draw() 'm rechtstreeks (regel ~1018): het is een RefObject, dus
+       React.useRef geeft elke render hetzelfde, stabiele object terug — de
+       waarde die verandert zit in .current, en die leest draw() vers in elk
+       animatieframe, niet als een dichtgetimmerde closure-snapshot van het
+       moment waarop dit effect opnieuw zou draaien. 'm toevoegen zou dus
+       nooit een her-run triggeren (het object verandert nooit) en verhult
+       alleen dat een linter dit niet als ref herkent — geen echte bug. */
   }, [canvasRef, coarsePointer, frozen, mountRef, narrowScreen, onSailing, progressRef, variant])
 
   useEffect(() => {

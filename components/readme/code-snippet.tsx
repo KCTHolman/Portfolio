@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 
 /* Een codeblok met een kopieerknop.
  *
@@ -18,14 +18,28 @@ const LABELS: Record<CopyState, string> = {
   failed: 'mislukt',
 }
 
+/* Verandert nooit tijdens de levensduur van de pagina — er valt dus niets te
+ * abonneren, alleen veilig te lezen. useSyncExternalStore in plaats van
+ * useState+useEffect: dat laatste zet canCopy pas ná de eerste verf om, dus
+ * de knop popt zichtbaar op. Dit leest de servervriendelijke `false` tijdens
+ * SSR/hydration en de echte waarde meteen daarna, zonder de tussenstap die
+ * de flits veroorzaakte. */
+function subscribeNever(): () => void {
+  return () => {}
+}
+
+function getCanCopySnapshot(): boolean {
+  return Boolean(navigator.clipboard) && window.isSecureContext
+}
+
+function getCanCopyServerSnapshot(): boolean {
+  return false
+}
+
 export function CodeSnippet({ lang, children }: { lang: string; children: ReactNode }) {
   const preRef = useRef<HTMLPreElement>(null)
   const [state, setState] = useState<CopyState>('idle')
-  const [canCopy, setCanCopy] = useState(false)
-
-  useEffect(() => {
-    setCanCopy(Boolean(navigator.clipboard) && window.isSecureContext)
-  }, [])
+  const canCopy = useSyncExternalStore(subscribeNever, getCanCopySnapshot, getCanCopyServerSnapshot)
 
   useEffect(() => {
     if (state === 'idle') return
