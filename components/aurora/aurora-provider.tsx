@@ -56,10 +56,33 @@ export function useAurora(): AuroraContextValue {
  *  meereist — hetzelfde punt in de wandeling, de zwaai en de bloei. */
 const STORE_KEY = 'kh-aurora'
 
+/** Hoeveel de zes blobs bij het laden opzij mogen staan van hun vaste
+ *  CSS-positie, in procent van het schildervlak — één keer geloot per
+ *  sessie (net als de preset hierboven), niet iets dat blijft lopen. Klein
+ *  genoeg dat het oog "vandaag net weer even anders" leest, niet "de layout
+ *  is stuk": de bestaande spin/drift-animaties bewegen de blobs toch al
+ *  veel verder dan dit tijdens het kijken. */
+const BLOB_COUNT = 6
+const SHIFT_RANGE_PCT = 3
+
 type StoredSession = {
   preset: number
   t0: number
   nextSwitchAt: number
+  /** [jx1, jy1, jx2, jy2, ...] — zie BLOB_COUNT/SHIFT_RANGE_PCT hierboven. */
+  shift: number[]
+}
+
+function randomBlobShift(): number[] {
+  return Array.from({ length: BLOB_COUNT * 2 }, () => (Math.random() * 2 - 1) * SHIFT_RANGE_PCT)
+}
+
+function applyBlobShift(shift: number[]): void {
+  const root = document.documentElement
+  for (let i = 0; i < BLOB_COUNT; i++) {
+    root.style.setProperty(`--aur-jx-${i + 1}`, `${(shift[i * 2] ?? 0).toFixed(2)}%`)
+    root.style.setProperty(`--aur-jy-${i + 1}`, `${(shift[i * 2 + 1] ?? 0).toFixed(2)}%`)
+  }
 }
 
 function readSession(): Partial<StoredSession> | null {
@@ -93,6 +116,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   const presetRef = useRef(0)
   const startedAtRef = useRef(0)
   const nextSwitchAtRef = useRef(AUTO_CYCLE_SEC)
+  const shiftRef = useRef<number[]>([])
   const blendRef = useRef<{ from: number; startElapsed: number } | null>(null)
   const frameRef = useRef<number | null>(null)
   const lastPaintRef = useRef(0)
@@ -142,6 +166,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
         preset: index,
         t0: startedAtRef.current,
         nextSwitchAt: nextSwitchAtRef.current,
+        shift: shiftRef.current,
       })
     },
     [paint, staticFrame],
@@ -158,6 +183,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
        de module-scope — daar zou het per render verschillen tussen server en
        client. */
     let preset = Math.floor(Math.random() * PRESETS.length)
+    let shift = randomBlobShift()
 
     if (saved) {
       const i = Number(saved.preset)
@@ -169,15 +195,24 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
       const next = Number(saved.nextSwitchAt)
       if (Number.isFinite(next) && next > 0) nextSwitchAtRef.current = next
+
+      // Zelfde lengte-check als preset hierboven: een oudere sessie (van vóór
+      // deze BLOB_COUNT) mag niet met te weinig waarden toegepast worden.
+      if (Array.isArray(saved.shift) && saved.shift.length === BLOB_COUNT * 2 && saved.shift.every(Number.isFinite)) {
+        shift = saved.shift
+      }
     }
 
     presetRef.current = preset
+    shiftRef.current = shift
     setActivePreset(preset)
+    applyBlobShift(shift)
     paint()
     writeSession({
       preset,
       t0: startedAtRef.current,
       nextSwitchAt: nextSwitchAtRef.current,
+      shift,
     })
   }, [paint])
 

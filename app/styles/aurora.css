@@ -78,10 +78,15 @@
 
 /* The two conic blobs each declare a spin and a drift. Both animate
    transform, so the drift (declared last) is the one that takes effect —
-   matching how the design renders. */
+   matching how the design renders.
+
+   Each position also carries a --aur-jx-N/--aur-jy-N offset — a few percent,
+   picked once per session by aurora-provider.tsx (see the comment there) so
+   the wash doesn't open in the exact same spot on every visit. Defaulting to
+   0% keeps the server-rendered/no-JS position identical to before. */
 .aur-blob--1 {
-  top: 6%;
-  left: 12%;
+  top: calc(6% + var(--aur-jy-1, 0%));
+  left: calc(12% + var(--aur-jx-1, 0%));
   width: 46vw;
   height: 46vw;
   border-radius: 50%;
@@ -91,8 +96,8 @@
   animation-duration: calc(44s / var(--speed)), calc(26s / var(--speed));
 }
 .aur-blob--2 {
-  bottom: 0%;
-  right: 4%;
+  bottom: calc(0% + var(--aur-jy-2, 0%));
+  right: calc(4% + var(--aur-jx-2, 0%));
   width: 54vw;
   height: 54vw;
   border-radius: 50%;
@@ -102,8 +107,8 @@
   animation-duration: calc(62s / var(--speed)), calc(30s / var(--speed));
 }
 .aur-blob--3 {
-  top: -6%;
-  left: -8%;
+  top: calc(-6% + var(--aur-jy-3, 0%));
+  left: calc(-8% + var(--aur-jx-3, 0%));
   width: 70vw;
   height: 50vh;
   background: radial-gradient(60% 55% at 40% 50%, var(--c1) 0%, transparent 72%);
@@ -112,8 +117,8 @@
   animation-duration: calc(22s / var(--speed));
 }
 .aur-blob--4 {
-  top: 32%;
-  right: -12%;
+  top: calc(32% + var(--aur-jy-4, 0%));
+  right: calc(-12% + var(--aur-jx-4, 0%));
   width: 65vw;
   height: 60vh;
   background: radial-gradient(55% 50% at 60% 50%, var(--c2) 0%, transparent 70%);
@@ -122,8 +127,8 @@
   animation-duration: calc(28s / var(--speed));
 }
 .aur-blob--5 {
-  bottom: -12%;
-  left: 16%;
+  bottom: calc(-12% + var(--aur-jy-5, 0%));
+  left: calc(16% + var(--aur-jx-5, 0%));
   width: 60vw;
   height: 55vh;
   background: radial-gradient(55% 50% at 50% 50%, var(--c3) 0%, transparent 74%);
@@ -132,8 +137,8 @@
   animation-duration: calc(34s / var(--speed));
 }
 .aur-blob--6 {
-  top: 10%;
-  left: 42%;
+  top: calc(10% + var(--aur-jy-6, 0%));
+  left: calc(42% + var(--aur-jx-6, 0%));
   width: 42vw;
   height: 48vh;
   background: radial-gradient(50% 50% at 50% 50%, var(--c4) 0%, transparent 72%);
@@ -172,12 +177,12 @@
     background: radial-gradient(150% 118% at 50% 30%, transparent 44%, rgba(0, 0, 0, 0.5) 84%, rgba(0, 0, 0, 0.92) 100%);
   }
 
-  .aur-blob--1 { top: 2%;  left: 4%;    width: 92vw;  height: 92vw; }
-  .aur-blob--2 { bottom: 2%; right: -8%; width: 108vw; height: 108vw; }
-  .aur-blob--3 { top: -8%;  left: -20%;  width: 130vw; height: 55vh; }
-  .aur-blob--4 { top: 28%;  right: -25%; width: 125vw; height: 60vh; }
-  .aur-blob--5 { bottom: -10%; left: -10%; width: 120vw; height: 55vh; }
-  .aur-blob--6 { top: 8%;   left: 10%;   width: 100vw; height: 48vh; }
+  .aur-blob--1 { top: calc(2% + var(--aur-jy-1, 0%));  left: calc(4% + var(--aur-jx-1, 0%));    width: 92vw;  height: 92vw; }
+  .aur-blob--2 { bottom: calc(2% + var(--aur-jy-2, 0%)); right: calc(-8% + var(--aur-jx-2, 0%)); width: 108vw; height: 108vw; }
+  .aur-blob--3 { top: calc(-8% + var(--aur-jy-3, 0%));  left: calc(-20% + var(--aur-jx-3, 0%));  width: 130vw; height: 55vh; }
+  .aur-blob--4 { top: calc(28% + var(--aur-jy-4, 0%));  right: calc(-25% + var(--aur-jx-4, 0%)); width: 125vw; height: 60vh; }
+  .aur-blob--5 { bottom: calc(-10% + var(--aur-jy-5, 0%)); left: calc(-10% + var(--aur-jx-5, 0%)); width: 120vw; height: 55vh; }
+  .aur-blob--6 { top: calc(8% + var(--aur-jy-6, 0%));   left: calc(10% + var(--aur-jx-6, 0%));   width: 100vw; height: 48vh; }
 }
 
 /* ---------- Preset swatches in the footer -------------------------------- */
