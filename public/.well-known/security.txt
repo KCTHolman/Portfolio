@@ -1,4 +1,4 @@
-Contact: mailto:koenholman@gmail.com
+Contact: mailto:ainuldertien@gmail.com
 Expires: 2027-08-06T00:00:00.000Z
 Preferred-Languages: nl, en
 Canonical: https://koenholman.nl/.well-known/security.txt
