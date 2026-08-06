@@ -260,6 +260,20 @@ a.khnav[aria-current="page"]::after {
   flex-direction: column;
   gap: 22px;
   max-width: 600px;
+  /* Sleepgordijn (zie lib/use-swipe-reveal.ts): --kh-swipe is 0 tot een
+     veeg 'm zet, dus dit is op een groot scherm altijd een no-op. */
+  transform: translateY(var(--kh-swipe, 0px));
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Tijdens het slepen zelf geen transitie: de tekst moet de vinger op de
+   voet volgen, niet er met vertraging achteraan lopen. Ná loslaten (de
+   klasse gaat er dan af) mag de terugval naar 0 of naar SWIPE_REVEAL_PX wél
+   de transition hierboven gebruiken — dat is de "snap". */
+.kh-home-grid.kh-swipe-dragging .kh-home-copy { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-home-copy { transition: none; }
 }
 
 .kh-main--home .kh-hero {

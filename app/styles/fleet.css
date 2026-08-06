@@ -40,9 +40,17 @@
   z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.2s ease;
+  /* Sleepgordijn (zie lib/use-swipe-reveal.ts): schuift tegengesteld aan
+     .kh-home-copy, dus dezelfde --kh-swipe met omgekeerd teken. Op een groot
+     scherm blijft --kh-swipe altijd 0, dus dit is daar een no-op. */
+  transform: translateY(calc(var(--kh-swipe, 0px) * -1));
+  transition: opacity 1.2s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .kh-home-visual.is-varend { opacity: 1; }
+
+/* Geen transitie tijdens het slepen zelf — zie dezelfde regel bij
+   .kh-home-copy in site.css, dit is de andere kant van hetzelfde gordijn. */
+.kh-home-grid.kh-swipe-dragging .kh-home-visual { transition: none; }
 
 /* ---------- Elders: een verre vloot achter de inhoud --------------------- */
 

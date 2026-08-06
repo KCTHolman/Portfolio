@@ -1,6 +1,4 @@
-import { Link } from '@/components/link'
-
-import { HomeScene } from '@/components/home-scene'
+import { HomeHero } from '@/components/home-hero'
 import { pageMetadata } from '@/lib/metadata'
 
 export const metadata = pageMetadata({
@@ -35,36 +33,7 @@ export default function HomePage() {
         }}
       />
 
-      {/* Alles wat je leest staat links en stopt bij 600px; de vloot ligt als
-          schermvullende laag daarachter met de boten in de rechterhelft. */}
-      <div className="kh-home-grid">
-        <div className="kh-home-copy">
-          <section className="kh-hero">
-            <p className="kh-eyebrow kh-eyebrow--hero">Software engineer</p>
-            <h1 className="kh-hero-title">
-              Koen <span className="kh-hero-accent">Holman</span>
-            </h1>
-            <p className="kh-hero-lead">
-              Software engineer uit Tilburg. Bouwt, lost op, en raakt niet uitgeleerd over AI.
-            </p>
-            <div className="kh-cta-row">
-              <Link className="khcta khcta--primary" href="/werk/">
-                Huidige AI-projecten &#8594;
-              </Link>
-              <Link className="khcta khcta--ghost" href="/contact/">
-                Zeg hallo
-              </Link>
-            </div>
-          </section>
-        </div>
-
-        {/* Willekeurig één van vier scènes: de vloot (honderden driehoekjes
-            die één schouw onder zeil vormen), een heel groot kompas, een
-            traag draaiend tandwiel, of een hele grote raket die opstijgt en
-            weer landt. Puur decoratief, dus buiten de leesvolgorde — zie
-            components/home-scene.tsx. */}
-        <HomeScene />
-      </div>
+      <HomeHero />
     </main>
   )
 }
