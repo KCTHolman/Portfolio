@@ -1,6 +1,6 @@
 import { Link } from '@/components/link'
 
-import { Fleet } from '@/components/fleet-lazy'
+import { HomeScene } from '@/components/home-scene'
 import { pageMetadata } from '@/lib/metadata'
 
 export const metadata = pageMetadata({
@@ -58,9 +58,11 @@ export default function HomePage() {
           </section>
         </div>
 
-        {/* Honderden driehoekjes die één schouw onder zeil vormen, met kleinere
-            boten eromheen. Puur decoratief, dus buiten de leesvolgorde. */}
-        <Fleet variant="hero" />
+        {/* Willekeurig één van drie scènes: de vloot (honderden driehoekjes
+            die één schouw onder zeil vormen), een heel groot kompas, of een
+            hele grote raket die opstijgt en weer landt. Puur decoratief, dus
+            buiten de leesvolgorde — zie components/home-scene.tsx. */}
+        <HomeScene />
       </div>
     </main>
   )

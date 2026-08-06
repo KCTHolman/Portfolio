@@ -49,7 +49,7 @@ import {
   type Particle,
 } from '@/lib/fleet-geometry'
 
-export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase'
+export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket'
 
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
@@ -186,6 +186,11 @@ export function useFleetScene({
 
     const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
     const formMs = variant === 'journey' ? 2400 : 1500
+    /** journey (scroll-gedreven, zie /werk/) en de twee homepage-scènes
+     *  hieronder (kompas/raket) delen dezelfde "één evoluerende vorm uit
+     *  JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang verschilt:
+     *  scroll bij journey, een vaste stand bij de homepage-scènes. */
+    const journeyLike = variant === 'journey' || variant === 'home-compass' || variant === 'home-rocket'
 
     let w = 0
     let h = 0
@@ -259,6 +264,13 @@ export function useFleetScene({
        scène duurt blijft herhalen. */
     const ROCKET_BOB_FREQ = 0.5
     const ROCKET_BOB_AMP_FRAC = 0.05
+    /* Homepage, variant "home-rocket": een rustige, eigen lus van opstijgen,
+       boven hangen, landen en even stilstaan — geen sinus (die kent geen
+       hangtijd) en geen eenmalig vertrek zoals hero's kleine lanceringen.
+       Zie homeRocketAltitude() hieronder. 16 seconden voor de volle cyclus
+       is traag genoeg om als "landen", niet als "stuiteren" te lezen. */
+    const HOME_ROCKET_CYCLE_SEC = 16
+    const HOME_ROCKET_LIFT_FRAC = 0.34
     /* Showcase, elke scène-wissel: hoeveel de jitter tijdens het mengen
        (SHOWCASE_BLEND_MS) opzwelt, in het midden van de overgang op zijn
        hoogst en weer terug naar normaal aan beide kanten. Een rechte lerp
@@ -370,6 +382,28 @@ export function useFleetScene({
       return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7)
     }
 
+    /** Nul snelheid aan beide kanten van een stuk, in plaats van de constante
+     *  snelheid van een rechte lerp — dezelfde curve als de kleurblend in
+     *  aurora-provider.tsx. homeRocketAltitude() hieronder gebruikt 'm voor
+     *  zowel het opstijgen als het landen, zodat geen van beide met een
+     *  schok begint of eindigt. */
+    function smoothstep(k: number): number {
+      const c = Math.min(1, Math.max(0, k))
+      return c * c * (3 - 2 * c)
+    }
+
+    /** 0..1: hoogte van de home-rocket-vorm boven haar grondpositie, op
+     *  moment t (0..1, fractie door HOME_ROCKET_CYCLE_SEC). Vier stukken:
+     *  opstijgen, hangen op de top, landen, en een moment stilstaan op de
+     *  grond — bewust geen ease-out aan beide kanten (dat gaf een harde
+     *  touchdown), maar smoothstep, die net zo zacht landt als vertrekt. */
+    function homeRocketAltitude(t: number): number {
+      if (t < 0.28) return smoothstep(t / 0.28)
+      if (t < 0.46) return 1
+      if (t < 0.82) return 1 - smoothstep((t - 0.46) / 0.36)
+      return 0
+    }
+
     function build(): void {
       let quality = frozen ? 0.5 : 1
       // Ambient tekent een handvol verre boten tegelijk — dezelfde
@@ -386,7 +420,7 @@ export function useFleetScene({
       // lancering wees naar een boot die zo meteen niet meer bestaat.
       launchingBoat = -1
 
-      if (variant === 'journey') {
+      if (journeyLike) {
         // Eén evoluerende vorm, geen vloot: de lead-shape-deeltjes krijgen hun
         // identiteit hier (vormonafhankelijk); hun positie per stadium komt
         // pas in layout() bij, waar de schaal van het canvas bekend is.
@@ -599,14 +633,18 @@ export function useFleetScene({
          leeskolom is links smaller gemaakt zodat de twee elkaar hooguit
          nipt raken, niet structureel overlappen. Showcase mag juist groter:
          de tekstkolom op /koen-holman/ blijft ruim binnen 600px, en de
-         scène hoort nadrukkelijk op te vallen. */
+         scène hoort nadrukkelijk op te vallen. Het kompas en de raket op de
+         homepage zelf mogen nog groter: dat zijn geen bijvangst naast de
+         gewone vloot maar het hele-grote alternatief ervoor. */
       const share = narrowScreen
         ? 0.78
         : variant === 'journey'
           ? 0.36
           : variant === 'showcase'
             ? 0.5
-            : 0.44
+            : variant === 'home-compass' || variant === 'home-rocket'
+              ? 0.6
+              : 0.44
       const lead = Math.min(w * share, (h * 0.62) / RATIO)
 
       for (const boat of boats) {
@@ -636,10 +674,9 @@ export function useFleetScene({
          dezelfde reden dat bx/by dat ook niet doen: het is duur, en de vorm
          zelf verandert niet tussen twee resizes. */
       const journeyQuality = frozen ? 0.5 : 1
-      const journeyStages =
-        variant === 'journey'
-          ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
-          : null
+      const journeyStages = journeyLike
+        ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
+        : null
 
       /* Showcase: hetzelfde idee als journeyStages hierboven, maar per boot —
          elke boot heeft haar eigen dichtheid (zie showcaseBoatDetail() in
@@ -832,7 +869,19 @@ export function useFleetScene({
       /* Scroll-voortgang lezen, één keer per frame — niet per deeltje. Onder
          frozen geen lopende interpolatie (t = 0): dan toont het de vorm die
          bij de dichtstbijzijnde sectie hoort, in stappen, niet vloeiend. */
-      const rawProgress = variant === 'journey' ? (progressRef?.current ?? 0) : 0
+      /* Kompas/raket op de homepage kennen geen scroll: ze staan vast op het
+         stadium van hun eigen scène — het kompas altijd volledig gevormd,
+         de raket altijd op het laatste (raket-)stadium. De op-en-neer
+         beweging van die laatste komt verderop uit een eigen klok
+         (HOME_ROCKET_CYCLE_SEC), niet uit een stadium-overgang. */
+      const rawProgress =
+        variant === 'journey'
+          ? (progressRef?.current ?? 0)
+          : variant === 'home-compass'
+            ? 1
+            : variant === 'home-rocket'
+              ? JOURNEY_STAGE_COUNT - 1
+              : 0
       const clampedProgress = Math.min(JOURNEY_STAGE_COUNT - 1, Math.max(0, rawProgress))
       const journeyStage = Math.min(
         JOURNEY_STAGE_COUNT - 1,
@@ -847,7 +896,7 @@ export function useFleetScene({
          een raar trillend zeil uitzien. */
       const compassStageIndex = 1
       const compassWeight =
-        variant === 'journey'
+        journeyLike
           ? journeyStage === compassStageIndex
             ? 1
             : journeyNext === compassStageIndex
@@ -1018,6 +1067,16 @@ export function useFleetScene({
           Math.sin(time * boat.bobF + boat.bobP) * boat.bobA +
           pointer.y * boat.par * 8 +
           boat.curveSign * CURVE_AMP * h * bulge
+
+        // Home-rocket: rigide op- en neerbeweging bovenop de gewone
+        // deining, één waarde voor de hele vorm (niet per korrel zoals
+        // hero's lancering) — de raket blijft zo altijd herkenbaar één
+        // silhouet, ook halverwege het opstijgen of landen.
+        if (variant === 'home-rocket' && !frozen) {
+          const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
+          boat.dy -= homeRocketAltitude(cyclePos) * h * HOME_ROCKET_LIFT_FRAC
+        }
+
         boat.rot = boat.theel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
         boat.sin = Math.sin(boat.rot)
         boat.cos = Math.cos(boat.rot)
@@ -1276,7 +1335,7 @@ export function useFleetScene({
      *  aanroep; showcase evenmin — die stelt dcx/dcy/dheel zelf, elke frame,
      *  in draw() (vlootpositie versus tandwiel-cluster, zie gearWeight). */
     function setFormation(index: number, snap: boolean): void {
-      if (variant === 'journey' || variant === 'showcase') return
+      if (journeyLike || variant === 'showcase') return
 
       const formation = deriveFormation(index, variant)
       const doSnap = snap || frozen
@@ -1316,7 +1375,7 @@ export function useFleetScene({
          30fps zichtbaar zou hakkelen, dus tekent die om dezelfde reden elk
          frame. */
       const forming = now - t0 < formMs
-      const frameGap = variant === 'journey' || variant === 'showcase' ? 0 : 30
+      const frameGap = journeyLike || variant === 'showcase' ? 0 : 30
       if (forming || now - lastFrame >= frameGap) {
         lastFrame = now
         if (now - lastPalette >= 220) {
