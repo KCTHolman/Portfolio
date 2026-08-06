@@ -37,17 +37,20 @@ import {
   type AuroraFrame,
   type AuroraPreset,
 } from '@/lib/aurora'
-import { readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
+import { isIOSWebKit, readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
 
 type AuroraContextValue = {
   presets: readonly AuroraPreset[]
   activePreset: number
   selectPreset: (index: number) => void
-  /** True zodra deze of een eerdere pagina op dit apparaat vaststelde dat het
-   *  de zes geblurde, met een SVG-filter vervormde lagen niet soepel bijhoudt
-   *  — zie de framegat-meting in de loop hieronder. AuroraStage laat dan het
-   *  SVG-vervormingsfilter weg, de duurste losse laag. */
+  /** True op twee gronden: (1) deze of een eerdere pagina op dit apparaat
+   *  stelde vast dat het de zes geblurde, met een SVG-filter vervormde lagen
+   *  niet soepel bijhoudt — zie de framegat-meting in de loop hieronder — of
+   *  (2) dit is WebKit op iOS, waar zo'n filter altíjd software-gerasterized
+   *  wordt, dus meteen bij mount, niet pas na een meting (zie isIOSWebKit()
+   *  in lib/perf-quality.ts). AuroraStage laat dan het SVG-vervormingsfilter
+   *  weg, de duurste losse laag. */
   reducedQuality: boolean
 }
 
@@ -171,12 +174,20 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     [paint, staticFrame],
   )
 
-  /* Alleen lezen — de vlag zelf wordt hieronder in de loop of door de
-     vloot-canvas (lib/use-fleet-scene.ts) geschreven. Los van de
-     sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk te
-     maken heeft, niet met welke preset actief is. */
+  /* Twee onafhankelijke redenen om meteen, zonder te wachten op een meting,
+     in de lichte stand te starten:
+       - readReducedQuality(): alleen lézen — de vlag zelf wordt hieronder in
+         de loop of door de vloot-canvas (lib/use-fleet-scene.ts) geschreven.
+       - isIOSWebKit(): geen meting nodig, want dit is geen "is dit apparaat
+         traag"-vraag maar "heeft deze renderengine hier een structurele
+         zwakte" — die geldt net zo goed op een snelle iPhone. Reactief
+         wachten (de framegat-meting hieronder duurt na de instap nog een
+         seconde of wat) zou de hapering nog een keer laten zien vóór hij
+         verdwijnt; dit voorkomt 'm meteen.
+     Los van de sessie-effect hieronder omdat dit met een heel ander
+     apparaatkenmerk te maken heeft, niet met welke preset actief is. */
   useEffect(() => {
-    if (readReducedQuality()) setReducedQuality(true)
+    if (readReducedQuality() || isIOSWebKit()) setReducedQuality(true)
   }, [])
 
   /* ---------- sessie oppakken -------------------------------------------- */
