@@ -371,11 +371,12 @@ export function useFleetScene({
        Zie homeRocketAltitude() hieronder. 16 seconden voor de volle cyclus
        is traag genoeg om als "landen", niet als "stuiteren" te lezen. */
     const HOME_ROCKET_CYCLE_SEC = 16
-    /* Op een telefoon staat de raket al hoog in beeld (zie het anker in
-       build()) om onder de tekst te passen — een even hoge stijging als op
-       desktop zou de neus dan voorbij de bovenrand duwen. Lager op smalle
-       schermen houdt 'm binnen beeld, ook op het hoogste punt van de lus. */
-    const HOME_ROCKET_LIFT_FRAC = narrowScreen ? 0.16 : 0.34
+    /* Op een telefoon staat de raket al bijna schermvullend (zie het grotere
+       vak en de lagere cy in build()/layout()) — de neus rust dan al rond
+       ~20% van de schermhoogte. Een even hoge stijging als op desktop zou 'm
+       voorbij de bovenrand duwen; 0.15 laat de neus op het hoogste punt van
+       de lus net onder de statusbalk blijven. */
+    const HOME_ROCKET_LIFT_FRAC = narrowScreen ? 0.15 : 0.34
     /* Showcase, elke scène-wissel: hoeveel de jitter tijdens het mengen
        (SHOWCASE_BLEND_MS) opzwelt, in het midden van de overgang op zijn
        hoogst en weer terug naar normaal aan beide kanten. Een rechte lerp
@@ -440,6 +441,30 @@ export function useFleetScene({
       groups.push([])
       groupPhase.push((g * 2.399) % (Math.PI * 2))
     }
+
+    /* Home-rocket: een handvol losse "vonken" die van de vlam wegstromen.
+       Geen deel van parts/groups hierboven — die array moet voor elk
+       journey-stadium (boot t/m raket) precies evenveel identiteiten tellen
+       (zie de toelichting bij JOURNEY_SLOTS in fleet-geometry.ts), en dat
+       zou een spoor dat alleen bij het raket-stadium hoort onnodig
+       verstoren. In plaats daarvan rekent drawRocketTrail() dit spoor elk
+       frame vers uit, uit deze kleine, vaste set — geen eigen identiteit
+       nodig, alleen een zaad per vonk zodat dezelfde vonk elke cyclus weer
+       hetzelfde pad neemt. */
+    const ROCKET_TRAIL_COUNT = 30
+    const rocketTrail =
+      variant === 'home-rocket'
+        ? Array.from({ length: ROCKET_TRAIL_COUNT }, (_, i) => {
+            const seeded = rng(0xc0a1 + i * 733)
+            return {
+              lag: i / ROCKET_TRAIL_COUNT,
+              side: (seeded() - 0.5) * 2,
+              speed: 0.5 + seeded() * 0.4,
+              size: 1.6 + seeded() * 2.4,
+              spin: seeded() * Math.PI * 2,
+            }
+          })
+        : []
 
     /* De aurora zet --t1..--t3 als inline style op <html>, dus dit leest de
        eigenschap rechtstreeks van het element af — getComputedStyle zou hier
@@ -540,7 +565,20 @@ export function useFleetScene({
         // onderkant duwen): de vorm hoort dus gecentreerd en in het bovenste
         // deel van het scherm, niet op het middelpunt waar de tekst anders
         // zou overlappen.
-        const anchor = soloHomeVariant && narrowScreen ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.32 } : JOURNEY_BOAT
+        // De raket krijgt op een telefoon een eigen, lagere cy: smaller
+        // silhouet dan het kompas/tandwiel (zie ROCKET_STAGE — de romp vult
+        // maar ~56% van het vak in de breedte), dus mag hij een flink groter
+        // vak krijgen (zie de eigen share in layout()) zonder zijwaarts te
+        // overlopen. Een lager middelpunt schuift dat grotere vak zo dat de
+        // neus toch nog vlak onder de statusbalk blijft en de vlam pas bij
+        // "Koen Holman" eindigt, in plaats van een groter vak gewoon om
+        // hetzelfde middelpunt te laten groeien.
+        const anchor =
+          variant === 'home-rocket' && narrowScreen
+            ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.42 }
+            : soloHomeVariant && narrowScreen
+              ? { ...JOURNEY_BOAT, cx: 0.5, cy: 0.32 }
+              : JOURNEY_BOAT
         boats.push({
           ...anchor,
           bobA: 0,
@@ -757,20 +795,32 @@ export function useFleetScene({
          raket op de homepage zelf mogen nog groter: dat zijn geen bijvangst
          naast de gewone vloot maar het hele-grote alternatief ervoor. Op een
          telefoon staan ze bovenin, boven de tekst (zie de gecentreerde,
-         hoger geplaatste anker-override in build()) — daar juist wat
-         kleiner dan op desktop, anders is er geen lucht meer over voor de
-         tekst eronder en de raket haar eigen stijg-lus. */
+         hoger geplaatste anker-override in build()) — en juist daar mogen
+         ze groter dan op desktop: er is geen kolom ernaast om rekening mee
+         te houden, alleen tekst eronder die toch al naar de onderkant
+         duwt (zie .kh-main--home op smalle schermen in site.css). */
       const share = narrowScreen
-        ? soloHomeVariant
-          ? 0.6
-          : variant === 'hero'
-            ? // Hero op een telefoon mag nadrukkelijk groter dan 0.78: de
-              // leidende boot is nu gecentreerd en hoger geankerd (zie
-              // HERO_BOATS_NARROW), en moet de lege ruimte onder de
-              // statusbalk ook echt vullen, niet er slechts wat dichter
-              // naartoe kruipen.
-              0.94
-            : 0.78
+        ? variant === 'home-rocket'
+          ? // De raket mag nog fors groter dan het kompas/tandwiel hieronder:
+            // haar romp gebruikt maar zo'n 56% van de breedte van haar eigen
+            // vak (zie ROCKET_STAGE), dus dit vak kan flink breder zonder dat
+            // de raket zelf zijwaarts buiten het scherm komt. Samen met de
+            // lagere cy hierboven vult ze zo bijna het hele scherm tussen de
+            // statusbalk en "Koen Holman".
+            1.2
+          : soloHomeVariant
+            ? // Net als hero hieronder: nadrukkelijk groter dan het eerdere
+              // 0.6, anders oogt het kompas/tandwiel klein en verloren in
+              // het bovenste deel van het scherm.
+              0.9
+            : variant === 'hero'
+              ? // Hero op een telefoon mag nadrukkelijk groter dan 0.78: de
+                // leidende boot is nu gecentreerd en hoger geankerd (zie
+                // HERO_BOATS_NARROW), en moet de lege ruimte onder de
+                // statusbalk ook echt vullen, niet er slechts wat dichter
+                // naartoe kruipen.
+                0.94
+              : 0.78
         : variant === 'journey'
           ? 0.36
           : variant === 'showcase'
@@ -918,6 +968,45 @@ export function useFleetScene({
       }
       if (o.launchPhase === 2) return isRocket ? o.launchRocketScale : 0
       return isRocket ? 0 : 1
+    }
+
+    /** Home-rocket: het spoor van vonken die onder de vlam wegstromen (zie
+     *  rocketTrail hierboven). altitude stuurt lengte én kracht ineen: vlak
+     *  bij de grond — net vertrokken of net geland — is er nauwelijks iets
+     *  te zien, op volle hoogte trekt de raket een duidelijk spoor. Elke
+     *  vonk herhaalt haar eigen pad elke cyclus (t loopt via % 1 gewoon
+     *  door), dus geen eigen levenscyclus om bij te houden. */
+    function drawRocketTrail(o: Boat, altitude: number, time: number): void {
+      const flameX = o.px + o.dx
+      const flameY = o.py + o.dy + o.ph * 0.48
+      const length = o.ph * 0.85 * altitude
+      const spread = o.pw * 0.12
+
+      ctx!.globalAlpha = 0.55 * altitude
+      ctx!.strokeStyle = paletteStr[4]
+      ctx!.beginPath()
+
+      for (const spark of rocketTrail) {
+        const t = (time * spark.speed * 0.3 + spark.lag) % 1
+        const r = spark.size * (1 - t) * altitude
+        if (r <= 0.15) continue
+        const x = flameX + spark.side * spread * t
+        const y = flameY + t * length
+        const a = spark.spin + time * 0.6
+        const ca = Math.cos(a)
+        const sa = Math.sin(a)
+        const cb = -0.5 * ca - SQRT3_2 * sa
+        const sb = SQRT3_2 * ca - 0.5 * sa
+        const cc = -0.5 * ca + SQRT3_2 * sa
+        const sc = -SQRT3_2 * ca - 0.5 * sa
+        ctx!.moveTo(x + ca * r, y + sa * r)
+        ctx!.lineTo(x + cb * r, y + sb * r)
+        ctx!.lineTo(x + cc * r, y + sc * r)
+        ctx!.closePath()
+      }
+
+      ctx!.stroke()
+      ctx!.globalAlpha = 1
     }
 
     function draw(now: number): void {
@@ -1505,6 +1594,12 @@ export function useFleetScene({
       }
 
       ctx!.globalAlpha = 1
+
+      if (variant === 'home-rocket' && !frozen && boats[0]) {
+        const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
+        const altitude = homeRocketAltitude(cyclePos)
+        if (altitude > 0.03) drawRocketTrail(boats[0], altitude, time)
+      }
     }
 
     /** Zet het doel voor elke boot naar de formatie van preset `index`.
