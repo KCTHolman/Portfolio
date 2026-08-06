@@ -40,7 +40,7 @@ import { useCallback, useRef, useState, type RefObject } from 'react'
 
 import { useAurora } from '@/components/aurora/aurora-provider'
 import { useFleetScene, type FleetVariant } from '@/lib/use-fleet-scene'
-import { useMediaQuery, useNarrowScreen, usePrefersReducedMotion } from '@/lib/use-media-query'
+import { useNarrowScreen, usePrefersReducedMotion } from '@/lib/use-media-query'
 
 export type { FleetVariant }
 
@@ -60,7 +60,6 @@ export function Fleet(props: FleetProps) {
 
   const reduceMotion = usePrefersReducedMotion()
   const narrowScreen = useNarrowScreen()
-  const coarsePointer = useMediaQuery('(pointer: coarse)')
   /* Stuurt de vlootformatie op hero/ambient; journey negeert 'm. Altijd
      beschikbaar — AuroraProvider omvat de hele boom, dus deze hook is hier
      nooit onveilig, ook al is de preset voor journey niet van belang. */
@@ -78,7 +77,6 @@ export function Fleet(props: FleetProps) {
        hier niet apart bevroren te worden. */
     frozen: reduceMotion,
     narrowScreen,
-    coarsePointer,
     onSailing,
     progressRef: variant === 'journey' ? props.progressRef : undefined,
     githubHoverRef: variant === 'journey' ? props.githubHoverRef : undefined,

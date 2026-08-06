@@ -20,6 +20,7 @@ import {
   FALLBACK_ACCENTS,
   FIXED_COLORS,
   HERO_BOATS,
+  HERO_BOATS_NARROW,
   JOURNEY_BOAT,
   JOURNEY_STAGES,
   JOURNEY_STAGE_COUNT,
@@ -139,7 +140,6 @@ type FleetSceneOptions = {
   /** Stilstaand beeld in plaats van een lopende animatie. */
   frozen: boolean
   narrowScreen: boolean
-  coarsePointer: boolean
   /** Aangeroepen zodra er iets te zien is, zodat de laag kan invaren. */
   onSailing: () => void
   /** Alleen variant "journey": scroll-voortgang, 0..JOURNEY_STAGE_COUNT-1.
@@ -196,7 +196,6 @@ export function useFleetScene({
   variant,
   frozen,
   narrowScreen,
-  coarsePointer,
   onSailing,
   progressRef,
   githubHoverRef,
@@ -220,7 +219,8 @@ export function useFleetScene({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const specs = variant === 'hero' ? HERO_BOATS : variant === 'ambient' ? AMBIENT_BOATS : []
+    const specs =
+      variant === 'hero' ? (narrowScreen ? HERO_BOATS_NARROW : HERO_BOATS) : variant === 'ambient' ? AMBIENT_BOATS : []
     /** journey (scroll-gedreven, zie /werk/) en de drie homepage-scènes
      *  hieronder (kompas/tandwiel/raket) delen dezelfde "één evoluerende vorm
      *  uit JOURNEY_STAGES"-opbouw — alleen de bron van de voortgang
@@ -763,7 +763,14 @@ export function useFleetScene({
       const share = narrowScreen
         ? soloHomeVariant
           ? 0.6
-          : 0.78
+          : variant === 'hero'
+            ? // Hero op een telefoon mag nadrukkelijk groter dan 0.78: de
+              // leidende boot is nu gecentreerd en hoger geankerd (zie
+              // HERO_BOATS_NARROW), en moet de lege ruimte onder de
+              // statusbalk ook echt vullen, niet er slechts wat dichter
+              // naartoe kruipen.
+              0.94
+            : 0.78
         : variant === 'journey'
           ? 0.36
           : variant === 'showcase'
@@ -1511,7 +1518,7 @@ export function useFleetScene({
     function setFormation(index: number, snap: boolean): void {
       if (journeyLike || variant === 'showcase') return
 
-      const formation = deriveFormation(index, variant)
+      const formation = deriveFormation(index, variant, narrowScreen)
       const doSnap = snap || frozen
 
       formation.forEach((slot, i) => {
@@ -1688,13 +1695,24 @@ export function useFleetScene({
     const observer = new ResizeObserver(onResize)
     observer.observe(mount)
 
-    function onPointerMove(e: PointerEvent): void {
-      if (e.pointerType === 'touch') return
+    /* Muis/pen: 'on' zolang de aanwijzer ergens boven het venster hangt, dus
+       een pointermove is genoeg. Vinger: die hangt nooit "boven" iets — een
+       tik moet zelf al roeren (zie onPointerDown), en pointermove voegt
+       daarna alleen het slepen toe zolang de vinger het scherm raakt. Beide
+       lopen door dezelfde x/y-toewijzing, want de een is gewoon de andere
+       met een muisknop in plaats van een vinger. */
+    function setPointerFrom(e: PointerEvent): void {
       pointer.px = e.clientX
       pointer.py = e.clientY
       pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2
       pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2
       pointer.on = true
+    }
+
+    /* Alleen aanraking heeft een expliciete "neer": een muis stuurt toch al
+       op elke move, en pointerdown daar nogmaals laten roeren voegt niets toe. */
+    function onPointerDown(e: PointerEvent): void {
+      if (e.pointerType === 'touch') setPointerFrom(e)
     }
 
     /* Muis het venster uit: het gat trekt weer dicht. Zonder dit blijft de
@@ -1703,14 +1721,20 @@ export function useFleetScene({
       pointer.on = false
     }
 
-    /* Alleen waar er een echte aanwijzer is. Op een aanraakscherm zou de
-       laatste tik een gat in de vloot achterlaten dat er blijft staan. */
-    if (!coarsePointer) {
-      window.addEventListener('pointermove', onPointerMove, { passive: true })
-      document.addEventListener('pointerleave', releasePointer)
-      document.addEventListener('pointercancel', releasePointer)
-      window.addEventListener('blur', releasePointer)
+    /* Vinger optillen sluit het gat meteen — anders bleef de laatste tik
+       staan tot de volgende aanraking, wat op een telefoon als een vlek zou
+       ogen in plaats van een kort effect. Een muisknop loslaten betekent
+       niet dat de cursor is vertrokken, dus dat blijft ongemoeid. */
+    function onPointerUp(e: PointerEvent): void {
+      if (e.pointerType === 'touch') releasePointer()
     }
+
+    window.addEventListener('pointermove', setPointerFrom, { passive: true })
+    window.addEventListener('pointerdown', onPointerDown, { passive: true })
+    document.addEventListener('pointerup', onPointerUp)
+    document.addEventListener('pointerleave', releasePointer)
+    document.addEventListener('pointercancel', releasePointer)
+    window.addEventListener('blur', releasePointer)
 
     document.addEventListener('visibilitychange', sync)
 
@@ -1735,12 +1759,12 @@ export function useFleetScene({
       observer.disconnect()
       window.clearTimeout(resizeTimer)
       document.removeEventListener('visibilitychange', sync)
-      if (!coarsePointer) {
-        window.removeEventListener('pointermove', onPointerMove)
-        document.removeEventListener('pointerleave', releasePointer)
-        document.removeEventListener('pointercancel', releasePointer)
-        window.removeEventListener('blur', releasePointer)
-      }
+      window.removeEventListener('pointermove', setPointerFrom)
+      window.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointerup', onPointerUp)
+      document.removeEventListener('pointerleave', releasePointer)
+      document.removeEventListener('pointercancel', releasePointer)
+      window.removeEventListener('blur', releasePointer)
       if (frame !== null) cancelAnimationFrame(frame)
     }
     /* presetIndex leest deze effect nergens rechtstreeks (alleen via de
@@ -1757,7 +1781,7 @@ export function useFleetScene({
        moment waarop dit effect opnieuw zou draaien. 'm toevoegen zou dus
        nooit een her-run triggeren (het object verandert nooit) en verhult
        alleen dat een linter dit niet als ref herkent — geen echte bug. */
-  }, [canvasRef, coarsePointer, frozen, mountRef, narrowScreen, onSailing, progressRef, variant])
+  }, [canvasRef, frozen, mountRef, narrowScreen, onSailing, progressRef, variant])
 
   useEffect(() => {
     presetIndexRef.current = presetIndex

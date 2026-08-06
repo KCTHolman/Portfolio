@@ -388,6 +388,25 @@ export const HERO_BOATS: BoatSpec[] = [
   { cx: 0.870, cy: 0.895, w: 0.08, depth: 0.20, par: 0.20, heel: -0.045 },
 ]
 
+/** Zelfde zeven boten als HERO_BOATS, maar dan voor een telefoon: daar staat
+ *  de tekst ónder de scène (zie .kh-main--home op smalle schermen in
+ *  site.css), niet ernaast, dus hoeft de vloot niet naar rechts te wijken.
+ *  De leidende boot schuift omhoog en naar het midden — hij vulde eerst vooral
+ *  de onderste helft, wat de bovenkant van het scherm (onder de statusbalk)
+ *  leeg liet — en de vier boventjes verspreiden zich juist over die
+ *  bovenrand om 'm te vullen. Blijft, net als hierboven, met opzet met de
+ *  hand geschreven, niet afgeleid van HERO_BOATS: elke boot heeft haar eigen
+ *  compositie-reden, geen formule. */
+export const HERO_BOATS_NARROW: BoatSpec[] = [
+  { cx: 0.50, cy: 0.36, w: LEAD_W, depth: 1.00, par: 1.00, heel: -0.052 },
+  { cx: 0.22, cy: 0.13, w: 0.24, depth: 0.48, par: 0.48, heel: -0.070 },
+  { cx: 0.80, cy: 0.10, w: 0.18, depth: 0.38, par: 0.38, heel: 0.048 },
+  { cx: 0.50, cy: 0.05, w: 0.14, depth: 0.28, par: 0.28, heel: -0.040 },
+  { cx: 0.88, cy: 0.24, w: 0.10, depth: 0.24, par: 0.24, heel: 0.055 },
+  { cx: 0.20, cy: 0.63, w: 0.12, depth: 0.30, par: 0.30, heel: -0.062 },
+  { cx: 0.72, cy: 0.68, w: 0.08, depth: 0.20, par: 0.20, heel: -0.045 },
+]
+
 export const AMBIENT_BOATS: BoatSpec[] = [
   /* Leidend, sinds de vlootformatie per aurora-preset: duidelijk groter dan de
      overige vier, en boven de 0.55-vuldrempel in buildBoat() zodat hij als
@@ -451,8 +470,8 @@ function shuffled(indices: number[], rnd: () => number): number[] {
  *  basis van de geometrie/drift van de preset en verdwijnt nooit. Kleine
  *  boten (slot 1+) worden een gelote subset van de ankerpool: de rest krijgt
  *  een geparkeerd doel buiten beeld. */
-export function deriveFormation(presetIndex: number, variant: FormationVariant): FormationSlot[] {
-  const anchors = variant === 'hero' ? HERO_BOATS : AMBIENT_BOATS
+export function deriveFormation(presetIndex: number, variant: FormationVariant, narrow = false): FormationSlot[] {
+  const anchors = variant === 'hero' ? (narrow ? HERO_BOATS_NARROW : HERO_BOATS) : AMBIENT_BOATS
   const preset = PRESETS[presetIndex] ?? PRESETS[0]
   const drift = preset.drift ?? DEFAULT_DRIFT
 
