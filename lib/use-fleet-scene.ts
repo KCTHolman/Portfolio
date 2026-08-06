@@ -51,6 +51,11 @@ import {
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
+/** cos/sin van 120°: de optelformules in draw()'s korrel-driehoekje leunen
+ *  hierop om twee hoekpunten uit het derde af te leiden zonder extra
+ *  Math.cos/sin-aanroepen. */
+const SQRT3_2 = Math.sqrt(3) / 2
+
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
 type Boat = BoatSpec & {
@@ -154,6 +159,37 @@ type FleetSceneOptions = {
   presetIndex: number
 }
 
+/* ---------- prestatiebewaking: automatisch terugschakelen op trage machines
+   ----------------------------------------------------------------------
+   Lighthouse meet laadprestatie, niet of duizenden korrels 30x per seconde
+   opnieuw tekenen soepel blijft op een oude of drukbezette machine. In
+   plaats van voor iedereen alvast minder deeltjes te bouwen (zichtbaar
+   armoediger, voor de overgrote meerderheid voor niks), meet de scène de
+   eigen tekentijd een paar tellen nadat de instap voorbij is: is die
+   structureel te hoog, dan bouwt hij zichzelf één keer opnieuw op met minder
+   deeltjes en een lagere pixelverhouding. Onthouden in localStorage — geen
+   machine wordt sneller tussen twee bezoeken, dus een volgend bezoek start
+   direct op het lagere niveau in plaats van de terugval opnieuw te laten
+   zien. ---------------------------------------------------------------- */
+const QUALITY_STORE_KEY = 'kh-fleet-quality'
+
+function readReducedQuality(): boolean {
+  try {
+    return localStorage.getItem(QUALITY_STORE_KEY) === 'reduced'
+  } catch {
+    // Privémodus of een volle quota: dit bezoek meet dan gewoon opnieuw.
+    return false
+  }
+}
+
+function writeReducedQuality(): void {
+  try {
+    localStorage.setItem(QUALITY_STORE_KEY, 'reduced')
+  } catch {
+    // Zie readReducedQuality().
+  }
+}
+
 export function useFleetScene({
   mountRef,
   canvasRef,
@@ -215,6 +251,31 @@ export function useFleetScene({
      *  bredere share hieronder in layout()) — de vorm mag daar groter en
      *  gecentreerd achter de tekst liggen in plaats van rechts ernaast. */
     const soloHomeVariant = variant === 'home-compass' || variant === 'home-rocket' || variant === 'home-gear'
+
+    /* Terugval-niveau: 1 is vol, QUALITY_DEGRADE_FACTOR is wat perfCheck()
+       hieronder ervoor in de plaats zet zodra tekenen structureel te lang
+       duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
+       terugval al vaststelde — zie readReducedQuality(). dprCap volgt mee:
+       op een tragere machine weegt de extra scherpte van devicePixelRatio 2
+       zwaarder dan wat hij oplevert. */
+    const QUALITY_DEGRADE_FACTOR = 0.55
+    let qualityScale = readReducedQuality() ? QUALITY_DEGRADE_FACTOR : 1
+    let dprCap = qualityScale < 1 ? 1 : 2
+    /* Meet pas een paar tellen nadat de instap voorbij is (die kost door de
+       forming-lerp toch al iets meer) en pas dan gericht: één venster van
+       samples, één keer een oordeel, geen continue meting die zelf weer
+       prestatie kost. Het echte interval tussen twee getekende frames — niet
+       de tijd die draw() zelf in JS doorbrengt — is de maat: op
+       GPU-versnelde canvas kan het echte rasterwerk buiten de JS-call om
+       gebeuren, dus alleen draw() opstoppen zou trager-dan-bedoeld tekenen op
+       een zwak GPU volledig missen. perfDone start al waar als dit bezoek de
+       terugval al kende — dan is er niets meer te meten. */
+    const PERF_SAMPLE_TARGET = 40
+    const PERF_BUDGET_MS = journeyLike || variant === 'showcase' ? 40 : 60
+    const PERF_WARMUP_MS = 600
+    let perfSamples = 0
+    let perfSum = 0
+    let perfDone = qualityScale < 1
 
     let w = 0
     let h = 0
@@ -406,8 +467,8 @@ export function useFleetScene({
      *  gedeelde functie in plaats van de berekening op twee plekken te
      *  herhalen. */
     function showcaseBoatDetail(spec: BoatSpec, index: number): number {
-      if (index === 0) return frozen ? 0.5 : 1
-      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7)
+      if (index === 0) return (frozen ? 0.5 : 1) * qualityScale
+      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7 * qualityScale)
     }
 
     /** Nul snelheid aan beide kanten van een stuk, in plaats van de constante
@@ -433,7 +494,9 @@ export function useFleetScene({
     }
 
     function build(): void {
-      let quality = frozen ? 0.5 : 1
+      // qualityScale: 1 tenzij perfCheck() hieronder al vaststelde (dit
+      // bezoek of een vorig) dat deze machine minder aankan.
+      let quality = (frozen ? 0.5 : 1) * qualityScale
       // Ambient tekent een handvol verre boten tegelijk — dezelfde
       // conservatieve korting als showcase's satellieten, uit hetzelfde
       // prestatie-oogpunt (showcase's eigen dichtheid loopt via
@@ -651,7 +714,10 @@ export function useFleetScene({
      *  opnieuw; de vorm zelf blijft staan, alleen de schaal verschuift. */
     function layout(): void {
       measure()
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      // dprCap zakt naar 1 zodra perfCheck() deze machine als traag
+      // aanmerkt — minder pixels om te vullen weegt zwaarder dan de extra
+      // scherpte, en de deeltjes zelf blijven op volle grootte.
+      const dpr = Math.min(dprCap, window.devicePixelRatio || 1)
 
       canvas!.width = Math.round(w * dpr)
       canvas!.height = Math.round(h * dpr)
@@ -1379,9 +1445,19 @@ export function useFleetScene({
           }
           if (r <= 0.02) continue
           const a = p.spin + (frozen ? 0 : time * 0.08)
-          ctx!.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
-          ctx!.lineTo(x + Math.cos(a + 2.0944) * r, y + Math.sin(a + 2.0944) * r)
-          ctx!.lineTo(x + Math.cos(a + 4.1888) * r, y + Math.sin(a + 4.1888) * r)
+          // Twee trig-calls, geen zes: de andere twee hoekpunten liggen op
+          // +120°/+240°, en cos/sin daarvan volgen uit ca/sa via de
+          // optelformules (cos120 = -0.5, sin120 = √3/2) — zelfde driehoek,
+          // een derde van de Math.cos/sin-aanroepen per korrel per frame.
+          const ca = Math.cos(a)
+          const sa = Math.sin(a)
+          const cb = -0.5 * ca - SQRT3_2 * sa
+          const sb = SQRT3_2 * ca - 0.5 * sa
+          const cc = -0.5 * ca + SQRT3_2 * sa
+          const sc = -SQRT3_2 * ca - 0.5 * sa
+          ctx!.moveTo(x + ca * r, y + sa * r)
+          ctx!.lineTo(x + cb * r, y + sb * r)
+          ctx!.lineTo(x + cc * r, y + sc * r)
           ctx!.closePath()
         }
 
@@ -1430,6 +1506,37 @@ export function useFleetScene({
 
     sceneRef.current = { setFormation }
 
+    /** Bouwt de scène in het huidige mount eenmalig opnieuw op met minder
+     *  deeltjes en een lagere pixelverhouding — het antwoord van perfCheck()
+     *  hieronder op een machine die de volle vloot niet soepel bijhoudt.
+     *  Alleen ooit omlaag, nooit weer omhoog: heen-en-weer schakelen tijdens
+     *  hetzelfde bezoek zou zelf weer als een hapering ogen. */
+    function degradeQuality(): void {
+      if (qualityScale >= 1) {
+        qualityScale = QUALITY_DEGRADE_FACTOR
+        dprCap = 1
+        writeReducedQuality()
+        build()
+        setFormation(presetIndexRef.current, true)
+        layout()
+      }
+    }
+
+    /** Eén oordeel, een paar tellen na de instap: hoe lang er gemiddeld
+     *  écht tussen twee getekende frames zit — niet hoe lang draw() zelf in
+     *  JS bezig is (zie de toelichting bij PERF_BUDGET_MS hierboven). Geen
+     *  doorlopende meting (die zou zelf weer prestatie kosten) — een venster
+     *  van PERF_SAMPLE_TARGET frames, dan klaar. Ligt het gemiddelde boven
+     *  PERF_BUDGET_MS, dan haalt deze machine de bedoelde snelheid niet,
+     *  ongeacht wat Lighthouse over de laadtijd zegt — dat meet iets anders. */
+    function perfCheck(gap: number): void {
+      perfSum += gap
+      perfSamples++
+      if (perfSamples < PERF_SAMPLE_TARGET) return
+      perfDone = true
+      if (perfSum / perfSamples > PERF_BUDGET_MS) degradeQuality()
+    }
+
     function loop(now: number): void {
       /* Tijdens de opbouw op volle snelheid, daarna rond de 30 beelden per
          seconde: het is een deinende achtergrond, geen animatie waar iemand
@@ -1438,10 +1545,19 @@ export function useFleetScene({
          achter de scrollpositie aan en voelt het schokkerig. Showcase heeft
          geen scroll, maar wél een doorlopende rotatie en stijg-golf die op
          30fps zichtbaar zou hakkelen, dus tekent die om dezelfde reden elk
-         frame. */
+         frame — al hoeft dat "elk frame" niet meer dan zo'n 60 keer per
+         seconde te zijn: op een 120/144Hz-scherm scheelt die kaap fors in
+         rekenwerk zonder dat iemand het verschil ziet. */
       const forming = now - t0 < formMs
-      const frameGap = journeyLike || variant === 'showcase' ? 0 : 30
+      const frameGap = journeyLike || variant === 'showcase' ? 15 : 30
       if (forming || now - lastFrame >= frameGap) {
+        // Vóór lastFrame wordt overschreven: het interval tussen dít en het
+        // vorige getekende frame is de prestatiemeting. Alleen na de instap
+        // en zijn warmup geteld — forming zelf tekent bewust vaker dan de
+        // gewone cadans, dat zou de meting scheeftrekken.
+        if (!perfDone && !forming && lastFrame > 0 && now - t0 > formMs + PERF_WARMUP_MS) {
+          perfCheck(now - lastFrame)
+        }
         lastFrame = now
         if (now - lastPalette >= 220) {
           lastPalette = now
