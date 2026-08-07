@@ -44,3 +44,15 @@ export function isIOSWebKit(): boolean {
   if (/iPhone|iPod/.test(ua)) return true
   return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1
 }
+
+/** Zelfde soort structurele-zwakte-vlag als isIOSWebKit() hierboven, alleen nu
+ *  voor Gecko: Firefox rasterized feTurbulence/feDisplacementMap-ketens (het
+ *  SVG-vervormingsfilter in aurora-stage.tsx) op de meeste apparaten via de
+ *  CPU, ook mét WebRender aan — gedocumenteerd in meerdere Mozilla-bugs
+ *  (bijv. bugzilla 422371, 1708971, 1744848). Dat geldt net zo goed op een
+ *  snelle machine, dus verdient dezelfde meteen-toegepaste vlag in plaats van
+ *  te wachten op de framegat-meting in aurora-provider.tsx. */
+export function isFirefox(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Firefox\//.test(navigator.userAgent)
+}
