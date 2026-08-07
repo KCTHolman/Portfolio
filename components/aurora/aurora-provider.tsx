@@ -44,21 +44,23 @@ import {
   type AuroraFrame,
   type AuroraPreset,
 } from '@/lib/aurora'
-import { isFirefox, isIOSWebKit, readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
+import { MAX_TIER, createFrameWatchdog, getTier, subscribeTier, svgFilterCeiling } from '@/lib/perf-quality'
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
 
 type AuroraContextValue = {
   presets: readonly AuroraPreset[]
   activePreset: number
   selectPreset: (index: number) => void
-  /** True op drie gronden: (1) deze of een eerdere pagina op dit apparaat
-   *  stelde vast dat het de zes geblurde, met een SVG-filter vervormde lagen
-   *  niet soepel bijhoudt — zie de framegat-meting in de loop hieronder — of
-   *  (2) dit is WebKit op iOS, of (3) dit is Firefox — in beide gevallen
-   *  wordt zo'n filter structureel duur/software-gerasterized, dus meteen bij
-   *  mount, niet pas na een meting (zie isIOSWebKit()/isFirefox() in
-   *  lib/perf-quality.ts). AuroraStage laat dan het SVG-vervormingsfilter
-   *  weg, de duurste losse laag. */
+  /** Afgeleid van het gedeelde kwaliteitsniveau in lib/perf-quality.ts,
+   *  geknipt op svgFilterCeiling() (iOS WebKit en Firefox rasterizen het
+   *  SVG-vervormingsfilter allebei structureel over de CPU — zie die functie
+   *  voor de onderbouwing). True zodra het effectieve niveau onder MAX_TIER
+   *  zit, of dat nu komt doordat de live meting hieronder nooit tot vol kon
+   *  klimmen, of doordat de vloot-canvas ernaast (lib/use-fleet-scene.ts)
+   *  eerder al terugschakelde — beide lezen en schrijven hetzelfde gedeelde
+   *  niveau. AuroraStage laat dan het SVG-vervormingsfilter weg, de duurste
+   *  losse laag, en kan 'm net zo goed weer terugkrijgen zodra het niveau
+   *  weer stijgt. */
   reducedQuality: boolean
   /** True zolang het tabblad verborgen is — zie de uitleg bovenaan dit
    *  bestand. AuroraStage zet hiermee de losse CSS @keyframes stil die de
@@ -190,22 +192,18 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     [paint, staticFrame],
   )
 
-  /* Drie onafhankelijke redenen om meteen, zonder te wachten op een meting,
-     in de lichte stand te starten:
-       - readReducedQuality(): alleen lézen — de vlag zelf wordt hieronder in
-         de loop of door de vloot-canvas (lib/use-fleet-scene.ts) geschreven.
-       - isIOSWebKit() / isFirefox(): geen meting nodig, want dit is geen "is
-         dit apparaat traag"-vraag maar "heeft deze renderengine hier een
-         structurele zwakte" — die geldt net zo goed op een snelle machine.
-         Reactief wachten (de framegat-meting hieronder duurt na de instap nog
-         een seconde of wat) zou de hapering nog een keer laten zien vóór hij
-         verdwijnt; dit voorkomt 'm meteen. Zie isFirefox() in
-         lib/perf-quality.ts voor de Mozilla-bugs die de Gecko-kant hiervan
-         onderbouwen.
-     Los van de sessie-effect hieronder omdat dit met een heel ander
-     apparaatkenmerk te maken heeft, niet met welke preset actief is. */
+  /* reducedQuality volgt het gedeelde niveau (zie lib/perf-quality.ts), niet
+     alleen bij mount maar de hele sessie lang: svgFilterCeiling() zorgt dat
+     een structureel trage renderengine (iOS WebKit, Firefox) nooit tot vol
+     klimt ook al meet de watchdog hieronder een moment lang schone frames,
+     en de subscribeTier()-listener zorgt dat een terugval of stap omhoog die
+     de vloot-canvas ernaast veroorzaakt hier net zo goed doorwerkt. Los van
+     het sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk
+     te maken heeft, niet met welke preset actief is. */
   useEffect(() => {
-    if (readReducedQuality() || isIOSWebKit() || isFirefox()) setReducedQuality(true)
+    const sync = () => setReducedQuality(Math.min(getTier(), svgFilterCeiling()) < MAX_TIER)
+    sync()
+    return subscribeTier(sync)
   }, [])
 
   /* ---------- sessie oppakken -------------------------------------------- */
@@ -271,34 +269,18 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
        lagen achter een SVG-vervormingsfilter (zie aurora-stage.tsx). Dat werk
        vertraagt de eerstvolgende requestAnimationFrame-aanroep net zo goed
        als een zware JS-taak dat zou doen, dus het echte gat tussen twee ticks
-       is de juiste maat — niet hoe lang paint() zelf duurt. Zelfde gedeelde
-       vlag als de vloot (lib/perf-quality.ts): wie het eerst een trage
-       machine vaststelt, schrijft 'm weg, en beide lezen 'm terug. */
-    const PERF_SAMPLE_TARGET = 40
-    const PERF_BUDGET_MS = 40
+       is de juiste maat — niet hoe lang paint() zelf duurt. Watchdog schrijft
+       naar hetzelfde gedeelde niveau als de vloot-canvas (lib/perf-quality.ts)
+       — de sync()-listener hierboven vertaalt elke wijziging, van welke kant
+       ook, terug naar reducedQuality. */
     const PERF_WARMUP_MS = 1000
-    const PERF_SAMPLE_CAP_MS = 200
-    let perfSamples = 0
-    let perfSum = 0
-    let perfDone = readReducedQuality()
-    let lastTick = 0
+    const watchdog = createFrameWatchdog(40)
 
     const tick = (now: number) => {
       if (cancelled) return
 
-      if (!perfDone) {
-        if (lastTick > 0 && now - startedAtRef.current > PERF_WARMUP_MS) {
-          perfSum += Math.min(now - lastTick, PERF_SAMPLE_CAP_MS)
-          perfSamples++
-          if (perfSamples >= PERF_SAMPLE_TARGET) {
-            perfDone = true
-            if (perfSum / perfSamples > PERF_BUDGET_MS) {
-              writeReducedQuality()
-              setReducedQuality(true)
-            }
-          }
-        }
-        lastTick = now
+      if (now - startedAtRef.current > PERF_WARMUP_MS) {
+        watchdog.sample(now)
       }
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
@@ -322,13 +304,11 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
     const start = () => {
       if (frameRef.current !== null || document.visibilityState === 'hidden') return
-      /* Terug van een verborgen tabblad: zonder deze reset zou de eerste tick
-         na het hervatten het hele verborgen interval (soms minuten) als één
-         framegat doorgeven aan de meting hierboven, en dat kan een verder
-         prima machine onterecht als traag bestempelen. lastTick > 0 is
-         precies de voorwaarde die de meting al gebruikt om de eerste tick na
-         een (her)start uit te sluiten. */
-      lastTick = 0
+      /* Terug van een verborgen tabblad: zonder deze reset zou de eerste
+         sample ná het hervatten het hele verborgen interval (soms minuten)
+         als één framegat doorgeven aan de watchdog, en dat kan een verder
+         prima machine onterecht als traag bestempelen. */
+      watchdog.reset()
       frameRef.current = requestAnimationFrame(tick)
     }
 
@@ -352,6 +332,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVisibilityChange)
+      watchdog.dispose()
       stop()
     }
   }, [paint, reduceMotion, staticFrame])
