@@ -1908,9 +1908,50 @@ export function useFleetScene({
         ? t0 + LAUNCH_FIRST_MIN_MS + Math.random() * (LAUNCH_FIRST_MAX_MS - LAUNCH_FIRST_MIN_MS)
         : null
     sync()
-    onSailing()
+
+    /* Aurora is de primaire achtergrond en toont zich meteen (zie
+       aurora-provider.tsx) — de vloot is bewust secundair en houdt zich in
+       tot er een eerste echt oordeel over dit apparaat is: ofwel het
+       gedeelde niveau verandert (omlaag zodra de eerste haperingen blijken,
+       omhoog zodra een venster overtuigend goede frames bewezen is — zie
+       lib/perf-quality.ts), ofwel REVEAL_MAX_WAIT_MS verstrijkt zonder dat
+       ooit een duidelijk oordeel viel (de "geen hapering, maar ook niet
+       overtuigend snel"-tussenzone). Tot die tijd bouwt en tekent deze scène
+       gewoon door — de test gebeurt op de vloot zelf, niet op een
+       nepbelasting — alleen blijft de wrapper in fleet.tsx onzichtbaar
+       (opacity 0) zolang `sailing` false is, dus niemand ziet 'm daarbij
+       live van kwaliteitsniveau wisselen.
+       t0 resetten op het onthullingsmoment is bewust: forming was allang
+       voorbij tegen de tijd dat dit vuurt (formMs is hooguit 2,6s, dit
+       duurt vaak langer), dus zonder reset zou de vloot in één klap
+       kant-en-klaar verschijnen. Met de reset speelt de instap-vlucht
+       (p.sx/p.sy, dezelfde als bij de allereerste tekenbeurt) alsnog af,
+       nu precies op het moment dat de vloot zichtbaar wordt — de onthulling
+       zelf is de instap, in plaats van een vlakke fade over een al
+       stilstaand beeld. */
+    const REVEAL_MAX_WAIT_MS = 3500
+    let revealed = false
+    const revealOnce = () => {
+      if (revealed) return
+      revealed = true
+      t0 = performance.now()
+      // Anders was de eerste lancering (gepland t.o.v. het originele t0,
+      // dus 2-3s na een bouwmoment dat niemand zag) allang begonnen of
+      // zelfs al voorbij tegen de tijd dat de vloot zichtbaar wordt —
+      // dezelfde herberekening als de allereerste keer hierboven, nu vanaf
+      // het onthullingsmoment.
+      nextLaunchAt =
+        variant === 'hero' && !frozen
+          ? t0 + LAUNCH_FIRST_MIN_MS + Math.random() * (LAUNCH_FIRST_MAX_MS - LAUNCH_FIRST_MIN_MS)
+          : null
+      onSailing()
+    }
+    const unsubscribeReveal = subscribeTier(revealOnce)
+    const revealFallback = window.setTimeout(revealOnce, REVEAL_MAX_WAIT_MS)
 
     return () => {
+      unsubscribeReveal()
+      window.clearTimeout(revealFallback)
       sceneRef.current = null
       observer.disconnect()
       window.clearTimeout(resizeTimer)
