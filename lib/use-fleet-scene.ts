@@ -265,20 +265,17 @@ export function useFleetScene({
     }
     /* Showcase heeft, in tegenstelling tot de andere varianten, geen ene
        vorm/vloot maar de "zon" plus acht satellieten tegelijk — bij dezelfde
-       ondergrens als de rest bleef die scène op het laagste niveau nog
+       ondergrens als de rest bleef die scène op het verlaagde niveau nog
        steeds merkbaar zwaarder dan hero/journey/ambient. Een lagere vloer
        hier snijdt recht in dat verschil, zonder de andere varianten aan te
        raken.
 
-       MAX_TIER + 1 stappen, gelijkmatig verdeeld tussen vloer en vol: veel
-       kleine stappen in plaats van een paar grote, zodat elke afzonderlijke
-       stap omhoog nauwelijks opvalt — zie de uitleg in lib/perf-quality.ts
-       over waarom dat zwaarder weegt dan snel op volle dichtheid komen. */
+       Twee standen (zie MAX_TIER in lib/perf-quality.ts): vloer en vol —
+       geen tussenliggende trappen meer nodig nu de meeste bezoekers toch al
+       op vol beginnen en dit alleen nog het verschil maakt voor wie
+       daadwerkelijk is teruggevallen. */
     const QUALITY_FLOOR = variant === 'showcase' ? 0.35 : 0.5
-    const QUALITY_STEPS: readonly number[] = Array.from(
-      { length: MAX_TIER + 1 },
-      (_, i) => QUALITY_FLOOR + ((1 - QUALITY_FLOOR) * i) / MAX_TIER,
-    )
+    const QUALITY_STEPS: readonly [number, number] = [QUALITY_FLOOR, 1]
     /* Vlakke halvering van de volle dichtheid, los van het tier-regime
        hierboven: dat regime reageert op gemeten haperingen, dit is een
        permanent lagere basislast op de GPU. Moet overal waar quality een
@@ -293,10 +290,8 @@ export function useFleetScene({
 
     let tier = effectiveTier()
     let qualityScale = QUALITY_STEPS[tier]
-    // Alleen op het hoogste niveau vol devicePixelRatio: dat verviervoudigt
-    // (bij dpr 2) het aantal te vullen pixels, dus verdient zelf ook een
-    // bewezen niveau — niet iets dat al bij de eerste stap boven de vloer
-    // meekomt.
+    // Alleen op vol devicePixelRatio 2: dat verviervoudigt het aantal te
+    // vullen pixels, dus verdient een bewezen niveau, niet de vloer.
     let dprCap = tier === MAX_TIER ? 2 : 1
     /* Alleen gezet vlak na een stap omhoog (zie applyTierUp()): performance.now()
        waarop de net herbouwde vloot vanaf straal 0 mag opgroeien naar volle
@@ -1908,50 +1903,17 @@ export function useFleetScene({
         ? t0 + LAUNCH_FIRST_MIN_MS + Math.random() * (LAUNCH_FIRST_MAX_MS - LAUNCH_FIRST_MIN_MS)
         : null
     sync()
-
-    /* Aurora is de primaire achtergrond en toont zich meteen (zie
-       aurora-provider.tsx) — de vloot is bewust secundair en houdt zich in
-       tot er een eerste echt oordeel over dit apparaat is: ofwel het
-       gedeelde niveau verandert (omlaag zodra de eerste haperingen blijken,
-       omhoog zodra een venster overtuigend goede frames bewezen is — zie
-       lib/perf-quality.ts), ofwel REVEAL_MAX_WAIT_MS verstrijkt zonder dat
-       ooit een duidelijk oordeel viel (de "geen hapering, maar ook niet
-       overtuigend snel"-tussenzone). Tot die tijd bouwt en tekent deze scène
-       gewoon door — de test gebeurt op de vloot zelf, niet op een
-       nepbelasting — alleen blijft de wrapper in fleet.tsx onzichtbaar
-       (opacity 0) zolang `sailing` false is, dus niemand ziet 'm daarbij
-       live van kwaliteitsniveau wisselen.
-       t0 resetten op het onthullingsmoment is bewust: forming was allang
-       voorbij tegen de tijd dat dit vuurt (formMs is hooguit 2,6s, dit
-       duurt vaak langer), dus zonder reset zou de vloot in één klap
-       kant-en-klaar verschijnen. Met de reset speelt de instap-vlucht
-       (p.sx/p.sy, dezelfde als bij de allereerste tekenbeurt) alsnog af,
-       nu precies op het moment dat de vloot zichtbaar wordt — de onthulling
-       zelf is de instap, in plaats van een vlakke fade over een al
-       stilstaand beeld. */
-    const REVEAL_MAX_WAIT_MS = 3500
-    let revealed = false
-    const revealOnce = () => {
-      if (revealed) return
-      revealed = true
-      t0 = performance.now()
-      // Anders was de eerste lancering (gepland t.o.v. het originele t0,
-      // dus 2-3s na een bouwmoment dat niemand zag) allang begonnen of
-      // zelfs al voorbij tegen de tijd dat de vloot zichtbaar wordt —
-      // dezelfde herberekening als de allereerste keer hierboven, nu vanaf
-      // het onthullingsmoment.
-      nextLaunchAt =
-        variant === 'hero' && !frozen
-          ? t0 + LAUNCH_FIRST_MIN_MS + Math.random() * (LAUNCH_FIRST_MAX_MS - LAUNCH_FIRST_MIN_MS)
-          : null
-      onSailing()
-    }
-    const unsubscribeReveal = subscribeTier(revealOnce)
-    const revealFallback = window.setTimeout(revealOnce, REVEAL_MAX_WAIT_MS)
+    // Meteen tonen, samen met aurora — geen verborgen testfase: de
+    // watchdog-meting draait toch al vanaf frame één en reageert al binnen
+    // een handvol frames als het optimistische startniveau (zie
+    // lib/perf-quality.ts) te hoog bleek. Verstoppen tot een niveau
+    // "vaststaat" loste dat niet op (voor een bezoeker die al op het
+    // bevestigde topniveau zit, verandert er nooit meer iets, dus zou de
+    // vloot nooit onthuld worden) en kostte iedereen een paar seconden
+    // lege ruimte, elke keer opnieuw.
+    onSailing()
 
     return () => {
-      unsubscribeReveal()
-      window.clearTimeout(revealFallback)
       sceneRef.current = null
       observer.disconnect()
       window.clearTimeout(resizeTimer)
