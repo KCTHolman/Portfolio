@@ -6,6 +6,7 @@ export const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/werk/', label: 'AI-projecten' },
   { href: '/koen-holman/', label: 'Over & contact' },
+  { href: '/playground/', label: 'Playground' },
 ] as const
 
 const NAV_ORDER = NAV_ITEMS.map((item) => normalize(item.href))

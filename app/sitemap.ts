@@ -12,6 +12,7 @@ const ROUTES: { path: string; priority: number }[] = [
   { path: '/werk/', priority: 0.8 },
   { path: '/werk/readme/', priority: 0.7 },
   { path: '/koen-holman/', priority: 0.6 },
+  { path: '/playground/', priority: 0.3 },
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {

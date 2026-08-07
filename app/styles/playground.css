@@ -1,0 +1,63 @@
+/* /playground/ — bediening voor de losgekoppelde vloot. */
+
+.kh-pg-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.kh-pg-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--kh-line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--kh-ash);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity .2s, border-color .2s, color .2s;
+}
+
+.kh-pg-btn:hover { color: var(--kh-ink-bright); }
+
+.kh-pg-btn[aria-pressed='true'] {
+  border-color: var(--kh-teal-soft);
+  color: var(--kh-teal-soft);
+  background: rgba(125, 224, 210, 0.1);
+}
+
+.kh-pg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--kh-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.kh-pg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--kh-ash);
+}
+
+.kh-pg-field code {
+  color: var(--kh-ink-bright);
+  font-size: 12px;
+}
+
+.kh-pg-field input[type='range'] { width: 100%; }
+
+.kh-pg-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--kh-ash);
+  cursor: pointer;
+}
