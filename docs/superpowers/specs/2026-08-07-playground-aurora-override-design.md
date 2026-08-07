@@ -61,6 +61,10 @@ vloot ernaast staat.
 
 ### Eén nieuw begrip: `AuroraOverride`, en `computeFrame` wordt preset-object-based
 
+`Hsl`/`Hsla` zelf zijn vandaag niet geëxporteerd (`lib/aurora.ts:16-17`) — nodig voor
+`AuroraOverride`'s eigen types, en de tuple↔object-mapping in `playground-view.tsx` zal ze
+ook willen noemen, dus die twee `type`-declaraties krijgen een `export` erbij.
+
 ```ts
 // lib/aurora.ts
 export type AuroraOverride = {
@@ -129,16 +133,23 @@ type AuroraContextValue = {
   `&& !overrideRef.current` bij.
 - **Geen persistentie**: `writeSession()` schrijft alleen `{preset, t0, nextSwitchAt}` —
   `override` komt daar bewust niet bij, dus een reload of nieuw tabblad ziet 'm nooit.
+- `setOverride` schrijft, net als `switchPreset` vandaag al doet voor `activePreset`, in
+  één moeite door de state (`setOverrideState`, voor React-render-consumers) én de ref
+  (`overrideRef.current`, voor de imperatieve loop) — geen van beide zonder de ander.
 
 ### `AuroraStage`: lezen uit `effectivePreset` in plaats van `presets[activePreset]`
 
 ```ts
 const { effectivePreset, reducedQuality, tabHidden } = useAurora()
 const geo = effectivePreset.geo
+const stageClassName =
+  (effectivePreset.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage') + ...
 ```
 
-Dit is de enige wijziging in dit bestand: geometrie volgt nu automatisch een actieve
-override, zonder dat dit component zelf iets van merges hoeft te weten.
+Twee plekken in dit bestand lezen vandaag `preset?.geo`/`preset?.motion` — beide gaan naar
+`effectivePreset`. `applyOverride` spreadt `motion` ongewijzigd door (geen override-veld
+ervoor), dus dit is voor `motion` geen gedragswijziging, alleen dezelfde bron als `geo` nu
+al gebruikt.
 
 ### Randgeval: preset 0 ("Levend") negeert kleur/drift-overrides
 
@@ -147,8 +158,9 @@ override, zonder dat dit component zelf iets van merges hoeft te weten.
 geen effect (in `applyOverride` blijft `preset.cols` `undefined` op Levend, dus de
 `override.cols`-tak wordt nooit genomen). `drift` wordt in diezelfde `auto`-tak ook nooit
 gelezen. **Geometrie werkt overal**, kleur en drift alleen op de 11 niet-levende presets.
-Het paneel toont hierover één regel uitleg zodra Levend actief is, in plaats van de
-kleurvlakjes stilletjes te laten disablen.
+Zowel de kleurvlakjes als de twee drift-sliders blijven op Levend gewoon interactief —
+ze doen dan alleen niets zichtbaars. Het paneel toont in plaats daarvan één regel uitleg
+zodra Levend actief is; er wordt bewust niets disabled.
 
 ## Panel-UI (`components/playground/playground-view.tsx`)
 
