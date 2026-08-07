@@ -281,6 +281,12 @@ export function useFleetScene({
        stevigere terugval hier snijdt recht in dat verschil, zonder de andere
        varianten aan te raken. */
     const QUALITY_DEGRADE_FACTOR = variant === 'showcase' ? 0.35 : 0.55
+    /* Vlakke halvering van de deeltjesdichtheid, los van qualityScale's
+       perf-terugval hierboven: die springt pas bij structureel trage frames
+       in, terwijl dit een permanent lagere basislast op de GPU is. Moet
+       overal waar quality een aantal punten bepaalt worden meegenomen —
+       zie de journeyQuality/showcaseBoatDetail-parity-uitleg verderop. */
+    const BASE_DENSITY = 0.5
     const FADE_MS = 1600
     let qualityScale = readReducedQuality() || isIOSWebKit() ? QUALITY_DEGRADE_FACTOR : 1
     let dprCap = qualityScale < 1 ? 1 : 2
@@ -523,8 +529,8 @@ export function useFleetScene({
      *  gedeelde functie in plaats van de berekening op twee plekken te
      *  herhalen. */
     function showcaseBoatDetail(spec: BoatSpec, index: number): number {
-      if (index === 0) return (frozen ? 0.5 : 1) * qualityScale
-      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7 * qualityScale)
+      if (index === 0) return (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY
+      return boatDetail(spec, (frozen ? 0.5 : 1) * 0.7 * qualityScale * BASE_DENSITY)
     }
 
     /** Nul snelheid aan beide kanten van een stuk, in plaats van de constante
@@ -552,7 +558,7 @@ export function useFleetScene({
     function build(): void {
       // qualityScale: 1 tenzij perfCheck() hieronder al vaststelde (dit
       // bezoek of een vorig) dat deze machine minder aankan.
-      let quality = (frozen ? 0.5 : 1) * qualityScale
+      let quality = (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY
       // Ambient tekent een handvol verre boten tegelijk — dezelfde
       // conservatieve korting als showcase's satellieten, uit hetzelfde
       // prestatie-oogpunt (showcase's eigen dichtheid loopt via
@@ -881,7 +887,7 @@ export function useFleetScene({
          de identiteiten- versus de stadium-array, en schuift de indexering
          binnen een boot volledig scheef zodra qualityScale ooit onder 1 zakt
          — precies het uiteengevallen kompas/tandwiel/raket dat dat gaf. */
-      const journeyQuality = (frozen ? 0.5 : 1) * qualityScale
+      const journeyQuality = (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY
       const journeyStages = journeyLike
         ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
         : null
