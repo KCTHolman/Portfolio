@@ -49,13 +49,7 @@ import {
   type BoatSpec,
   type Particle,
 } from '@/lib/fleet-geometry'
-import {
-  canvasCeiling,
-  createFrameWatchdog,
-  getTier,
-  subscribeTier,
-  type QualityTier,
-} from '@/lib/perf-quality'
+import { createFrameWatchdog, getTier, subscribeTier, type QualityTier } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
@@ -264,13 +258,10 @@ export function useFleetScene({
     /* Kwaliteitsniveau — 0/1/2, gedeeld met de aurora-achtergrond via
        lib/perf-quality.ts. Zie dat bestand voor het hele regime (meteen
        omlaag bij hapering, pas omhoog na een lang bewezen stabiel venster).
-       Hier alleen de vertaling van een niveau naar wat dat voor déze scène
-       betekent: canvasCeiling() knipt het gedeelde niveau op een eigen
-       bovengrens (iOS WebKit's bekende canvas-zwakte), dus fleet kan op een
-       ander effectief niveau staan dan de aurora-achtergrond ernaast. */
-    const CANVAS_CEILING = canvasCeiling()
+       Geen browser-specifieke bovengrens hier: elk apparaat, elke
+       renderengine doorloopt dezelfde meting. */
     function effectiveTier(): QualityTier {
-      return Math.min(getTier(), CANVAS_CEILING) as QualityTier
+      return getTier()
     }
     /* Showcase heeft, in tegenstelling tot de andere varianten, geen ene
        vorm/vloot maar de "zon" plus acht satellieten tegelijk — bij dezelfde
@@ -1873,10 +1864,7 @@ export function useFleetScene({
 
     /* Reageert op een niveauwijziging waar die ook vandaan komt — deze scène
        zelf (via de watchdog hierboven) of de aurora-achtergrond ernaast, die
-       hetzelfde gedeelde niveau leest en schrijft (zie lib/perf-quality.ts).
-       effectiveTier() knipt op CANVAS_CEILING, dus een wijziging die voor
-       déze scène niets verandert (bijv. de aurora zakt terug maar fleet zat
-       toch al op zijn eigen bovengrens) doet hier gewoon niets. */
+       hetzelfde gedeelde niveau leest en schrijft (zie lib/perf-quality.ts). */
     const unsubscribeTier = subscribeTier(() => {
       const nextEffective = effectiveTier()
       if (nextEffective === tier) return

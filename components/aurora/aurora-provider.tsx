@@ -44,23 +44,21 @@ import {
   type AuroraFrame,
   type AuroraPreset,
 } from '@/lib/aurora'
-import { MAX_TIER, createFrameWatchdog, getTier, subscribeTier, svgFilterCeiling } from '@/lib/perf-quality'
+import { MAX_TIER, createFrameWatchdog, getTier, subscribeTier } from '@/lib/perf-quality'
 import { usePrefersReducedMotion } from '@/lib/use-media-query'
 
 type AuroraContextValue = {
   presets: readonly AuroraPreset[]
   activePreset: number
   selectPreset: (index: number) => void
-  /** Afgeleid van het gedeelde kwaliteitsniveau in lib/perf-quality.ts,
-   *  geknipt op svgFilterCeiling() (iOS WebKit en Firefox rasterizen het
-   *  SVG-vervormingsfilter allebei structureel over de CPU — zie die functie
-   *  voor de onderbouwing). True zodra het effectieve niveau onder MAX_TIER
-   *  zit, of dat nu komt doordat de live meting hieronder nooit tot vol kon
-   *  klimmen, of doordat de vloot-canvas ernaast (lib/use-fleet-scene.ts)
-   *  eerder al terugschakelde — beide lezen en schrijven hetzelfde gedeelde
-   *  niveau. AuroraStage laat dan het SVG-vervormingsfilter weg, de duurste
-   *  losse laag, en kan 'm net zo goed weer terugkrijgen zodra het niveau
-   *  weer stijgt. */
+  /** Afgeleid van het gedeelde kwaliteitsniveau in lib/perf-quality.ts — geen
+   *  browser-specifieke uitzondering, dezelfde meting voor iedereen. True
+   *  zodra het niveau onder MAX_TIER zit, of dat nu komt doordat de live
+   *  meting hieronder nooit tot vol kon klimmen, of doordat de vloot-canvas
+   *  ernaast (lib/use-fleet-scene.ts) eerder al terugschakelde — beide lezen
+   *  en schrijven hetzelfde gedeelde niveau. AuroraStage laat dan het
+   *  SVG-vervormingsfilter weg, de duurste losse laag, en kan 'm net zo goed
+   *  weer terugkrijgen zodra het niveau weer stijgt. */
   reducedQuality: boolean
   /** True zolang het tabblad verborgen is — zie de uitleg bovenaan dit
    *  bestand. AuroraStage zet hiermee de losse CSS @keyframes stil die de
@@ -193,15 +191,14 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   )
 
   /* reducedQuality volgt het gedeelde niveau (zie lib/perf-quality.ts), niet
-     alleen bij mount maar de hele sessie lang: svgFilterCeiling() zorgt dat
-     een structureel trage renderengine (iOS WebKit, Firefox) nooit tot vol
-     klimt ook al meet de watchdog hieronder een moment lang schone frames,
-     en de subscribeTier()-listener zorgt dat een terugval of stap omhoog die
-     de vloot-canvas ernaast veroorzaakt hier net zo goed doorwerkt. Los van
-     het sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk
-     te maken heeft, niet met welke preset actief is. */
+     alleen bij mount maar de hele sessie lang — geen browser-specifieke
+     uitzondering: elke renderengine bewijst zichzelf via dezelfde meting. De
+     subscribeTier()-listener zorgt dat een terugval of stap omhoog die de
+     vloot-canvas ernaast veroorzaakt hier net zo goed doorwerkt. Los van het
+     sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk te
+     maken heeft, niet met welke preset actief is. */
   useEffect(() => {
-    const sync = () => setReducedQuality(Math.min(getTier(), svgFilterCeiling()) < MAX_TIER)
+    const sync = () => setReducedQuality(getTier() < MAX_TIER)
     sync()
     return subscribeTier(sync)
   }, [])

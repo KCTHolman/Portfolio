@@ -25,12 +25,14 @@
    frame één gewoon door, dus een onterechte aanname corrigeert zichzelf
    net zo snel als bij een eerste bezoek.
 
-   isIOSWebKit()/isFirefox() sturen dit startniveau niet meer (iedereen begint
-   op 0) maar blijven wel een harde bovengrens voor wat de live meting mag
-   toestaan: dit zijn geen "dit apparaat is toevallig traag"-signalen maar
-   "deze renderengine heeft hier een structurele zwakte" — die geldt ook op
-   een moment dat de meting toevallig goed uitpakt, en zou anders leiden tot
-   een omhoog-stap die meteen weer teruggedraaid moet worden.
+   Geen hardgecodeerde uitzondering per renderengine: elke browser doorloopt
+   precies dezelfde meting, en het gemeten niveau is het enige dat telt — ook
+   op Firefox of iOS WebKit. Blijkt een niveau daar toch niet vol te houden,
+   dan pakt de omlaag-kant van dit regime dat op dezelfde manier op als bij
+   elk ander apparaat: meteen, na de eerste aaneengesloten reeks trage
+   frames. Een korte overschatting die zichzelf binnen een paar frames
+   corrigeert weegt hier zwaarder dan een permanente, niet meer te herziene
+   aanname vooraf.
    ========================================================================== */
 
 export type QualityTier = 0 | 1 | 2
@@ -42,46 +44,6 @@ function clampTier(n: number): QualityTier {
   if (n <= 0) return 0
   if (n >= MAX_TIER) return MAX_TIER
   return 1
-}
-
-/** iPhone/iPad, ongeacht welke browser — Chrome/Firefox op iOS zijn zelf ook
- *  WebKit onder de motorkap (Apple staat geen andere engine toe). Structurele
- *  zwakte op twee fronten: canvas-rasterisatie en het SVG-vervormingsfilter
- *  achter de aurora-achtergrond draaien hier beide grotendeels via de CPU.
- *  iPad meldt zich sinds iPadOS 13 als "Macintosh" in de user-agent (voor
- *  desktop-class sites) — maxTouchPoints is het algemeen gebruikte
- *  onderscheid met een echte Mac, die dat nooit rapporteert. */
-export function isIOSWebKit(): boolean {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent
-  if (/iPhone|iPod/.test(ua)) return true
-  return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1
-}
-
-/** Zelfde soort structurele-zwakte-vlag als isIOSWebKit() hierboven, alleen
- *  voor Gecko: Firefox rasterized feTurbulence/feDisplacementMap-ketens (het
- *  SVG-vervormingsfilter in aurora-stage.tsx) op de meeste apparaten via de
- *  CPU, ook mét WebRender aan — gedocumenteerd in meerdere Mozilla-bugs
- *  (bijv. bugzilla 422371, 1708971, 1744848). Geen bekende structurele
- *  canvas-zwakte zoals bij iOS WebKit, dus deze vlag beperkt zich tot het
- *  SVG-filter — zie svgFilterCeiling() hieronder. */
-export function isFirefox(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return /Firefox\//.test(navigator.userAgent)
-}
-
-/** Bovengrens voor alles dat via canvas rasterized (de vloot). Alleen iOS
- *  WebKit is hier hard gecapt — voor Firefox is er geen vergelijkbaar
- *  bewijs van een structurele canvas-zwakte, dus die mag daar gewoon naar
- *  MAX_TIER doorgroeien als de meting het toestaat. */
-export function canvasCeiling(): QualityTier {
-  return isIOSWebKit() ? 1 : MAX_TIER
-}
-
-/** Bovengrens voor het SVG-vervormingsfilter (de aurora-achtergrond). Beide
- *  bekende structurele zwaktes gelden hier. */
-export function svgFilterCeiling(): QualityTier {
-  return isIOSWebKit() || isFirefox() ? 1 : MAX_TIER
 }
 
 function readStoredTier(): QualityTier | null {
@@ -120,8 +82,8 @@ function ensureTier(): QualityTier {
   return tier
 }
 
-/** Huidig gedeeld niveau — ruwe meting, nog niet geknipt op een consument-
- *  eigen bovengrens (zie canvasCeiling()/svgFilterCeiling() hierboven). */
+/** Huidig gedeeld niveau — hetzelfde voor elke consument, geen enkele
+ *  browser-specifieke uitzondering of bovengrens. */
 export function getTier(): QualityTier {
   return ensureTier()
 }
