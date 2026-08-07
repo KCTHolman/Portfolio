@@ -51,14 +51,15 @@ type AuroraContextValue = {
   presets: readonly AuroraPreset[]
   activePreset: number
   selectPreset: (index: number) => void
-  /** Afgeleid van het gedeelde kwaliteitsniveau in lib/perf-quality.ts — geen
-   *  browser-specifieke uitzondering, dezelfde meting voor iedereen. True
-   *  zodra het niveau onder MAX_TIER zit, of dat nu komt doordat de live
-   *  meting hieronder nooit tot vol kon klimmen, of doordat de vloot-canvas
-   *  ernaast (lib/use-fleet-scene.ts) eerder al terugschakelde — beide lezen
-   *  en schrijven hetzelfde gedeelde niveau. AuroraStage laat dan het
-   *  SVG-vervormingsfilter weg, de duurste losse laag, en kan 'm net zo goed
-   *  weer terugkrijgen zodra het niveau weer stijgt. */
+  /** Afgeleid van het gedeelde kwaliteitsniveau in lib/perf-quality.ts, maar
+   *  niet rechtstreeks — zie de uitleg bij het effect dat dit zet: het
+   *  SVG-vervormingsfilter is een nooit eerder geteste, in één klap
+   *  aanslaande kostenpost, dus krijgt eerst een eigen, langere bewijstijd
+   *  zodra het gedeelde niveau MAX_TIER haalt, en na een mislukte poging een
+   *  oplopende afkoeltijd voor de volgende — geen browser-detectie, gewoon
+   *  een strenger criterium voor deze ene dure stap. Omlaag blijft wél
+   *  meteen: geen enkele reden om een zichtbare hapering nog even aan te
+   *  laten staan. */
   reducedQuality: boolean
   /** True zolang het tabblad verborgen is — zie de uitleg bovenaan dit
    *  bestand. AuroraStage zet hiermee de losse CSS @keyframes stil die de
@@ -190,17 +191,73 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     [paint, staticFrame],
   )
 
-  /* reducedQuality volgt het gedeelde niveau (zie lib/perf-quality.ts), niet
-     alleen bij mount maar de hele sessie lang — geen browser-specifieke
-     uitzondering: elke renderengine bewijst zichzelf via dezelfde meting. De
-     subscribeTier()-listener zorgt dat een terugval of stap omhoog die de
-     vloot-canvas ernaast veroorzaakt hier net zo goed doorwerkt. Los van het
-     sessie-effect hieronder omdat dit met een heel ander apparaatkenmerk te
-     maken heeft, niet met welke preset actief is. */
+  /* reducedQuality volgt het gedeelde niveau (lib/perf-quality.ts), maar niet
+     rechtstreeks: dat niveau zegt alleen dat de vloot-canvas ergens (mogelijk
+     via een heel andere pagina, of via de vloot-canvas ernaast, die niets van
+     het SVG-filter afweet) MAX_TIER haalde — niet dat dít specifieke, dure
+     filter het aankan. Voor de vloot is elke stap omhoog een geleidelijk
+     zwaardere versie van hetzelfde (meer korrels): een bewezen stabiel lager
+     niveau is een redelijke voorspelling voor het volgende. Voor dit filter
+     is de laatste stap geen gradueel zwaarder maar een heel andere, nooit
+     eerder geteste kostenpost die in één keer aanslaat — een renderengine
+     met een structurele zwakte hierin (zoals Firefox' SVG-rasterisatie, zie
+     de git-geschiedenis) klimt dus soms naar MAX_TIER op basis van metingen
+     die het filter zelf nooit raakten, om er vervolgens meteen weer af te
+     vallen zodra het wél aan gaat. Geen browser-detectie om dat te
+     voorkomen — gewoon een eigen, langere bewijstijd specifiek voor déze
+     stap, plus een oplopende afkoeltijd na een mislukte poging (verdubbelt
+     tot een plafond, reset bij een geslaagde poging) zodat een structureel
+     zwakke renderengine vanzelf steeds minder vaak opnieuw probeert in
+     plaats van te blijven flitsen. */
   useEffect(() => {
-    const sync = () => setReducedQuality(getTier() < MAX_TIER)
-    sync()
-    return subscribeTier(sync)
+    const EXTRA_PROOF_MS = 4000
+    const BASE_COOLDOWN_MS = 4000
+    const MAX_COOLDOWN_MS = 60000
+
+    let pendingSince: number | null = null
+    let cooldownMs = BASE_COOLDOWN_MS
+    let cooldownUntil = 0
+    let showingFull = false
+
+    const evaluate = (now: number) => {
+      const atMax = getTier() >= MAX_TIER
+
+      if (!atMax) {
+        if (showingFull) {
+          // Net teruggevallen terwijl het filter aanstond: dit was dus een
+          // mislukte poging — de volgende mag langer wachten.
+          cooldownMs = Math.min(cooldownMs * 2, MAX_COOLDOWN_MS)
+          cooldownUntil = now + cooldownMs
+        }
+        pendingSince = null
+        showingFull = false
+        setReducedQuality(true)
+        return
+      }
+
+      if (showingFull || now < cooldownUntil) return
+      if (pendingSince === null) {
+        pendingSince = now
+        return
+      }
+      if (now - pendingSince >= EXTRA_PROOF_MS) {
+        pendingSince = null
+        showingFull = true
+        cooldownMs = BASE_COOLDOWN_MS // geslaagde poging: vertrouwen herstelt
+        setReducedQuality(false)
+      }
+    }
+
+    const tick = () => evaluate(performance.now())
+    tick()
+    const unsubscribe = subscribeTier(tick)
+    // Los van tier-wijzigingen: het verstrijken van EXTRA_PROOF_MS zelf is
+    // geen gebeurtenis die subscribeTier ooit meldt.
+    const interval = window.setInterval(tick, 250)
+    return () => {
+      unsubscribe()
+      window.clearInterval(interval)
+    }
   }, [])
 
   /* ---------- sessie oppakken -------------------------------------------- */

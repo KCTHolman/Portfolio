@@ -279,10 +279,24 @@ export function useFleetScene({
        journeyQuality/showcaseBoatDetail-parity-uitleg verderop. */
     const BASE_DENSITY = 0.5
     const FADE_MS = 1600
+    /* Korter dan FADE_MS: omlaag verdwijnt een deel van een al bekende vloot
+       (rustig mag), omhoog verschijnt de hele, net herbouwde vloot ineens
+       (vlotter voelt hier beter dan een even trage opbouw als het wegkrimpen). */
+    const GROW_MS = 900
 
     let tier = effectiveTier()
     let qualityScale = QUALITY_STEPS[tier]
     let dprCap = tier === 0 ? 1 : 2
+    /* Alleen gezet vlak na een stap omhoog (zie applyTierUp()): performance.now()
+       waarop de net herbouwde vloot vanaf straal 0 mag opgroeien naar volle
+       grootte. Eén gedeeld tijdstip voor de hele vloot, geen los veld per
+       korrel zoals fadeStart dat wel heeft — build() geeft élk deeltje een
+       nieuwe identiteit uit dezelfde RNG-stroom, dus er is toch geen "dit
+       deeltje bestond al eerder" om apart te houden; de hele, net herbouwde
+       vloot groeit in lockstap in. Kost niets extra op de GPU: dezelfde ene
+       instanced draw call van elk frame krijgt alleen een andere straal
+       aangeleverd zolang dit venster loopt. */
+    let growStart: number | null = null
 
     /* Elk frame één sample; de watchdog telt zelf aaneengesloten reeksen bij
        en meldt aan het gedeelde niveau zodra dat een stap rechtvaardigt (zie
@@ -1009,6 +1023,21 @@ export function useFleetScene({
          zetten pointer.on, geen apart pad nodig. */
       const repel = pointer.on && !frozen && tier === MAX_TIER
 
+      /* growFactor: 1 zolang er geen stap omhoog loopt (het overgrote deel
+         van de tijd — dit raakt de radius dan gewoon niet), anders 0..1 over
+         GROW_MS vanaf growStart. Onder frozen geen groei-animatie — daar
+         geldt (net als bij forming) meteen het eindbeeld, er draait toch
+         geen lus die 'm verder zou opbouwen. */
+      let growFactor = 1
+      if (growStart !== null) {
+        const g = (now - growStart) / GROW_MS
+        if (g >= 1 || frozen) {
+          growStart = null
+        } else {
+          growFactor = smoothstep(g)
+        }
+      }
+
       /* Hoe hard de veren deze frame aantrekken, gerekend in tijd en niet in
          frames. Anders sluit hetzelfde gat op een trage machine merkbaar
          langzamer dan op een snelle. Het dak van 100 ms vangt de sprong op die
@@ -1564,6 +1593,7 @@ export function useFleetScene({
           if (p.fadeStart !== undefined) {
             r *= 1 - smoothstep((now - p.fadeStart) / FADE_MS)
           }
+          if (growFactor < 1) r *= growFactor
           if (r <= 0.02) continue
           // De rotatie zelf gaat als hoek mee naar de GPU (lib/fleet-gl.ts) —
           // die rekent de twee overige hoekpunten (+120°/+240°) zelf uit in
@@ -1678,11 +1708,11 @@ export function useFleetScene({
      *  inhoud van élke index verschuift zodra quality verandert, niet alleen
      *  het totaal). Dit hergebruikt daarom letterlijk hetzelfde pad als een
      *  resize (build + setFormation + layout) — t0 blijft ongemoeid, dus
-     *  forming staat allang op false en de nieuwe korrels verschijnen meteen
-     *  op hun eindpositie, zonder opnieuw naar binnen te vliegen. Een lichte
-     *  sprong in dichtheid, geen volledige scèneomwenteling — en zeldzaam
-     *  genoeg (pas na een lang bewezen stabiel venster) om dat te mogen
-     *  zijn. */
+     *  forming staat allang op false en de nieuwe korrels verschijnen op hun
+     *  eindpositie, zonder opnieuw naar binnen te vliegen. growStart laat
+     *  draw() ze daar wel vanaf straal 0 laten opgroeien in plaats van in
+     *  één klap op volle grootte te verschijnen — zie de toelichting bij
+     *  growStart hierboven. */
     function applyTierUp(newTier: QualityTier): void {
       qualityScale = QUALITY_STEPS[newTier]
       dprCap = newTier === 0 ? 1 : 2
@@ -1690,6 +1720,7 @@ export function useFleetScene({
       build()
       setFormation(presetIndexRef.current, true)
       layout()
+      growStart = performance.now()
     }
 
     function loop(now: number): void {
