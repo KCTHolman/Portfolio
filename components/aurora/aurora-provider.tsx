@@ -37,11 +37,13 @@ import {
   AUTO_CYCLE_SEC,
   BLEND_SEC,
   PRESETS,
+  applyOverride,
   blendFrames,
   bloomAt,
   computeFrame,
   hsla,
   type AuroraFrame,
+  type AuroraOverride,
   type AuroraPreset,
 } from '@/lib/aurora'
 import { MAX_TIER, createFrameWatchdog, getTier, subscribeTier } from '@/lib/perf-quality'
@@ -61,6 +63,17 @@ type AuroraContextValue = {
    *  bestand. AuroraStage zet hiermee de losse CSS @keyframes stil die de
    *  rAF-loop hieronder niet aanraakt. */
   tabHidden: boolean
+  /** Alleen voor het exploratieve override-paneel op /playground — zie
+   *  lib/aurora.ts. Nooit bewaard, en negeert de bestaande preset-keuze
+   *  niet: `effectivePreset` hieronder is de preset mét deze override erover
+   *  gelegd. */
+  override: AuroraOverride | null
+  setOverride: (next: AuroraOverride | null) => void
+  /** `presets[activePreset]` mét `override` erover gemerged — waar
+   *  AuroraStage en het playground-paneel uit horen te lezen in plaats van
+   *  zelf `presets[activePreset]` te pakken, zodat een override ook de
+   *  geometrie (SVG-filter/CSS) raakt. */
+  effectivePreset: AuroraPreset
 }
 
 const AuroraContext = createContext<AuroraContextValue | null>(null)
@@ -116,8 +129,16 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
      mount-effect hieronder zet 'm meteen goed als het tabblad al bij de
      eerste render verborgen is. */
   const [tabHidden, setTabHidden] = useState(false)
+  /* Alleen voor het override-paneel op /playground — begint op null (geen
+     override) en blijft dat voor elke andere pagina, voor altijd. */
+  const [override, setOverrideState] = useState<AuroraOverride | null>(null)
 
   const presetRef = useRef(0)
+  /* Spiegelt `override` hierboven, om dezelfde reden als presetRef
+     hieronder spiegelt: paint() draait in een rAF-loop, niet als render, en
+     mag daar geen nieuwe functie-identiteit per override-wijziging voor
+     nodig hebben. */
+  const overrideRef = useRef<AuroraOverride | null>(null)
   const startedAtRef = useRef(0)
   const nextSwitchAtRef = useRef(AUTO_CYCLE_SEC)
   const blendRef = useRef<{ fromFrame: AuroraFrame; startElapsed: number } | null>(null)
@@ -132,12 +153,27 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
      in plaats van eeuwig op het openingsframe te blijven staan. */
   const staticFrame = reduceMotion
 
+  /* presets[presetRef.current] mét een eventuele override erover gelegd —
+     wat paint() en switchPreset() hieronder aan computeFrame meegeven in
+     plaats van rechtstreeks een index. Leest alleen refs, dus veilig om
+     vanuit elke closure hieronder aan te roepen zonder in een
+     dependency-array te moeten staan. */
+  const getEffectivePreset = () => applyOverride(PRESETS[presetRef.current] ?? PRESETS[0], overrideRef.current)
+
+  /* setOverride schrijft, net als switchPreset voor activePreset/presetRef
+     al deed, in één moeite door de ref (voor de imperatieve paint()-loop)
+     én de state (voor render-consumers zoals AuroraStage). */
+  const setOverride = useCallback((next: AuroraOverride | null) => {
+    overrideRef.current = next
+    setOverrideState(next)
+  }, [])
+
   const paint = useCallback(() => {
     const root = document.documentElement
     const elapsed = (Date.now() - startedAtRef.current) / 1000
     const bloom = staticFrame ? 1 : bloomAt(elapsed)
 
-    let frame = computeFrame(presetRef.current, elapsed, bloom)
+    let frame = computeFrame(getEffectivePreset(), elapsed, bloom)
 
     const blend = blendRef.current
     if (blend) {
@@ -160,6 +196,12 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
 
   const switchPreset = useCallback(
     (index: number) => {
+      /* Vóór de vroege return hieronder: anders zou opnieuw klikken op de
+         al-actieve swatch tijdens een override 'm stilletjes laten staan in
+         plaats van 'm te wissen. Een nieuwe (of dezelfde) preset is een
+         schone basis om vanaf te experimenteren, geen stapeling op wat er
+         net overreden werd. */
+      setOverride(null)
       if (index === presetRef.current && !blendRef.current) return
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
@@ -168,7 +210,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
       } else {
         // Valt terug op de rauwe preset alleen als er nog nooit geschilderd is —
         // in de praktijk staat lastFrameRef altijd al vanaf de mount-paint.
-        const fromFrame = lastFrameRef.current ?? computeFrame(presetRef.current, elapsed, bloomAt(elapsed))
+        const fromFrame = lastFrameRef.current ?? computeFrame(getEffectivePreset(), elapsed, bloomAt(elapsed))
         blendRef.current = { fromFrame, startElapsed: elapsed }
       }
       presetRef.current = index
@@ -184,7 +226,7 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
         nextSwitchAt: nextSwitchAtRef.current,
       })
     },
-    [paint, staticFrame],
+    [paint, setOverride, staticFrame],
   )
 
   /* reducedQuality volgt het gedeelde niveau (lib/perf-quality.ts)
@@ -273,7 +315,9 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
       }
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000
-      if (!reduceMotion && elapsed >= nextSwitchAtRef.current) {
+      /* Een actieve override mag niet weggedreven worden onder je vandaan —
+         zie setOverride hierboven. */
+      if (!reduceMotion && !overrideRef.current && elapsed >= nextSwitchAtRef.current) {
         advanceAutoCycle()
       }
 
@@ -326,9 +370,27 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     }
   }, [paint, reduceMotion, staticFrame])
 
+  /* Voor render-consumers (AuroraStage, het playground-paneel) — dezelfde
+     merge als getEffectivePreset() hierboven, maar op de React-state versie
+     van override/activePreset in plaats van de refs, zodat dit meerendert
+     wanneer die veranderen. */
+  const effectivePreset = useMemo(
+    () => applyOverride(PRESETS[activePreset] ?? PRESETS[0], override),
+    [activePreset, override],
+  )
+
   const value = useMemo<AuroraContextValue>(
-    () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset, reducedQuality, tabHidden }),
-    [activePreset, switchPreset, reducedQuality, tabHidden],
+    () => ({
+      presets: PRESETS,
+      activePreset,
+      selectPreset: switchPreset,
+      reducedQuality,
+      tabHidden,
+      override,
+      setOverride,
+      effectivePreset,
+    }),
+    [activePreset, switchPreset, reducedQuality, tabHidden, override, setOverride, effectivePreset],
   )
 
   return <AuroraContext.Provider value={value}>{children}</AuroraContext.Provider>
