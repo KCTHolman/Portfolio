@@ -313,6 +313,7 @@ a.khnav[aria-current="page"]::after {
 /* Over en Contact samen: gewone doorlopende pagina, net als de andere
    tekstpagina's — geen vastgezet deel, geen apart scrollend blok. */
 .kh-main--koen-holman { padding: 76px 20px 120px; }
+.kh-main--playground  { padding: 76px 20px 120px; }
 
 /* Intro + CTA-rij vullen het eerste scherm; de panelen erna beginnen zo
    altijd buiten de vouw, met het scroll-pijltje ernaartoe wijzend onderin.
