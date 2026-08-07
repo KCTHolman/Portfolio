@@ -198,7 +198,11 @@ export function useFleetScene({
     const canvas = canvasRef.current
     if (!mount || !canvas) return
 
-    const ctx = canvas.getContext('2d')
+    /* desynchronized: dit canvas is elk frame toch al een volledige
+       herschildering (clearRect + alles opnieuw), dus de dubbele buffering
+       die de browser normaal aanhoudt om tearing te voorkomen kost hier
+       alleen maar extra compositorwerk zonder zichtbaar voordeel. */
+    const ctx = canvas.getContext('2d', { desynchronized: true })
     if (!ctx) return
 
     const specs =
