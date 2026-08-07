@@ -13,8 +13,8 @@
    wandelt door de tint.
    ========================================================================== */
 
-type Hsl = readonly [hue: number, saturation: number, lightness: number]
-type Hsla = readonly [hue: number, saturation: number, lightness: number, alpha: number]
+export type Hsl = readonly [hue: number, saturation: number, lightness: number]
+export type Hsla = readonly [hue: number, saturation: number, lightness: number, alpha: number]
 
 type AuroraGeometry = {
   /** Swirl-sterkte — de scale van de displacement map. */
@@ -179,8 +179,35 @@ function hueAt(elapsed: number): number {
  *  houden. */
 export const DEFAULT_DRIFT: AuroraDrift = { amp: 8, period: 80 }
 
-export function computeFrame(presetIndex: number, elapsed: number, bloom: number): AuroraFrame {
-  const p = PRESETS[presetIndex] ?? PRESETS[0]
+/** Losse velden om over een preset heen te leggen — voor het exploratieve
+ *  override-paneel op /playground, zie applyOverride() hieronder. Nooit
+ *  bewaard (geen sessionStorage, geen preset-bestand), en losstaand van de
+ *  12 vaste PRESETS: dit vervangt geen preset, het legt er iets overheen. */
+export type AuroraOverride = {
+  geo?: Partial<AuroraGeometry>
+  drift?: Partial<AuroraDrift>
+  /** Per index: null/afwezig laat de kleur van de onderliggende preset staan. */
+  cols?: readonly (Hsla | null)[]
+  tcols?: readonly (Hsl | null)[]
+}
+
+/** Merget een override over een preset heen. Op presets zonder cols/tcols
+ *  (alleen "Levend", die ze algoritmisch afleidt in computeFrame hieronder)
+ *  blijft een kleur-override zonder effect — er is daar geen basis-array om
+ *  overheen te leggen, en dat is bewust geen val-terug-waarde verzinnen. */
+export function applyOverride(preset: AuroraPreset, override: AuroraOverride | null): AuroraPreset {
+  if (!override) return preset
+  return {
+    ...preset,
+    geo: override.geo ? { ...preset.geo, ...override.geo } : preset.geo,
+    drift: override.drift ? { ...(preset.drift ?? DEFAULT_DRIFT), ...override.drift } : preset.drift,
+    cols: preset.cols && override.cols ? preset.cols.map((c, i) => override.cols?.[i] ?? c) : preset.cols,
+    tcols: preset.tcols && override.tcols ? preset.tcols.map((c, i) => override.tcols?.[i] ?? c) : preset.tcols,
+  }
+}
+
+export function computeFrame(preset: AuroraPreset, elapsed: number, bloom: number): AuroraFrame {
+  const p = preset
 
   if (p.auto || !p.cols || !p.tcols) {
     const h = hueAt(elapsed)

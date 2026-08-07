@@ -1,10 +1,60 @@
-/* /playground/ — bediening voor de losgekoppelde vloot. */
+/* /playground/ — bediening voor de losgekoppelde vloot, en het
+   aurora-override-paneel. Eigen, compacte kop i.p.v. de gewone grote
+   .kh-page-title/.kh-lead: dit is een ontwikkelaarspaneel, geen
+   marketingpagina, en het geheel moet in één scherm passen (zie
+   main.kh-main--playground hieronder). */
+
+/* Hogere specificiteit dan de gedeelde .kh-main--playground-regel in
+   site.css (die nog steeds de brede, publieke maat gebruikt) — dit duwt de
+   ruime 76px/120px-padding opzij zonder site.css zelf aan te raken. */
+/* Geen eigen min-height: .kh-main heeft al flex: 1 0 auto in de
+   pagina-brede flex-kolom (zie site.css) en groeit dus vanzelf tot de
+   ruimte die overblijft na de sticky footer — een eigen 100svh hier zou
+   daar gewoon bovenop komen en precies de footer-hoogte laten overlopen.
+   Geen align-items hier: de default stretch geeft .kh-pg-shell hieronder
+   gratis de volle hoogte van .kh-main, zonder een fragiele height:100%-keten
+   door de flex-kolom heen te moeten trekken. */
+main.kh-main--playground {
+  display: flex;
+  padding: 24px 20px;
+}
+
+/* Alles blijft links, tegen de vloot-illustratie rechts aan — Playground +
+   de Fleet-knoppen bovenaan, het aurora-override-paneel onderaan, in
+   dezelfde kolom uit elkaar getrokken met space-between in plaats van naast
+   elkaar in een tweede koloM. */
+.kh-pg-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.kh-pg-title {
+  margin: 8px 0 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: clamp(26px, 3.4vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.kh-pg-lead {
+  margin: 8px 0 0;
+  max-width: 34em;
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 300;
+  color: rgba(222, 234, 247, 0.68);
+}
 
 .kh-pg-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .kh-pg-btn {
@@ -27,12 +77,17 @@
   background: rgba(125, 224, 210, 0.1);
 }
 
+.kh-pg-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .kh-pg-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 20px;
-  padding: 16px 18px;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
   border: 1px solid var(--kh-line);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
@@ -41,8 +96,8 @@
 .kh-pg-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12.5px;
   color: var(--kh-ash);
 }
 
@@ -60,4 +115,159 @@
   font-size: 13px;
   color: var(--kh-ash);
   cursor: pointer;
+}
+
+/* ---------- aurora-override: sliders in een compact 2-koloms rooster ---- */
+
+.kh-pg-panel--aurora { gap: 10px; }
+
+.kh-pg-sliders {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 18px;
+}
+
+@media (min-width: 520px) {
+  .kh-pg-sliders { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- stijlvolle sliders --------------------------------------------
+   accent-color stuurt duim én gevulde track native, geen pseudo-element-
+   gepriegel nodig — geo en drift krijgen elk hun eigen merkkleur (dezelfde
+   teal/amber als de rest van de site) zodat de twee groepen ook zonder
+   labels van elkaar te onderscheiden zijn. Een groter, hoger track-blok dan
+   de browser-default plus een gloed op focus/hover maakt er iets van dat
+   voelt als bedienen, niet als een formulierveld. */
+.kh-pg-field--slider input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  cursor: pointer;
+  transition: box-shadow .2s;
+}
+
+.kh-pg-field--geo input[type='range'] { accent-color: var(--kh-teal-soft); }
+.kh-pg-field--drift input[type='range'] { accent-color: var(--kh-amber); }
+
+.kh-pg-field--slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(10, 12, 18, 0.8);
+  cursor: pointer;
+  transition: transform .15s;
+}
+
+.kh-pg-field--slider input[type='range']::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid rgba(10, 12, 18, 0.8);
+  cursor: pointer;
+  transition: transform .15s;
+}
+
+.kh-pg-field--geo input[type='range']:hover,
+.kh-pg-field--geo input[type='range']:focus-visible {
+  box-shadow: 0 0 0 6px rgba(125, 224, 210, 0.12);
+}
+
+.kh-pg-field--drift input[type='range']:hover,
+.kh-pg-field--drift input[type='range']:focus-visible {
+  box-shadow: 0 0 0 6px rgba(230, 178, 90, 0.12);
+}
+
+.kh-pg-field--slider input[type='range']:active::-webkit-slider-thumb { transform: scale(1.25); }
+.kh-pg-field--slider input[type='range']:active::-moz-range-thumb { transform: scale(1.25); }
+
+@media (prefers-reduced-motion: reduce) {
+  .kh-pg-field--slider input[type='range']::-webkit-slider-thumb,
+  .kh-pg-field--slider input[type='range']::-moz-range-thumb { transition: none; }
+}
+
+/* ---------- kleurenrij + los-zwevende picker-popover -------------------
+   Rij van 8: 5 "blobs" + 3 "accenten" — dezelfde maat/vorm als de
+   .aur-preset-swatches in de footer (app/styles/aurora.css), zodat dit
+   paneel leest als hetzelfde soort bediening. De popover hangt absoluut
+   gepositioneerd óver de rest van het paneel heen (position: relative op de
+   wrap hieronder) in plaats van 'm naar beneden te duwen — een kleur
+   openen mag de paneelhoogte niet laten springen, dat is precies waarom
+   alles in 100vh moest passen. */
+.kh-pg-swatch-wrap {
+  position: relative;
+}
+
+.kh-pg-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kh-pg-swatch {
+  width: 30px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 5px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity .2s, transform .2s, border-color .2s, box-shadow .2s;
+}
+
+.kh-pg-swatch:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.kh-pg-swatch[aria-pressed='true'] {
+  opacity: 1;
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
+}
+
+/* Alleen de eerste accent-swatch krijgt de extra marge — die volgt direct
+   op de laatste blob-swatch, wat de twee groepjes uit elkaar trekt zonder
+   een aparte rij te openen. */
+.kh-pg-swatch:not(.kh-pg-swatch--accent) + .kh-pg-swatch--accent {
+  margin-left: 8px;
+}
+
+.kh-pg-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  padding: 10px;
+  border: 1px solid var(--kh-line);
+  border-radius: 10px;
+  background: rgba(8, 10, 16, 0.88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  width: fit-content;
+}
+
+/* react-colorful stuurt zijn eigen afmeting via CSS-variabelen op het
+   root-element van de picker. */
+.kh-pg-popover .react-colorful {
+  width: 200px;
+  height: 160px;
+}
+
+.kh-pg-panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kh-pg-hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--kh-ash);
 }

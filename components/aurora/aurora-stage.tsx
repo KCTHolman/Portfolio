@@ -12,17 +12,19 @@
 
 import type { CSSProperties } from 'react'
 
-import { BASE_GEOMETRY } from '@/lib/aurora'
 import { useAurora } from './aurora-provider'
 
 const BLOBS = [1, 2, 3, 4, 5, 6] as const
 
 export function AuroraStage() {
-  const { presets, activePreset, reducedQuality, tabHidden } = useAurora()
-  const preset = presets[activePreset]
-  const geo = preset?.geo ?? BASE_GEOMETRY
+  const { effectivePreset, reducedQuality, tabHidden } = useAurora()
+  // effectivePreset is altijd een volledig AuroraPreset (nooit undefined) —
+  // geen val-terug-waarde meer nodig zoals presets[activePreset] die wel kon
+  // missen.
+  const geo = effectivePreset.geo
   const stageClassName =
-    (preset?.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage') + (tabHidden ? ' aur-stage--paused' : '')
+    (effectivePreset.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage') +
+    (tabHidden ? ' aur-stage--paused' : '')
   /* Op een machine die dit al niet bijhoudt (zie de framegat-meting in
      aurora-provider.tsx) laat de duurste losse laag weg: het
      SVG-vervormingsfilter dwingt een volledige software-rasterisatie van de
