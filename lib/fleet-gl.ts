@@ -173,67 +173,13 @@ export function createFleetRenderer(canvas: HTMLCanvasElement): FleetRenderer | 
   })
   if (!gl) return null
 
-  const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SRC)
-  const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SRC)
-  const program = gl.createProgram()
-  if (!vs || !fs || !program) return null
-  gl.attachShader(program, vs)
-  gl.attachShader(program, fs)
-  gl.linkProgram(program)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null
-  gl.deleteShader(vs)
-  gl.deleteShader(fs)
-
-  const uResolution = gl.getUniformLocation(program, 'uResolution')
-
-  const vao = gl.createVertexArray()
-  gl.bindVertexArray(vao)
-
-  // Vier hoekpunten van een vierkant, als triangle-strip — één keer
-  // aangemaakt, nooit instanced (divisor 0, de standaard).
-  const cornerBuf = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, cornerBuf)
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
-  const aCorner = gl.getAttribLocation(program, 'aCorner')
-  gl.enableVertexAttribArray(aCorner)
-  gl.vertexAttribPointer(aCorner, 2, gl.FLOAT, false, 0, 0)
-
   // Eén interleaved buffer voor alle instantie-attributen — hergebruikt
   // Float32Array-geheugen tussen frames in plaats van er elke keer een
-  // nieuwe te alloceren; groeit alleen als de vloot zelf groeit.
+  // nieuwe te alloceren; groeit alleen als de vloot zelf groeit. Dit
+  // CPU-geheugen overleeft contextverlies gewoon (setup() hieronder raakt
+  // 'm niet aan); alleen de GPU-zijde moet na herstel opnieuw.
   let capacity = 2048
   let buffer = new Float32Array(capacity * FLOATS_PER_INSTANCE)
-  const instanceBuf = gl.createBuffer()
-  const STRIDE = FLOATS_PER_INSTANCE * 4
-
-  // Inline (geen losse functie): een geneste closure verliest voor TypeScript
-  // de narrowing van `gl` als niet-null die de check hierboven al gaf.
-  {
-    gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuf)
-    const attrs: [string, number, number][] = [
-      ['aCenter', 2, 0],
-      ['aRadius', 1, 8],
-      ['aAngle', 1, 12],
-      ['aColor', 3, 16],
-      ['aAlpha', 1, 28],
-    ]
-    for (const [name, size, offset] of attrs) {
-      const loc = gl.getAttribLocation(program, name)
-      if (loc < 0) continue
-      gl.enableVertexAttribArray(loc)
-      gl.vertexAttribPointer(loc, size, gl.FLOAT, false, STRIDE, offset)
-      gl.vertexAttribDivisor(loc, 1)
-    }
-  }
-
-  gl.bindVertexArray(null)
-
-  gl.enable(gl.BLEND)
-  // ONE, ONE_MINUS_SRC_ALPHA: hoort bij premultiplied-alpha-output in de
-  // fragment-shader hierboven — SRC_ALPHA i.p.v. ONE zou dubbel vermenigvuldigen
-  // en de rand van elk deeltje zichtbaar te donker maken.
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-  gl.clearColor(0, 0, 0, 0)
 
   let count = 0
   let cssW = 0
@@ -241,15 +187,110 @@ export function createFleetRenderer(canvas: HTMLCanvasElement): FleetRenderer | 
   let contextLost = false
   // Bijgehouden naast `capacity` (de logische grootte in instanties): de
   // GPU-allocatie zelf moet alleen opnieuw met bufferData() gezet worden
-  // wanneer de Float32Array daadwerkelijk gegroeid is, anders volstaat het
-  // veel goedkopere bufferSubData() hieronder.
+  // wanneer de Float32Array daadwerkelijk gegroeid is (of de GPU-buffer net
+  // opnieuw is aangemaakt na contextverlies), anders volstaat het veel
+  // goedkopere bufferSubData() hieronder.
   let uploadedCapacity = 0
+
+  // Alle GPU-resources (shaders, program, VAO, buffers) — herbouwd door
+  // setup() hieronder, zowel bij de eerste aanmaak als na een
+  // 'webglcontextrestored'-event. WebGL-objecten van vóór contextverlies
+  // zijn dan al ongeldig gemaakt door de browser; er is geen manier om ze
+  // te hergebruiken, alleen opnieuw aanmaken op dezelfde context.
+  let program: WebGLProgram | null = null
+  let uResolution: WebGLUniformLocation | null = null
+  let vao: WebGLVertexArrayObject | null = null
+  let cornerBuf: WebGLBuffer | null = null
+  let instanceBuf: WebGLBuffer | null = null
+
+  // gl als parameter (i.p.v. de closure) omdat TypeScript de
+  // niet-null-narrowing van de buitenste `if (!gl) return null` niet
+  // doorzet in een geneste functiedeclaratie.
+  function setup(gl: WebGL2RenderingContext): boolean {
+    const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SRC)
+    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SRC)
+    const prog = gl.createProgram()
+    if (!vs || !fs || !prog) return false
+    gl.attachShader(prog, vs)
+    gl.attachShader(prog, fs)
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false
+    gl.deleteShader(vs)
+    gl.deleteShader(fs)
+
+    const nextVao = gl.createVertexArray()
+    gl.bindVertexArray(nextVao)
+
+    // Vier hoekpunten van een vierkant, als triangle-strip — één keer
+    // aangemaakt, nooit instanced (divisor 0, de standaard).
+    const nextCornerBuf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, nextCornerBuf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
+    const aCorner = gl.getAttribLocation(prog, 'aCorner')
+    gl.enableVertexAttribArray(aCorner)
+    gl.vertexAttribPointer(aCorner, 2, gl.FLOAT, false, 0, 0)
+
+    const nextInstanceBuf = gl.createBuffer()
+    const STRIDE = FLOATS_PER_INSTANCE * 4
+
+    // Inline (geen losse functie): een geneste closure verliest voor TypeScript
+    // de narrowing van `gl` als niet-null die de check hierboven al gaf.
+    {
+      gl.bindBuffer(gl.ARRAY_BUFFER, nextInstanceBuf)
+      const attrs: [string, number, number][] = [
+        ['aCenter', 2, 0],
+        ['aRadius', 1, 8],
+        ['aAngle', 1, 12],
+        ['aColor', 3, 16],
+        ['aAlpha', 1, 28],
+      ]
+      for (const [name, size, offset] of attrs) {
+        const loc = gl.getAttribLocation(prog, name)
+        if (loc < 0) continue
+        gl.enableVertexAttribArray(loc)
+        gl.vertexAttribPointer(loc, size, gl.FLOAT, false, STRIDE, offset)
+        gl.vertexAttribDivisor(loc, 1)
+      }
+    }
+
+    gl.bindVertexArray(null)
+
+    gl.enable(gl.BLEND)
+    // ONE, ONE_MINUS_SRC_ALPHA: hoort bij premultiplied-alpha-output in de
+    // fragment-shader hierboven — SRC_ALPHA i.p.v. ONE zou dubbel vermenigvuldigen
+    // en de rand van elk deeltje zichtbaar te donker maken.
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+    gl.clearColor(0, 0, 0, 0)
+
+    program = prog
+    uResolution = gl.getUniformLocation(prog, 'uResolution')
+    vao = nextVao
+    cornerBuf = nextCornerBuf
+    instanceBuf = nextInstanceBuf
+    // De net aangemaakte GPU-buffer is leeg: forceer een volledige
+    // bufferData() bij de eerstvolgende flush() in plaats van de
+    // bufferSubData()-kortere weg, die een niet-bestaande allocatie zou
+    // aanspreken.
+    uploadedCapacity = 0
+    return true
+  }
+
+  if (!setup(gl)) return null
 
   const onContextLost = (e: Event) => {
     e.preventDefault()
     contextLost = true
   }
+  // Spec-conform herstelpad: dezelfde context blijft geldig, maar alle
+  // GPU-resources erop (shaders, program, VAO, buffers) zijn door de browser
+  // ongeldig gemaakt en moeten opnieuw aangemaakt — geen nieuwe
+  // getContext()-aanroep nodig of mogelijk. Mislukt setup() zelf (zeer
+  // zeldzaam), dan blijft de vloot leeg staan in plaats van te crashen.
+  const onContextRestored = () => {
+    contextLost = !setup(gl)
+  }
   canvas.addEventListener('webglcontextlost', onContextLost)
+  canvas.addEventListener('webglcontextrestored', onContextRestored)
 
   function ensureCapacity(needed: number): void {
     if (needed <= capacity) return
@@ -307,6 +348,7 @@ export function createFleetRenderer(canvas: HTMLCanvasElement): FleetRenderer | 
     },
     dispose() {
       canvas.removeEventListener('webglcontextlost', onContextLost)
+      canvas.removeEventListener('webglcontextrestored', onContextRestored)
       gl.deleteProgram(program)
       gl.deleteBuffer(cornerBuf)
       gl.deleteBuffer(instanceBuf)
