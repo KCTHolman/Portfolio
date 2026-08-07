@@ -319,3 +319,11 @@
   .aur-paint { animation: none; }
 }
 
+/* Verborgen tabblad: aurora-provider.tsx pauzeert hiermee ook de losse CSS
+   @keyframes (blobs, de filter-ademhaling, de korrel) — de rAF-kleurwandeling
+   stopt daar al op visibilitychange, maar deze lopen op hun eigen animatie
+   en zouden anders onzichtbaar door blijven draaien op de achtergrond. */
+.aur-stage--paused .aur-blob,
+.aur-stage--paused .aur-paint,
+.aur-stage--paused .aur-grain { animation-play-state: paused; }
+

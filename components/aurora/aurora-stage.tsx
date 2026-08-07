@@ -18,10 +18,11 @@ import { useAurora } from './aurora-provider'
 const BLOBS = [1, 2, 3, 4, 5, 6] as const
 
 export function AuroraStage() {
-  const { presets, activePreset, reducedQuality } = useAurora()
+  const { presets, activePreset, reducedQuality, tabHidden } = useAurora()
   const preset = presets[activePreset]
   const geo = preset?.geo ?? BASE_GEOMETRY
-  const stageClassName = preset?.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage'
+  const stageClassName =
+    (preset?.motion === 'build' ? 'aur-stage aur-stage--build' : 'aur-stage') + (tabHidden ? ' aur-stage--paused' : '')
   /* Op een machine die dit al niet bijhoudt (zie de framegat-meting in
      aurora-provider.tsx) laat de duurste losse laag weg: het
      SVG-vervormingsfilter dwingt een volledige software-rasterisatie van de
@@ -33,7 +34,10 @@ export function AuroraStage() {
   return (
     <div aria-hidden="true">
       <svg className="aur-defs" aria-hidden="true" focusable="false">
-        <filter id="kh-paint">
+        {/* sRGB in plaats van de linearRGB-default: scheelt de sRGB<->linear-
+            omrekening op elke pixel van deze schermvullende filters, zonder
+            zichtbaar verschil in wat toch al abstracte ruis is. */}
+        <filter id="kh-paint" colorInterpolationFilters="sRGB">
           <feTurbulence
             type="fractalNoise"
             baseFrequency={`${geo.freq.toFixed(4)} ${(geo.freq * 1.35).toFixed(4)}`}
@@ -49,7 +53,7 @@ export function AuroraStage() {
             yChannelSelector="G"
           />
         </filter>
-        <filter id="kh-grain">
+        <filter id="kh-grain" colorInterpolationFilters="sRGB">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} />
         </filter>
       </svg>

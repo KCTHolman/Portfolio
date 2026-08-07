@@ -12,7 +12,14 @@
    Wat wél per preset verandert — geometrie, de swatch die "aan" staat — gaat
    gewoon door de render, declaratief. Dat is de scheiding: per frame
    imperatief, per keuze declaratief.
-   ========================================================================== */
+
+   tabHidden is de uitzondering op "per frame imperatief": de zes geblurde
+   blobs, de SVG-vervormingsfilter en de korrel draaien op eigen CSS
+   @keyframes, niet op de rAF-loop hieronder — die loop pauzeert al op
+   visibilitychange, maar de CSS-animaties zelf lopen gewoon door op een
+   verborgen tabblad. tabHidden geeft aurora-stage.tsx een klasse om ze
+   daar ook echt stil te zetten: niets zichtbaars verandert (het tabblad is
+   toch verborgen), alleen de kosten vallen weg zolang niemand kijkt. */
 
 import {
   createContext,
@@ -52,6 +59,10 @@ type AuroraContextValue = {
    *  in lib/perf-quality.ts). AuroraStage laat dan het SVG-vervormingsfilter
    *  weg, de duurste losse laag. */
   reducedQuality: boolean
+  /** True zolang het tabblad verborgen is — zie de uitleg bovenaan dit
+   *  bestand. AuroraStage zet hiermee de losse CSS @keyframes stil die de
+   *  rAF-loop hieronder niet aanraakt. */
+  tabHidden: boolean
 }
 
 const AuroraContext = createContext<AuroraContextValue | null>(null)
@@ -103,6 +114,10 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
      zodat server en client gelijk renderen, en pas ná mount leest een los
      effect hieronder de opgeslagen vlag terug. */
   const [reducedQuality, setReducedQuality] = useState(false)
+  /* Begint op false om dezelfde server/client-reden als hierboven; het
+     mount-effect hieronder zet 'm meteen goed als het tabblad al bij de
+     eerste render verborgen is. */
+  const [tabHidden, setTabHidden] = useState(false)
 
   const presetRef = useRef(0)
   const startedAtRef = useRef(0)
@@ -321,11 +336,14 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
     }
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') stop()
+      const hidden = document.visibilityState === 'hidden'
+      setTabHidden(hidden)
+      if (hidden) stop()
       else start()
     }
 
     document.addEventListener('visibilitychange', onVisibilityChange)
+    setTabHidden(document.visibilityState === 'hidden')
     start()
 
     return () => {
@@ -336,8 +354,8 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
   }, [paint, reduceMotion, staticFrame])
 
   const value = useMemo<AuroraContextValue>(
-    () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset, reducedQuality }),
-    [activePreset, switchPreset, reducedQuality],
+    () => ({ presets: PRESETS, activePreset, selectPreset: switchPreset, reducedQuality, tabHidden }),
+    [activePreset, switchPreset, reducedQuality, tabHidden],
   )
 
   return <AuroraContext.Provider value={value}>{children}</AuroraContext.Provider>
