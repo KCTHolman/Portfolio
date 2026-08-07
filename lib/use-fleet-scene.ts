@@ -49,14 +49,10 @@ import {
   type BoatSpec,
   type Particle,
 } from '@/lib/fleet-geometry'
+import { createFleetRenderer, hslToRgb } from '@/lib/fleet-gl'
 import { createFrameWatchdog, getTier, subscribeTier, type QualityTier } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
-
-/** cos/sin van 120°: de optelformules in draw()'s korrel-driehoekje leunen
- *  hierop om twee hoekpunten uit het derde af te leiden zonder extra
- *  Math.cos/sin-aanroepen. */
-const SQRT3_2 = Math.sqrt(3) / 2
 
 /** Een boot op het scherm: de spec plus alles wat per frame of per maat
  *  verandert. */
@@ -198,12 +194,16 @@ export function useFleetScene({
     const canvas = canvasRef.current
     if (!mount || !canvas) return
 
-    /* desynchronized: dit canvas is elk frame toch al een volledige
-       herschildering (clearRect + alles opnieuw), dus de dubbele buffering
-       die de browser normaal aanhoudt om tearing te voorkomen kost hier
-       alleen maar extra compositorwerk zonder zichtbaar voordeel. */
-    const ctx = canvas.getContext('2d', { desynchronized: true })
-    if (!ctx) return
+    /* GPU-rasterisatie via WebGL2 (lib/fleet-gl.ts): de fysica hieronder
+       (deining, jitter, muis-afstoting, formatie-tweens) rekent nog steeds
+       per deeltje op de CPU, zoals altijd — alleen de laatste stap (een
+       Canvas2D-pad tekenen en rasterizen) is vervangen door één instanced
+       draw call. desynchronized: dit canvas is elk frame toch al een
+       volledige herschildering, dus de dubbele buffering die de browser
+       normaal aanhoudt om tearing te voorkomen kost hier alleen maar extra
+       compositorwerk zonder zichtbaar voordeel. */
+    const gl = createFleetRenderer(canvas)
+    if (!gl) return
 
     const specs =
       variant === 'hero' ? (narrowScreen ? HERO_BOATS_NARROW : HERO_BOATS) : variant === 'ambient' ? AMBIENT_BOATS : []
@@ -429,7 +429,9 @@ export function useFleetScene({
       [...FIXED_COLORS[1]],
       [...FIXED_COLORS[2]],
     ]
-    const paletteStr = new Array<string>(COLORS)
+    /** RGB (0..1) per kleurslot, voor de shader — vervangt de oude
+     *  paletteStr[]-CSS-strings die alleen ctx.strokeStyle iets aankonden. */
+    const paletteRgb: [number, number, number][] = Array.from({ length: COLORS }, () => [0, 0, 0])
 
     for (let t = 0; t < TIERS; t++) {
       // Niet lineair: de meeste korrels horen in de stille helft thuis, en een
@@ -485,7 +487,7 @@ export function useFleetScene({
     function syncPalette(): void {
       for (let i = 0; i < COLORS; i++) {
         const c = palette[i]
-        paletteStr[i] = `hsl(${Math.round(c[0] * 10) / 10},${c[1]}%,${c[2]}%)`
+        paletteRgb[i] = hslToRgb(c[0], c[1], c[2])
       }
     }
 
@@ -773,13 +775,9 @@ export function useFleetScene({
       // deeltjes zelf blijven op volle grootte.
       const dpr = Math.min(dprCap, window.devicePixelRatio || 1)
 
-      canvas!.width = Math.round(w * dpr)
-      canvas!.height = Math.round(h * dpr)
       canvas!.style.width = `${w}px`
       canvas!.style.height = `${h}px`
-      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx!.lineWidth = 1
-      ctx!.lineJoin = 'round'
+      gl!.resize(w, h, dpr)
 
       /* De voorste boot moet in beide richtingen passen mét lucht eromheen —
          op de breedte alleen schalen levert op een laag canvas een boot op
@@ -981,10 +979,8 @@ export function useFleetScene({
       const flameY = o.py + o.dy + o.ph * 0.48
       const length = o.ph * 0.85 * altitude
       const spread = o.pw * 0.12
-
-      ctx!.globalAlpha = 0.55 * altitude
-      ctx!.strokeStyle = paletteStr[4]
-      ctx!.beginPath()
+      const alpha = 0.55 * altitude
+      const [red, green, blue] = paletteRgb[4]
 
       for (const spark of rocketTrail) {
         const t = (time * spark.speed * 0.3 + spark.lag) % 1
@@ -993,20 +989,8 @@ export function useFleetScene({
         const x = flameX + spark.side * spread * t
         const y = flameY + t * length
         const a = spark.spin + time * 0.6
-        const ca = Math.cos(a)
-        const sa = Math.sin(a)
-        const cb = -0.5 * ca - SQRT3_2 * sa
-        const sb = SQRT3_2 * ca - 0.5 * sa
-        const cc = -0.5 * ca + SQRT3_2 * sa
-        const sc = -SQRT3_2 * ca - 0.5 * sa
-        ctx!.moveTo(x + ca * r, y + sa * r)
-        ctx!.lineTo(x + cb * r, y + sb * r)
-        ctx!.lineTo(x + cc * r, y + sc * r)
-        ctx!.closePath()
+        gl!.push(x, y, r, a, red, green, blue, alpha)
       }
-
-      ctx!.stroke()
-      ctx!.globalAlpha = 1
     }
 
     function draw(now: number): void {
@@ -1320,7 +1304,7 @@ export function useFleetScene({
         boat.dx = Math.sin(time * boat.swayF + boat.swayP) * boat.swayA + pointer.x * boat.par * MAGNET_X
       }
 
-      ctx!.clearRect(0, 0, w, h)
+      gl!.reset()
 
       for (let g = 0; g < groups.length; g++) {
         const list = groups[g]
@@ -1330,9 +1314,8 @@ export function useFleetScene({
            kriskras door de vloot, dus je ziet een veld dat ademt en niet een
            aantal vlakken dat samen aan- en uitgaat. */
         const pulse = frozen ? 1 : 0.7 + 0.3 * Math.sin(time * 0.7 + groupPhase[g])
-        ctx!.globalAlpha = tierAlpha[g % TIERS] * pulse
-        ctx!.strokeStyle = paletteStr[(g / TIERS) | 0]
-        ctx!.beginPath()
+        const groupAlpha = tierAlpha[g % TIERS] * pulse
+        const [groupRed, groupGreen, groupBlue] = paletteRgb[(g / TIERS) | 0]
 
         for (const p of list) {
           let x: number
@@ -1573,33 +1556,21 @@ export function useFleetScene({
             r *= 1 - smoothstep((now - p.fadeStart) / FADE_MS)
           }
           if (r <= 0.02) continue
+          // De rotatie zelf gaat als hoek mee naar de GPU (lib/fleet-gl.ts) —
+          // die rekent de twee overige hoekpunten (+120°/+240°) zelf uit in
+          // de fragment-shader, dus hier geen trig meer nodig.
           const a = p.spin + (frozen ? 0 : time * 0.08)
-          // Twee trig-calls, geen zes: de andere twee hoekpunten liggen op
-          // +120°/+240°, en cos/sin daarvan volgen uit ca/sa via de
-          // optelformules (cos120 = -0.5, sin120 = √3/2) — zelfde driehoek,
-          // een derde van de Math.cos/sin-aanroepen per korrel per frame.
-          const ca = Math.cos(a)
-          const sa = Math.sin(a)
-          const cb = -0.5 * ca - SQRT3_2 * sa
-          const sb = SQRT3_2 * ca - 0.5 * sa
-          const cc = -0.5 * ca + SQRT3_2 * sa
-          const sc = -SQRT3_2 * ca - 0.5 * sa
-          ctx!.moveTo(x + ca * r, y + sa * r)
-          ctx!.lineTo(x + cb * r, y + sb * r)
-          ctx!.lineTo(x + cc * r, y + sc * r)
-          ctx!.closePath()
+          gl!.push(x, y, r, a, groupRed, groupGreen, groupBlue, groupAlpha)
         }
-
-        ctx!.stroke()
       }
-
-      ctx!.globalAlpha = 1
 
       if (variant === 'home-rocket' && !frozen && boats[0]) {
         const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
         const altitude = homeRocketAltitude(cyclePos)
         if (altitude > 0.03) drawRocketTrail(boats[0], altitude, time)
       }
+
+      gl!.flush()
     }
 
     /** Zet het doel voor elke boot naar de formatie van preset `index`.
@@ -1901,6 +1872,7 @@ export function useFleetScene({
       window.removeEventListener('blur', releasePointer)
       unsubscribeTier()
       watchdog.dispose()
+      gl.dispose()
       if (frame !== null) cancelAnimationFrame(frame)
     }
     /* presetIndex leest deze effect nergens rechtstreeks (alleen via de
