@@ -16,6 +16,7 @@
 import { useRef, useState } from 'react'
 
 import { Link } from '@/components/link'
+import { DirectionalTransition } from '@/components/directional-transition'
 import { Fleet } from '@/components/fleet-lazy'
 import { ScrollCue } from '@/components/scroll-cue'
 import { RUN_STEPS } from '@/components/showcase/run-data'
@@ -51,6 +52,7 @@ export function WerkJourney() {
     <>
       <Fleet variant="journey" progressRef={progressRef} githubHoverRef={githubHoverRef} />
 
+      <DirectionalTransition>
       <main className="kh-main kh-main--werk" id="inhoud">
         <section className="kh-werk-hero" style={{ padding: '56px 0 0', maxWidth: '520px' }}>
           <p className="kh-eyebrow">Huidige AI-projecten</p>
@@ -344,6 +346,7 @@ export function WerkJourney() {
           </div>
         </section>
       </main>
+      </DirectionalTransition>
     </>
   )
 }

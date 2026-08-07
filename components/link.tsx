@@ -1,39 +1,22 @@
 'use client'
 
-/* next/link, maar de navigatie loopt via de view transition zodat de pagina
-   in de goede richting wegschuift. Verder identiek: prefetch, hover-gedrag en
-   toetsenbord blijven van Link zelf. */
+/* next/link, maar met een richting: een klik naar een andere hoofdpagina
+   krijgt kh-forward/kh-back mee als transition type, zodat de pagina in de
+   goede richting wisselt (zie components/directional-transition.tsx en
+   lib/nav.ts). next/link regelt zelf al prefetch, hover-gedrag, toetsenbord
+   en de modifier/middenklik-uitzondering — die hoeft hier niet over. */
 
 import NextLink from 'next/link'
-import type { ComponentProps, MouseEvent } from 'react'
+import { usePathname } from 'next/navigation'
+import type { ComponentProps } from 'react'
 
-import { useViewTransitionNavigate } from './view-transitions'
+import { directionBetween } from '@/lib/nav'
 
 type LinkProps = ComponentProps<typeof NextLink>
 
-export function Link({ href, onClick, ...rest }: LinkProps) {
-  const navigate = useViewTransitionNavigate()
+export function Link({ href, transitionTypes, ...rest }: LinkProps) {
+  const pathname = usePathname()
+  const direction = typeof href === 'string' ? directionBetween(pathname, href) : null
 
-  const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    onClick?.(event)
-
-    // Een modifier of middenklik hoort een nieuw tabblad te openen, niet te navigeren.
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return
-    }
-
-    if (!navigate || typeof href !== 'string') return
-
-    event.preventDefault()
-    navigate(href)
-  }
-
-  return <NextLink href={href} onClick={handleClick} {...rest} />
+  return <NextLink href={href} transitionTypes={direction ? [direction] : transitionTypes} {...rest} />
 }

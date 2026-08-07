@@ -11,6 +11,7 @@
    lading raketjes en een tandwiel.
    ========================================================================== */
 
+import { DirectionalTransition } from '@/components/directional-transition'
 import { Fleet } from '@/components/fleet-lazy'
 import { ScrollCue } from '@/components/scroll-cue'
 import { GitHubIcon, InstagramIcon, LinkedInIcon } from '@/components/social-icons'
@@ -28,6 +29,7 @@ export function KoenHolmanPage() {
     <>
       <Fleet variant="showcase" />
 
+      <DirectionalTransition>
       <main className="kh-main kh-main--koen-holman" id="inhoud">
         <section style={{ maxWidth: '600px' }}>
           <div className="kh-koen-hero">
@@ -83,6 +85,7 @@ export function KoenHolmanPage() {
           </div>
         </section>
       </main>
+      </DirectionalTransition>
     </>
   )
 }

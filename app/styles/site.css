@@ -1034,50 +1034,68 @@ a.khcta--ghost:hover { color: var(--kh-ink-bright); }
 }
 
 /* ---------- Page transitions -------------------------------------------
-   Cross-document View Transitions: a soft cross-fade by default, and a
-   directional slide when assets/transitions.js can tell forward from back
-   (it reads the Navigation API and compares against the nav order below).
-   Browsers without support just do a normal navigation — no fallback code
-   needed. ------------------------------------------------------------- */
+   React's <ViewTransition> (components/directional-transition.tsx) tags
+   each page-to-page navigation with kh-forward/kh-back — set on the page's
+   own content, not on root, so AuroraStage and SiteFooter (both outside any
+   page-level ViewTransition, see app/layout.tsx) never get swept into the
+   snapshot. @view-transition stays as the cross-document fallback: a full
+   (non-SPA) navigation, e.g. before JS has taken over, still gets a soft
+   cross-fade instead of a hard cut. ------------------------------------ */
 
 @view-transition {
   navigation: auto;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: .45s;
-  animation-timing-function: cubic-bezier(.4, 0, .2, 1);
+:root {
+  --duration-exit: 150ms;
+  --duration-enter: 210ms;
+  --duration-move: 400ms;
 }
 
-:root:active-view-transition-type(kh-forward)::view-transition-old(root) {
-  animation-name: kh-vt-out-left;
+@keyframes kh-vt-fade {
+  from { filter: blur(3px); opacity: 0; }
+  to   { filter: blur(0); opacity: 1; }
 }
-:root:active-view-transition-type(kh-forward)::view-transition-new(root) {
-  animation-name: kh-vt-in-right;
-}
-:root:active-view-transition-type(kh-back)::view-transition-old(root) {
-  animation-name: kh-vt-out-right;
-}
-:root:active-view-transition-type(kh-back)::view-transition-new(root) {
-  animation-name: kh-vt-in-left;
+@keyframes kh-vt-slide {
+  from { translate: var(--kh-vt-slide-offset); }
+  to   { translate: 0; }
 }
 
-@keyframes kh-vt-out-left {
-  to { transform: translateX(-2.5%); opacity: 0; }
+::view-transition-old(.kh-forward) {
+  --kh-vt-slide-offset: -60px;
+  animation:
+    var(--duration-exit) ease-in both kh-vt-fade reverse,
+    var(--duration-move) ease-in-out both kh-vt-slide reverse;
 }
-@keyframes kh-vt-in-right {
-  from { transform: translateX(2.5%); opacity: 0; }
+::view-transition-new(.kh-forward) {
+  --kh-vt-slide-offset: 60px;
+  animation:
+    var(--duration-enter) ease-out var(--duration-exit) both kh-vt-fade,
+    var(--duration-move) ease-in-out both kh-vt-slide;
 }
-@keyframes kh-vt-out-right {
-  to { transform: translateX(2.5%); opacity: 0; }
+
+::view-transition-old(.kh-back) {
+  --kh-vt-slide-offset: 60px;
+  animation:
+    var(--duration-exit) ease-in both kh-vt-fade reverse,
+    var(--duration-move) ease-in-out both kh-vt-slide reverse;
 }
-@keyframes kh-vt-in-left {
-  from { transform: translateX(-2.5%); opacity: 0; }
+::view-transition-new(.kh-back) {
+  --kh-vt-slide-offset: -60px;
+  animation:
+    var(--duration-enter) ease-out var(--duration-exit) both kh-vt-fade,
+    var(--duration-move) ease-in-out both kh-vt-slide;
 }
 
 @media (prefers-reduced-motion: reduce) {
   @view-transition {
     navigation: none;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
