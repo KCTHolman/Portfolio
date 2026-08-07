@@ -71,6 +71,21 @@ button:focus-visible,
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Homepage intro: naam eerst, alsof hij even in het midden van het scherm
+   zweeft, dan naar zijn plek in de kolom zakt. Eyebrow en lead volgen, en de
+   knoppenrij sluit de rij — samen zo'n 2,7s, ruim binnen de aandachtsspanne
+   van iemand die net binnenkomt. */
+@keyframes khIntroTitle {
+  from { opacity: 0; transform: translateY(-18vh); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes khIntroRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Skip link — the aurora panel and sticky nav sit ahead of the content. */
 .kh-skip {
   position: absolute;
@@ -780,7 +795,28 @@ a.khnav[aria-current="page"]::after {
   flex-direction: column;
   justify-content: center;
   padding: 56px 0 32px;
-  animation: khRise 1s ease both;
+}
+
+/* Stap 1: de naam, alsof hij eerst in het midden van het scherm verschijnt
+   en daarna naar zijn plek in de tekstkolom zakt. */
+.kh-hero-title {
+  animation: khIntroTitle 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stap 2: de rest van de tekst, iets na de naam. */
+.kh-eyebrow--hero {
+  animation: khIntroRise .7s ease both;
+  animation-delay: 1s;
+}
+.kh-hero-lead {
+  animation: khIntroRise .7s ease both;
+  animation-delay: 1.2s;
+}
+
+/* Stap 3: de knoppen, samen, als laatste. */
+.kh-main--home .kh-cta-row {
+  animation: khIntroRise .8s ease both;
+  animation-delay: 1.9s;
 }
 
 /* Eén maat groter dan het comfortabel is, en strak aangesnoerd. De snede
