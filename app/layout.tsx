@@ -10,7 +10,6 @@ import './styles/fleet.css'
 import { AuroraProvider } from '@/components/aurora/aurora-provider'
 import { AuroraStage } from '@/components/aurora/aurora-stage'
 import { SiteFooter } from '@/components/site-footer'
-import { ViewTransitions } from '@/components/view-transitions'
 import { SITE_URL } from '@/lib/metadata'
 
 export const metadata: Metadata = {
@@ -53,15 +52,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Naar de inhoud
         </a>
 
-        <ViewTransitions>
-          <AuroraProvider>
-            <div className="kh-shell">
-              <AuroraStage />
-              {children}
-              <SiteFooter />
-            </div>
-          </AuroraProvider>
-        </ViewTransitions>
+        <AuroraProvider>
+          <div className="kh-shell">
+            <AuroraStage />
+            {children}
+            <SiteFooter />
+          </div>
+        </AuroraProvider>
 
         <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />
         <SpeedInsights />

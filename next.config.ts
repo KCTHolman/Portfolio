@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
 
   reactStrictMode: true,
 
+  /* React's <ViewTransition> (components/directional-transition.tsx) werkt
+     in de App Router zonder configuratie — de experimental.viewTransition-
+     vlag die oudere Next-versies hiervoor nodig hadden bestaat niet meer in
+     16.3, zie node_modules/next/dist/docs/01-app/02-guides/view-transitions.md. */
+
   /* Over en Contact zijn samengevoegd tot één pagina; bestaande links naar
      de losse routes blijven werken via een permanente redirect. */
   async redirects() {
