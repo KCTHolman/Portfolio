@@ -50,7 +50,7 @@ import {
   type Particle,
 } from '@/lib/fleet-geometry'
 import { createFleetRenderer, hslToRgb } from '@/lib/fleet-gl'
-import { createFrameWatchdog, getTier, subscribeTier, type QualityTier } from '@/lib/perf-quality'
+import { MAX_TIER, createFrameWatchdog, getTier, subscribeTier, type QualityTier } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
@@ -998,7 +998,16 @@ export function useFleetScene({
       const form = frozen ? 1 : Math.min(1, (now - t0) / formMs)
       const forming = form < 1
       const time = frozen ? 0 : elapsed
-      const repel = pointer.on && !frozen
+      /* Muis-afstoting kost per korrel extra werk (afstand, e-macht, een
+         eigen chaos-rotatie) zodra de cursor er is — precies het soort
+         "alleen bij interactie" kost dat de watchdog niet vooraf kan meten
+         (de framegat-meting loopt door zonder dat iemand ooit hovert). Pas
+         aan zodra het gedeelde niveau bewezen vol staat: hetzelfde
+         "eerst bewijzen, dan pas"-principe als de rest van het regime, nu
+         toegepast op een kost die zelf buiten de meting om valt. Geldt
+         evengoed voor een vinger op mobiel als een muis op desktop — beide
+         zetten pointer.on, geen apart pad nodig. */
+      const repel = pointer.on && !frozen && tier === MAX_TIER
 
       /* Hoe hard de veren deze frame aantrekken, gerekend in tijd en niet in
          frames. Anders sluit hetzelfde gat op een trage machine merkbaar
