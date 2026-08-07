@@ -555,6 +555,13 @@ export function useFleetScene({
       // prestatie-oogpunt (showcase's eigen dichtheid loopt via
       // showcaseBoatDetail() hierboven, niet via deze `quality`).
       if (variant === 'ambient') quality *= 0.7
+      // De drie homepage-alternatieven tekenen precies één vorm, geen hele
+      // vloot — BASE_DENSITY's halvering is getuned op hero's vloot van
+      // zeven/acht boten tegelijk, en drukt hier onnodig op een silhouet dat
+      // toch al een fractie van dat totaal aantal korrels kost. Terug naar
+      // volle dichtheid (× 2 heft BASE_DENSITY exact op) omdat er niets
+      // anders is dat om GPU-budget concurreert.
+      if (soloHomeVariant) quality *= 2
       measure()
 
       parts = []
@@ -836,15 +843,18 @@ export function useFleetScene({
             : soloHomeVariant
               ? 0.6
               : 0.44
-      /* Home-rocket op desktop: geen hoogte-plafond. De hoogtebeperking
-         hieronder bestaat om een boot in twee richtingen te laten passen,
-         maar de raket mag hier bewust "lekker groot" — écht 60% van de
-         schermbreedte, ook op een brede monitor waar dat plafond anders
-         altijd eerder zou binden dan de breedte zelf. Het canvas beslaat
-         toch al het hele scherm, dus een neus of vlam die daarbovenuit
-         valt, tekent gewoon niet — geen layout die daardoor breekt. */
+      /* Home-rocket en home-gear op desktop: geen hoogte-plafond. De
+         hoogtebeperking hieronder bestaat om een boot in twee richtingen te
+         laten passen, maar deze twee mogen hier bewust "lekker groot" — écht
+         60% van de schermbreedte, ook op een brede monitor waar dat plafond
+         anders altijd eerder zou binden dan de breedte zelf. Het canvas
+         beslaat toch al het hele scherm, dus een neus, vlam of tand die
+         daarbovenuit valt, tekent gewoon niet — geen layout die daardoor
+         breekt. */
       const lead =
-        variant === 'home-rocket' && !narrowScreen ? w * share : Math.min(w * share, (h * 0.62) / RATIO)
+        (variant === 'home-rocket' || variant === 'home-gear') && !narrowScreen
+          ? w * share
+          : Math.min(w * share, (h * 0.62) / RATIO)
 
       for (const boat of boats) {
         boat.pw = lead * (boat.w / LEAD_W)
@@ -881,8 +891,10 @@ export function useFleetScene({
          zat maar niet hier), dan krijgt elk slot een ander aantal punten in
          de identiteiten- versus de stadium-array, en schuift de indexering
          binnen een boot volledig scheef zodra qualityScale ooit onder 1 zakt
-         — precies het uiteengevallen kompas/tandwiel/raket dat dat gaf. */
-      const journeyQuality = (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY
+         — precies het uiteengevallen kompas/tandwiel/raket dat dat gaf. Zelfde
+         reden dat de soloHomeVariant-boost hierboven in build() hier exact
+         wordt herhaald, en niet alleen daar. */
+      const journeyQuality = (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY * (soloHomeVariant ? 2 : 1)
       const journeyStages = journeyLike
         ? JOURNEY_STAGES.map((stage, si) => buildJourneyStage(stage, si, journeyQuality))
         : null

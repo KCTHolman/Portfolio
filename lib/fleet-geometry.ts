@@ -629,10 +629,28 @@ function circlePoly(cx: number, cy: number, rx: number, ry: number, steps: numbe
   return pts
 }
 
+/** Ster van om-en-om lange en korte tikken vanuit een gedeelde binnenstraal —
+ *  geen tandwiel-tand (die heeft een vlakke top), gewoon een scherpe punt per
+ *  tik. i=0 wijst recht omhoog (noord), zodat de lange tikken op dezelfde
+ *  n/o/z/w-assen als de naald vallen; de korte tikken vallen daartussen op de
+ *  tussenpunten. Voor het kompas' windroos hieronder. */
+function starPoly(cx: number, cy: number, rInner: number, rLong: number, rShort: number, points: number): Point[] {
+  const pts: Point[] = []
+  for (let i = 0; i < points; i++) {
+    const a = -Math.PI / 2 + (i / points) * Math.PI * 2
+    const rOuter = i % 2 === 0 ? rLong : rShort
+    pts.push([cx + Math.cos(a) * rOuter, cy + Math.sin(a) * rOuter])
+    const mid = -Math.PI / 2 + ((i + 0.5) / points) * Math.PI * 2
+    pts.push([cx + Math.cos(mid) * rInner, cy + Math.sin(mid) * rInner])
+  }
+  return pts
+}
+
 /* Kompas, genormaliseerd in hetzelfde vak als de boot. Geen ambitie om
    fotorealistisch te zijn — de acht rollen van de boot (kast, twee
-   naaldhelften, binnenschijf, as en drie tikken/pin) geven een silhouet dat
-   meteen als kompas leest zodra de deeltjes zich verzamelen. */
+   naaldhelften, binnenschijf, as, windroos, schaalring en centrum-pin) geven
+   een silhouet dat meteen als kompas leest zodra de deeltjes zich
+   verzamelen. */
 const KX = 0.5
 const KY = 0.48
 /* Zelfde reden als GEAR_STAGE/ROCKET_STAGE hieronder: de showcase-vloot
@@ -641,12 +659,18 @@ const KY = 0.48
    per-boot stage-remap in use-fleet-scene.ts. */
 const COMPASS_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.40, 0.40, 48), // kast (hull-rol)
-  poly([KX, KY], [KX - 0.065, KY - 0.02], [KX, KY - 0.40], [KX + 0.065, KY - 0.02]), // noordnaald (mainsail-rol)
-  poly([KX, KY], [KX - 0.05, KY + 0.018], [KX, KY + 0.27], [KX + 0.05, KY + 0.018]), // zuidnaald (jib-rol)
+  // Smaller, langer toelopend dan een boot-zeil: een echte naaldpunt in
+  // plaats van een dikke ruit. Noord blijft groter dan zuid, zoals op een
+  // echt kompas.
+  poly([KX, KY], [KX - 0.045, KY - 0.05], [KX, KY - 0.40], [KX + 0.045, KY - 0.05]), // noordnaald (mainsail-rol)
+  poly([KX, KY], [KX - 0.035, KY + 0.045], [KX, KY + 0.27], [KX + 0.035, KY + 0.045]), // zuidnaald (jib-rol)
   circlePoly(KX, KY, 0.29, 0.29, 40), // binnenschijf (flyer-rol)
   spar([KX, KY - 0.40], [KX, KY + 0.40], 0.006), // naald-as (mast-rol)
-  spar([KX - 0.40, KY], [KX + 0.40, KY], 0.006), // oost-west-tik (boom-rol)
-  spar([KX - 0.28, KY - 0.28], [KX + 0.28, KY + 0.28], 0.005), // diagonale tik (sprit-rol)
+  // Windroos: acht tikken, lang op n/o/z/w (ze raken de kast, net als de
+  // naaldpunt) en korter op de tussenpunten — leest meteen als kompasdial
+  // in plaats van de twee losse kruislijnen die hier stonden.
+  starPoly(KX, KY, 0.305, 0.4, 0.345, 8), // windroos (boom-rol)
+  circlePoly(KX, KY, 0.345, 0.345, 60), // schaalring, ter hoogte van de korte tikken (sprit-rol)
   poly([KX - 0.02, KY - 0.02], [KX + 0.02, KY - 0.02], [KX + 0.02, KY + 0.02], [KX - 0.02, KY + 0.02]), // centrum-pin (flag-rol)
 ]
 
@@ -666,18 +690,34 @@ function gearPoly(cx: number, cy: number, rOuter: number, rInner: number, teeth:
   return pts
 }
 
+/** Eén spaak als lijn door het middelpunt, op een gekozen hoek — zie GEAR_STAGE
+ *  hieronder voor waarom dat de hoek zelf is die hier toe doet. */
+function radialSpar(cx: number, cy: number, angleDeg: number, len: number, thick: number): Point[] {
+  const a = (angleDeg * Math.PI) / 180
+  const dx = Math.cos(a) * len
+  const dy = Math.sin(a) * len
+  return spar([cx - dx, cy - dy], [cx + dx, cy + dy], thick)
+}
+
 /* Tandwiel, zelfde middelpunt en schaal als het kompas: lichaam, tandrand,
    naaf, een tussenring, en drie spaken plus een boutje in het midden. De
    showcase-vloot (zie SHOWCASE_STAGES hieronder) hergebruikt 'm rechtstreeks
-   in plaats van een eigen tandwielvorm te tekenen. */
+   in plaats van een eigen tandwielvorm te tekenen.
+
+   De drie spaken stonden op 0°/45°/90° — een kruis plus één diagonaal, zonder
+   diens spiegelbeeld. Dat is geen spaakwiel maar een half exemplaar: zes
+   spaak-einden die in twee groepjes van drie klitten (0°/45°/90° en
+   180°/225°/270°) met een kale kwartslag ertussen. Recht op 60° uit elkaar
+   (0°/60°/120°) geeft wél een echt symmetrisch wiel — dezelfde soort fix als
+   de windroos bij het kompas. */
 const GEAR_STAGE: JourneyStage = [
   circlePoly(KX, KY, 0.34, 0.34, 40), // lichaam (hull-rol)
   gearPoly(KX, KY, 0.42, 0.34, 10), // tandrand (mainsail-rol)
   circlePoly(KX, KY, 0.16, 0.16, 28), // naaf (jib-rol)
   circlePoly(KX, KY, 0.26, 0.26, 34), // tussenring (flyer-rol)
-  spar([KX, KY - 0.34], [KX, KY + 0.34], 0.006), // spaak (mast-rol)
-  spar([KX - 0.34, KY], [KX + 0.34, KY], 0.006), // spaak (boom-rol)
-  spar([KX - 0.24, KY - 0.24], [KX + 0.24, KY + 0.24], 0.005), // spaak (sprit-rol)
+  radialSpar(KX, KY, 0, 0.34, 0.006), // spaak (mast-rol)
+  radialSpar(KX, KY, 60, 0.34, 0.006), // spaak (boom-rol)
+  radialSpar(KX, KY, 120, 0.34, 0.005), // spaak (sprit-rol)
   poly([KX - 0.025, KY - 0.025], [KX + 0.025, KY - 0.025], [KX + 0.025, KY + 0.025], [KX - 0.025, KY + 0.025]), // bout (flag-rol)
 ]
 
