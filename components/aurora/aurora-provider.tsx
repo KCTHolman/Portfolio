@@ -210,9 +210,13 @@ export function AuroraProvider({ children }: { children: ReactNode }) {
      zwakke renderengine vanzelf steeds minder vaak opnieuw probeert in
      plaats van te blijven flitsen. */
   useEffect(() => {
-    const EXTRA_PROOF_MS = 4000
-    const BASE_COOLDOWN_MS = 4000
-    const MAX_COOLDOWN_MS = 60000
+    // Zelfde grootteorde als de basis-afkoeltijd van het gedeelde regime
+    // (lib/perf-quality.ts) — prestatie weegt hier het zwaarst, dus liever
+    // een paar seconden extra wachten dan een filter aanzetten dat net zo
+    // snel weer uitmoet.
+    const EXTRA_PROOF_MS = 6000
+    const BASE_COOLDOWN_MS = 6000
+    const MAX_COOLDOWN_MS = 120000
 
     let pendingSince: number | null = null
     let cooldownMs = BASE_COOLDOWN_MS
