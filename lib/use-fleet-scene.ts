@@ -268,10 +268,17 @@ export function useFleetScene({
        ondergrens als de rest bleef die scène op het laagste niveau nog
        steeds merkbaar zwaarder dan hero/journey/ambient. Een lagere vloer
        hier snijdt recht in dat verschil, zonder de andere varianten aan te
-       raken. Middelste stap ligt op het midden tussen vloer en vol — geen
-       eigen afweging nodig, gewoon een derde trede. */
+       raken.
+
+       MAX_TIER + 1 stappen, gelijkmatig verdeeld tussen vloer en vol: veel
+       kleine stappen in plaats van een paar grote, zodat elke afzonderlijke
+       stap omhoog nauwelijks opvalt — zie de uitleg in lib/perf-quality.ts
+       over waarom dat zwaarder weegt dan snel op volle dichtheid komen. */
     const QUALITY_FLOOR = variant === 'showcase' ? 0.35 : 0.5
-    const QUALITY_STEPS: readonly [number, number, number] = [QUALITY_FLOOR, (QUALITY_FLOOR + 1) / 2, 1]
+    const QUALITY_STEPS: readonly number[] = Array.from(
+      { length: MAX_TIER + 1 },
+      (_, i) => QUALITY_FLOOR + ((1 - QUALITY_FLOOR) * i) / MAX_TIER,
+    )
     /* Vlakke halvering van de volle dichtheid, los van het tier-regime
        hierboven: dat regime reageert op gemeten haperingen, dit is een
        permanent lagere basislast op de GPU. Moet overal waar quality een
@@ -286,7 +293,11 @@ export function useFleetScene({
 
     let tier = effectiveTier()
     let qualityScale = QUALITY_STEPS[tier]
-    let dprCap = tier === 0 ? 1 : 2
+    // Alleen op het hoogste niveau vol devicePixelRatio: dat verviervoudigt
+    // (bij dpr 2) het aantal te vullen pixels, dus verdient zelf ook een
+    // bewezen niveau — niet iets dat al bij de eerste stap boven de vloer
+    // meekomt.
+    let dprCap = tier === MAX_TIER ? 2 : 1
     /* Alleen gezet vlak na een stap omhoog (zie applyTierUp()): performance.now()
        waarop de net herbouwde vloot vanaf straal 0 mag opgroeien naar volle
        grootte. Eén gedeeld tijdstip voor de hele vloot, geen los veld per
@@ -1688,7 +1699,7 @@ export function useFleetScene({
     function applyTierDown(newTier: QualityTier): void {
       const fadeShare = 1 - QUALITY_STEPS[newTier] / qualityScale
       qualityScale = QUALITY_STEPS[newTier]
-      dprCap = newTier === 0 ? 1 : 2
+      dprCap = newTier === MAX_TIER ? 2 : 1
       tier = newTier
 
       const fadeStart = performance.now()
@@ -1715,7 +1726,7 @@ export function useFleetScene({
      *  growStart hierboven. */
     function applyTierUp(newTier: QualityTier): void {
       qualityScale = QUALITY_STEPS[newTier]
-      dprCap = newTier === 0 ? 1 : 2
+      dprCap = newTier === MAX_TIER ? 2 : 1
       tier = newTier
       build()
       setFormation(presetIndexRef.current, true)
