@@ -103,6 +103,23 @@
   50%      { filter: brightness(1.16) saturate(1.1); }
 }
 
+/* WebKit rasterizes a big feTurbulence/feDisplacementMap filter unreliably —
+   on a large, high-resolution layer like this one it can silently fail to
+   paint at all instead of just running slow (a handful of open WebKit bugs
+   track this). The frame-gap watchdog in aurora-provider.tsx can't catch
+   that case: a layer that never paints doesn't cost any main-thread time,
+   so nothing looks slow. Safer to skip the filter on WebKit altogether,
+   before it gets a chance to fail, than to wait on a signal that may never
+   come. -webkit-touch-callout is a reliable, UA-sniff-free way to target
+   WebKit only (desktop Safari, and every iOS browser — Apple requires them
+   all to run on WebKit, so this reaches iOS Firefox/Chrome too). */
+@supports (-webkit-touch-callout: none) {
+  .aur-paint {
+    filter: none;
+    animation: khBreatheLite 26s ease-in-out infinite;
+  }
+}
+
 .aur-blob {
   position: absolute;
   mix-blend-mode: screen;
