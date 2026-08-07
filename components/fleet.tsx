@@ -16,9 +16,10 @@
      home-gear     homepage-alternatief voor hero: één heel groot tandwiel dat
                    traag en doorlopend draait
      home-rocket   homepage-alternatief voor hero: één hele grote raket die
-                   op een trage, eigen klok opstijgt, boven hangt en weer
-                   landt — een lus, geen eenmalig vertrek zoals hero's eigen
-                   kleine lanceringen
+                   op een eigen klok echt vertrekt — opstijgt en helemaal
+                   van beeld verdwijnt, een paar tellen leeg blijft, en dan
+                   uit willekeurig verschenen driehoekjes weer opnieuw
+                   samenkomt tot raket
 
    Welke van de vier homepage-standen (hero/home-compass/home-gear/
    home-rocket) een bezoek te zien krijgt, loot components/home-scene.tsx bij

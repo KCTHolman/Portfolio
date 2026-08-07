@@ -384,18 +384,44 @@ export function useFleetScene({
        scène duurt blijft herhalen. */
     const ROCKET_BOB_FREQ = 0.5
     const ROCKET_BOB_AMP_FRAC = 0.05
-    /* Homepage, variant "home-rocket": een rustige, eigen lus van opstijgen,
-       boven hangen, landen en even stilstaan — geen sinus (die kent geen
-       hangtijd) en geen eenmalig vertrek zoals hero's kleine lanceringen.
-       Zie homeRocketAltitude() hieronder. 16 seconden voor de volle cyclus
-       is traag genoeg om als "landen", niet als "stuiteren" te lezen. */
-    const HOME_ROCKET_CYCLE_SEC = 16
-    /* Op een telefoon staat de raket al bijna schermvullend (zie het grotere
-       vak en de lagere cy in build()/layout()) — de neus rust dan al rond
-       ~20% van de schermhoogte. Een even hoge stijging als op desktop zou 'm
-       voorbij de bovenrand duwen; 0.15 laat de neus op het hoogste punt van
-       de lus net onder de statusbalk blijven. */
-    const HOME_ROCKET_LIFT_FRAC = narrowScreen ? 0.15 : 0.34
+    /* Homepage, variant "home-rocket": een viertakt die de raket echt laat
+       vertrekken in plaats van op-en-neer te laten stuiteren. De lancering
+       zelf bouwt op, zoals een echte start: eerst ontsteking — een
+       rookwolk die aanwakkert bij de voet, de raket zelf beweegt nog
+       nauwelijks — en pas daarna trekt hij, steeds sneller, los en
+       helemaal boven de canvasrand uit (zie homeRocketAscend/-Billow
+       hieronder). Daarna is het scherm een paar tellen leeg, en dan vinden
+       de driehoekjes elkaar vanuit willekeurige plekken weer terug tot de
+       raket opnieuw staat. homeRocketPhase/-PhaseStart houden bij waar in
+       die cyclus de scène nu is; de vier duren zijn bewust ongelijk (een
+       opbouwende start, rustig en traag weer samenkomen) — een vertrek en
+       een wording voelen niet even snel. */
+    type HomeRocketPhase = 'formed' | 'launch' | 'gone' | 'reform'
+    let homeRocketPhase: HomeRocketPhase = 'formed'
+    let homeRocketPhaseStart = t0
+    const HOME_ROCKET_HOLD_SEC = 5
+    const HOME_ROCKET_LAUNCH_SEC = 4
+    /* Letterlijk de instructie: het scherm blijft precies 3 tellen leeg
+       voordat de driehoekjes weer verschijnen. */
+    const HOME_ROCKET_GONE_SEC = 3
+    const HOME_ROCKET_REFORM_SEC = 2.8
+    /* Langer dan HOME_ROCKET_LAUNCH_SEC: de wolk leeft door tot ruim in
+       'gone', en dooft daar pas uit — in plaats van precies op het moment
+       dat de raket zelf de rand bereikt, wat als een abrupte knip zou
+       ogen. */
+    const HOME_ROCKET_BILLOW_LIFE_SEC = 5.5
+    const HOME_ROCKET_BILLOW_COUNT = 42
+    /** Eén rookwolk-punt bij de voet van de raket tijdens het opstijgen —
+     *  zie seedHomeRocketLaunch()/drawHomeRocketBillow() hieronder. Geen
+     *  deel van parts/groups: dit spoor leeft los van de raket-identiteit
+     *  en hoeft dus niet aan JOURNEY_SLOTS' vaste aantal punten per stadium
+     *  te voldoen. */
+    type HomeRocketBillowPoint = { angle: number; speed: number; size: number; spin: number; delay: number }
+    let homeRocketBillow: HomeRocketBillowPoint[] = []
+    /* Vaste grondpositie, bevroren op het moment van ontsteking — de wolk
+       blijft bij de lanceerplek liggen terwijl de raket zelf wegtrekt, net
+       als bij een echte lancering. */
+    let homeRocketLaunchOrigin = { x: 0, y: 0 }
     /* Showcase, elke scène-wissel: hoeveel de jitter tijdens het mengen
        (SHOWCASE_BLEND_MS) opzwelt, in het midden van de overgang op zijn
        hoogst en weer terug naar normaal aan beide kanten. Een rechte lerp
@@ -463,30 +489,6 @@ export function useFleetScene({
       groupPhase.push((g * 2.399) % (Math.PI * 2))
     }
 
-    /* Home-rocket: een handvol losse "vonken" die van de vlam wegstromen.
-       Geen deel van parts/groups hierboven — die array moet voor elk
-       journey-stadium (boot t/m raket) precies evenveel identiteiten tellen
-       (zie de toelichting bij JOURNEY_SLOTS in fleet-geometry.ts), en dat
-       zou een spoor dat alleen bij het raket-stadium hoort onnodig
-       verstoren. In plaats daarvan rekent drawRocketTrail() dit spoor elk
-       frame vers uit, uit deze kleine, vaste set — geen eigen identiteit
-       nodig, alleen een zaad per vonk zodat dezelfde vonk elke cyclus weer
-       hetzelfde pad neemt. */
-    const ROCKET_TRAIL_COUNT = 30
-    const rocketTrail =
-      variant === 'home-rocket'
-        ? Array.from({ length: ROCKET_TRAIL_COUNT }, (_, i) => {
-            const seeded = rng(0xc0a1 + i * 733)
-            return {
-              lag: i / ROCKET_TRAIL_COUNT,
-              side: (seeded() - 0.5) * 2,
-              speed: 0.5 + seeded() * 0.4,
-              size: 1.6 + seeded() * 2.4,
-              spin: seeded() * Math.PI * 2,
-            }
-          })
-        : []
-
     /* De aurora zet --t1..--t3 als inline style op <html>, dus dit leest de
        eigenschap rechtstreeks van het element af — getComputedStyle zou hier
        per keer een style-recalc afdwingen voor precies dezelfde drie waarden. */
@@ -535,24 +537,12 @@ export function useFleetScene({
 
     /** Nul snelheid aan beide kanten van een stuk, in plaats van de constante
      *  snelheid van een rechte lerp — dezelfde curve als de kleurblend in
-     *  aurora-provider.tsx. homeRocketAltitude() hieronder gebruikt 'm voor
-     *  zowel het opstijgen als het landen, zodat geen van beide met een
-     *  schok begint of eindigt. */
+     *  aurora-provider.tsx. De forming-instap hieronder gebruikt 'm voor het
+     *  invaren bij het laden, en home-rocket's reform-fase hergebruikt
+     *  precies diezelfde opbouw wanneer de raket zich opnieuw vormt. */
     function smoothstep(k: number): number {
       const c = Math.min(1, Math.max(0, k))
       return c * c * (3 - 2 * c)
-    }
-
-    /** 0..1: hoogte van de home-rocket-vorm boven haar grondpositie, op
-     *  moment t (0..1, fractie door HOME_ROCKET_CYCLE_SEC). Vier stukken:
-     *  opstijgen, hangen op de top, landen, en een moment stilstaan op de
-     *  grond — bewust geen ease-out aan beide kanten (dat gaf een harde
-     *  touchdown), maar smoothstep, die net zo zacht landt als vertrekt. */
-    function homeRocketAltitude(t: number): number {
-      if (t < 0.28) return smoothstep(t / 0.28)
-      if (t < 0.46) return 1
-      if (t < 0.82) return 1 - smoothstep((t - 0.46) / 0.36)
-      return 0
     }
 
     function build(): void {
@@ -846,7 +836,15 @@ export function useFleetScene({
             : soloHomeVariant
               ? 0.6
               : 0.44
-      const lead = Math.min(w * share, (h * 0.62) / RATIO)
+      /* Home-rocket op desktop: geen hoogte-plafond. De hoogtebeperking
+         hieronder bestaat om een boot in twee richtingen te laten passen,
+         maar de raket mag hier bewust "lekker groot" — écht 60% van de
+         schermbreedte, ook op een brede monitor waar dat plafond anders
+         altijd eerder zou binden dan de breedte zelf. Het canvas beslaat
+         toch al het hele scherm, dus een neus of vlam die daarbovenuit
+         valt, tekent gewoon niet — geen layout die daardoor breekt. */
+      const lead =
+        variant === 'home-rocket' && !narrowScreen ? w * share : Math.min(w * share, (h * 0.62) / RATIO)
 
       for (const boat of boats) {
         boat.pw = lead * (boat.w / LEAD_W)
@@ -988,28 +986,79 @@ export function useFleetScene({
       return isRocket ? 0 : 1
     }
 
-    /** Home-rocket: het spoor van vonken die onder de vlam wegstromen (zie
-     *  rocketTrail hierboven). altitude stuurt lengte én kracht ineen: vlak
-     *  bij de grond — net vertrokken of net geland — is er nauwelijks iets
-     *  te zien, op volle hoogte trekt de raket een duidelijk spoor. Elke
-     *  vonk herhaalt haar eigen pad elke cyclus (t loopt via % 1 gewoon
-     *  door), dus geen eigen levenscyclus om bij te houden. */
-    function drawRocketTrail(o: Boat, altitude: number, time: number): void {
-      const flameX = o.px + o.dx
-      const flameY = o.py + o.dy + o.ph * 0.48
-      const length = o.ph * 0.85 * altitude
-      const spread = o.pw * 0.12
-      const alpha = 0.55 * altitude
-      const [red, green, blue] = paletteRgb[4]
+    /** Home-rocket, bij de overgang naar de reform-fase: elke korrel van de
+     *  raket krijgt een nieuwe, willekeurige plek om vandaan te
+     *  "verschijnen" — een cirkel rond haar eigen doelpositie in de vorm,
+     *  ruim genoeg om echt verspreid te ogen in plaats van een lichte
+     *  wazigheid. Eenmalig per cyclus aangeroepen (zie de faseovergang in
+     *  draw()), niet elke frame: anders is er nooit een vaste startplek om
+     *  vanaf te bewegen. Hergebruikt p.sx/p.sy — dezelfde velden die de
+     *  forming-instap bij het laden al voor precies dit doel had. */
+    function seedHomeRocketReform(): void {
+      const owner = boats[0]
+      if (!owner) return
+      const stageIdx = JOURNEY_STAGE_COUNT - 1
+      const scatter = Math.max(owner.pw, owner.ph) * 0.9
+      for (const p of parts) {
+        if (p.boat !== 0 || !p.jx || !p.jy) continue
+        const bx = p.jx[stageIdx]
+        const by = p.jy[stageIdx]
+        const ax = owner.px + bx * owner.cos - by * owner.sin
+        const ay = owner.py + bx * owner.sin + by * owner.cos
+        const angle = Math.random() * Math.PI * 2
+        const radius = (0.4 + Math.random() * 0.6) * scatter
+        p.sx = ax + Math.cos(angle) * radius
+        p.sy = ay + Math.sin(angle) * radius
+      }
+    }
 
-      for (const spark of rocketTrail) {
-        const t = (time * spark.speed * 0.3 + spark.lag) % 1
-        const r = spark.size * (1 - t) * altitude
-        if (r <= 0.15) continue
-        const x = flameX + spark.side * spread * t
-        const y = flameY + t * length
-        const a = spark.spin + time * 0.6
-        gl!.push(x, y, r, a, red, green, blue, alpha)
+    /** Home-rocket, bij de overgang naar de launch-fase: bevriest de
+     *  grondpositie (homeRocketLaunchOrigin) en loot een vaste set
+     *  rookwolk-punten die daar straks vandaan uitwaaieren — zie
+     *  drawHomeRocketBillow(). Elk punt krijgt een eigen `delay` (0..0.3s)
+     *  zodat de wolk als geheel aanwakkert in plaats van in één klap vol op
+     *  te komen. */
+    function seedHomeRocketLaunch(): void {
+      const owner = boats[0]
+      if (!owner) return
+      homeRocketLaunchOrigin = { x: owner.px + owner.dx, y: owner.py + owner.dy + owner.ph * 0.5 }
+      homeRocketBillow = Array.from({ length: HOME_ROCKET_BILLOW_COUNT }, (_, i) => {
+        const seeded = rng(0x5a11 + i * 617)
+        return {
+          // Vooral zijwaarts en omlaag uitwaaierend — een rookwolk die
+          // langs de grond blijft hangen, niet mee omhoog stijgt.
+          angle: Math.PI / 2 + (seeded() - 0.5) * Math.PI * 1.1,
+          speed: 0.5 + seeded() * 1,
+          size: 2 + seeded() * 4,
+          spin: seeded() * Math.PI * 2,
+          delay: seeded() * 0.3,
+        }
+      })
+    }
+
+    /** Home-rocket: tekent de rookwolk bij de voet, zie seedHomeRocketLaunch()
+     *  hierboven. `elapsed` loopt door vanaf het moment van ontsteking, ook
+     *  nog een stuk in de gone-fase — zie de aanroep in draw(), die de
+     *  klok van de twee fasen aan elkaar plakt zodat de wolk niet abrupt
+     *  stopt op het moment dat de raket zelf de rand bereikt. Dezelfde
+     *  "straal schaalt, geen apart alphakanaal"-gewoonte als de rest van
+     *  deze scène geldt hier niet: dit spoor staat los van de gedeelde
+     *  deeltjesgroepen, dus een eigen alpha kost niets extra. */
+    function drawHomeRocketBillow(elapsed: number): void {
+      if (!homeRocketBillow.length) return
+      const [red, green, blue] = paletteRgb[4]
+      const origin = homeRocketLaunchOrigin
+      for (const b of homeRocketBillow) {
+        const t = (elapsed - b.delay) / HOME_ROCKET_BILLOW_LIFE_SEC
+        if (t <= 0 || t >= 1) continue
+        const dist = ease(t) * b.speed * 220
+        const x = origin.x + Math.cos(b.angle) * dist
+        const y = origin.y + Math.sin(b.angle) * dist * 0.6
+        const r = b.size * (1 - t * 0.7)
+        // Vloeit in over de eerste ~0.6s (de "aanwakkerende" ontsteking) en
+        // weer uit tot het einde van de levensduur (t → 1).
+        const alpha = Math.min(1, (elapsed - b.delay) * 1.7) * 0.6 * (1 - t)
+        gl!.push(x, y, r, b.spin + elapsed, red, green, blue, alpha)
       }
     }
 
@@ -1190,6 +1239,78 @@ export function useFleetScene({
       }
       const liftoffRise = liftoffStart === null ? 0 : (now - liftoffStart) / 1000
 
+      /* Home-rocket: eigen viertakt-klok, zie de toelichting bij
+         homeRocketPhase hierboven. Schuift zelf door naar de volgende fase
+         zodra de huidige lang genoeg heeft gestaan; frozen (reduced motion)
+         slaat dit hele blok over, dus dan blijft de fase permanent 'formed'. */
+      if (variant === 'home-rocket' && !frozen) {
+        const phaseElapsed = (now - homeRocketPhaseStart) / 1000
+        if (homeRocketPhase === 'formed' && phaseElapsed >= HOME_ROCKET_HOLD_SEC) {
+          homeRocketPhase = 'launch'
+          homeRocketPhaseStart = now
+          seedHomeRocketLaunch()
+        } else if (homeRocketPhase === 'launch' && phaseElapsed >= HOME_ROCKET_LAUNCH_SEC) {
+          homeRocketPhase = 'gone'
+          homeRocketPhaseStart = now
+        } else if (homeRocketPhase === 'gone' && phaseElapsed >= HOME_ROCKET_GONE_SEC) {
+          homeRocketPhase = 'reform'
+          homeRocketPhaseStart = now
+          seedHomeRocketReform()
+        } else if (homeRocketPhase === 'reform' && phaseElapsed >= HOME_ROCKET_REFORM_SEC) {
+          homeRocketPhase = 'formed'
+          homeRocketPhaseStart = now
+        }
+      }
+      const homeRocketPhaseElapsed = variant === 'home-rocket' ? (now - homeRocketPhaseStart) / 1000 : 0
+      /* Hoever de traagste korrel (vy 45, zie buildJourneyIdentities() in
+         fleet-geometry.ts) minstens omhoog moet om de hele vorm boven de
+         canvasrand te krijgen — de onderkant (de vlam) staat het verst van
+         de rand af, dus die bepaalt de maat. Elk frame opnieuw uit boats[0]
+         gelezen: goedkoop, en blijft zo ook na een resize kloppen. */
+      const homeRocketOwner = variant === 'home-rocket' ? boats[0] : undefined
+      const homeRocketClear = homeRocketOwner ? homeRocketOwner.py + homeRocketOwner.ph * 0.6 + 40 : 0
+      /* 0..1 door de launch-fase, 1 zodra 'gone' is (blijft daar op
+         maximum staan — anders zakt de vorm halverwege de wachttijd
+         alweer terug). Derde macht, geen rechte lerp: de eerste seconden
+         beweegt de raket zo bijna niet (de rookwolk hieronder trekt in die
+         tijd alle aandacht — "eerst de trail, dan pas de liftoff"), en
+         pas in de tweede helft van de fase trekt hij snel en steeds
+         sneller door. */
+      const homeRocketLaunchT =
+        homeRocketPhase === 'launch'
+          ? Math.min(1, homeRocketPhaseElapsed / HOME_ROCKET_LAUNCH_SEC)
+          : homeRocketPhase === 'gone'
+            ? 1
+            : 0
+      const homeRocketAscend = homeRocketLaunchT * homeRocketLaunchT * homeRocketLaunchT
+      /* Ruime overschot (35%) op de geometrische klaring, zodat zelfs de
+         traagste korrel (laagste vy) door de additieve spreiding
+         hieronder nog altijd ruim over de rand komt. */
+      const homeRocketRiseBase = homeRocketClear * 1.35
+      /* Slot 3 in ROCKET_STAGE is de "vlam" (zie fleet-geometry.ts) — dat
+         stuk van de vorm IS de stuwvlam al, dus de build-up hoort zich
+         daar te laten zien in plaats van in een los wolkje ernaast. Een
+         stilstaande raket brandt niet: buiten de launch-fase bestaat dit
+         slot dus niet (straal 0), en pas als de motoren echt ontsteken
+         komt het op.
+
+         De vlam-poly zelf is een druppel: breed waar hij de romp raakt
+         (genormaliseerd y 0.7 — dat is de motoruitlaat, de "onderkant
+         raket") en spits aflopend naar de punt (y 0.96). De burst moet dus
+         vanuit die uitlaat komen, niet vanuit de losse eigen positie van
+         elke korrel: homeRocketFlameSourceBy is dat ankerpunt, in dezelfde
+         lokale (boot-relatieve, nog ongeroteerde) ruimte als bx/by. Elke
+         korrel schuift — gestaffeld via p.lag, dezelfde truc als de
+         forming-instap — eerst van die bron náár haar eigen natuurlijke
+         plek in de druppel (het "opbouwen"), en stroomt daarna door langs
+         diezelfde lijn tot voorbij die plek (het "losraken"), terwijl de
+         straal krimpt naar niets. Zie de bx/by-aanpassing bij de
+         home-gear-rotatie hierboven, en de r-aanpassing hieronder. */
+      const homeRocketFlameSourceBy = homeRocketOwner ? (0.7 - 0.48) * homeRocketOwner.ph : 0
+      const HOME_ROCKET_FLAME_BUILD_FRAC = 0.4
+      const HOME_ROCKET_FLAME_PEAK = 2.8
+      const homeRocketReformT = homeRocketPhase === 'reform' ? Math.min(1, homeRocketPhaseElapsed / HOME_ROCKET_REFORM_SEC) : 0
+
       /* Showcase: eigen klok, geen scroll of hover. Elke scène (vloot,
          kompas, raketten, tandwielen) staat SHOWCASE_STAGE_MS lang stil, en
          mengt daarna in SHOWCASE_BLEND_MS naar de volgende — in een lus van
@@ -1330,15 +1451,6 @@ export function useFleetScene({
           pointer.y * boat.par * MAGNET_Y +
           boat.curveSign * CURVE_AMP * h * bulge
 
-        // Home-rocket: rigide op- en neerbeweging bovenop de gewone
-        // deining, één waarde voor de hele vorm (niet per korrel zoals
-        // hero's lancering) — de raket blijft zo altijd herkenbaar één
-        // silhouet, ook halverwege het opstijgen of landen.
-        if (variant === 'home-rocket' && !frozen) {
-          const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
-          boat.dy -= homeRocketAltitude(cyclePos) * h * HOME_ROCKET_LIFT_FRAC
-        }
-
         boat.rot = boat.theel + Math.sin(time * boat.rockF + boat.rockP) * boat.rockA
         boat.sin = Math.sin(boat.rot)
         boat.cos = Math.cos(boat.rot)
@@ -1466,6 +1578,29 @@ export function useFleetScene({
               by = ry
             }
 
+            // Home-rocket, vlam-slot: schuift van de motoruitlaat
+            // (homeRocketFlameSourceBy) naar de eigen plek in de druppel en
+            // stroomt daar voorbij door — zie de toelichting hierboven bij
+            // homeRocketFlameSourceBy. bx blijft ongemoeid tijdens het
+            // opbouwen (de korrel schuift alleen in de y-richting, van de
+            // uitlaat naar haar eigen hoogte in de druppel) en schaalt pas
+            // tijdens het losraken ook zijwaarts mee, zodat de burst dan
+            // pas echt uitwaaiert.
+            if (variant === 'home-rocket' && p.slot === 3 && homeRocketPhase === 'launch') {
+              const local = Math.max(0, Math.min(1, (homeRocketLaunchT - p.lag) / (1 - 0.45)))
+              if (local > 0) {
+                if (local < HOME_ROCKET_FLAME_BUILD_FRAC) {
+                  const buildE = smoothstep(local / HOME_ROCKET_FLAME_BUILD_FRAC)
+                  by = homeRocketFlameSourceBy + (by - homeRocketFlameSourceBy) * buildE
+                } else {
+                  const detach = ease((local - HOME_ROCKET_FLAME_BUILD_FRAC) / (1 - HOME_ROCKET_FLAME_BUILD_FRAC))
+                  const extend = 1 + detach * 2.2
+                  bx *= extend
+                  by = homeRocketFlameSourceBy + (by - homeRocketFlameSourceBy) * extend
+                }
+              }
+            }
+
             x = o.px + o.dx + bx * o.cos - by * o.sin
             y = o.py + o.dy + bx * o.sin + by * o.cos
 
@@ -1473,6 +1608,27 @@ export function useFleetScene({
             // rafelt uiteen terwijl hij wegdrijft in plaats van als één blok
             // omhoog te schuiven.
             if (liftoffRise > 0) y -= liftoffRise * (p.vy ?? 70)
+
+            // Home-rocket, launch/gone: een gedeelde, versnellende
+            // klimcurve (homeRocketAscend) plus een kleine, additieve
+            // spreiding op vy — genoeg voor het "uiteenrafelen"-gevoel,
+            // zonder dat een trage korrel ooit de rand niet zou halen
+            // (dat zou de multiplicatieve vy-schaal hierboven wél kunnen
+            // geven).
+            if (homeRocketAscend > 0) {
+              y -= homeRocketAscend * (homeRocketRiseBase + ((p.vy ?? 100) - 100) * 2.5)
+            }
+
+            // Home-rocket, reform: in plaats van de normale doelpositie een
+            // lerp vanaf de willekeurige plek die seedHomeRocketReform() net
+            // aan p.sx/p.sy gaf — dezelfde opbouw als de forming-instap bij
+            // het laden (smoothstep, per-korrel vertraagd via p.lag), maar
+            // nu herhaalbaar op elke nieuwe cyclus.
+            if (homeRocketReformT > 0) {
+              const e = smoothstep((homeRocketReformT - p.lag) / (1 - 0.45))
+              x = p.sx + (x - p.sx) * e
+              y = p.sy + (y - p.sy) * e
+            }
 
             // Showcase, raketten-scène: geen eenmalig vertrek (dat is de
             // aparte hero-lancering hierboven), maar een doorlopende
@@ -1591,6 +1747,34 @@ export function useFleetScene({
             if (variant === 'showcase' && p.boat !== 0) {
               r = 0
             }
+            // Home-rocket: geen vlam zolang de raket niet aan het lanceren
+            // is — stilstaand op de grond (formed) of nog aan het
+            // samenkomen (reform) brandt er niets. Alleen tijdens launch
+            // doorloopt elke vlam-korrel haar eigen opflakkeren-en-
+            // losraken, gestaffeld via p.lag — zie de toelichting bij
+            // HOME_ROCKET_FLAME_BUILD_FRAC hierboven.
+            if (variant === 'home-rocket' && p.slot === 3) {
+              if (homeRocketPhase !== 'launch') {
+                r = 0
+              } else {
+                const local = Math.max(0, Math.min(1, (homeRocketLaunchT - p.lag) / (1 - 0.45)))
+                if (local <= 0) {
+                  r = 0
+                } else if (local < HOME_ROCKET_FLAME_BUILD_FRAC) {
+                  const buildE = smoothstep(local / HOME_ROCKET_FLAME_BUILD_FRAC)
+                  r *= buildE * HOME_ROCKET_FLAME_PEAK * (1 + Math.sin(time * 22) * 0.12)
+                } else {
+                  const detach = ease((local - HOME_ROCKET_FLAME_BUILD_FRAC) / (1 - HOME_ROCKET_FLAME_BUILD_FRAC))
+                  r *= HOME_ROCKET_FLAME_PEAK * (1 - detach)
+                }
+              }
+            }
+            // Home-rocket, gone: sowieso onzichtbaar, los van of
+            // homeRocketAscend de rand ook echt gehaald heeft — een
+            // vangnet voor uitzonderlijke schermafmetingen.
+            if (variant === 'home-rocket' && homeRocketPhase === 'gone') {
+              r = 0
+            }
           }
           // Kwaliteitsterugval: dit deeltje is aangewezen om te verdwijnen
           // (zie applyTierDown()) en krimpt over FADE_MS naar niets, in
@@ -1609,10 +1793,16 @@ export function useFleetScene({
         }
       }
 
-      if (variant === 'home-rocket' && !frozen && boats[0]) {
-        const cyclePos = (time % HOME_ROCKET_CYCLE_SEC) / HOME_ROCKET_CYCLE_SEC
-        const altitude = homeRocketAltitude(cyclePos)
-        if (altitude > 0.03) drawRocketTrail(boats[0], altitude, time)
+      // Home-rocket: de rookwolk bij de voet, zie drawHomeRocketBillow()
+      // hierboven. `elapsed` telt door vanaf de ontsteking, ook nog een
+      // stuk in 'gone', zodat de wolk niet abrupt stopt op het moment dat
+      // de raket zelf de rand bereikt.
+      if (variant === 'home-rocket' && !frozen) {
+        if (homeRocketPhase === 'launch') {
+          drawHomeRocketBillow(homeRocketPhaseElapsed)
+        } else if (homeRocketPhase === 'gone') {
+          drawHomeRocketBillow(HOME_ROCKET_LAUNCH_SEC + homeRocketPhaseElapsed)
+        }
       }
 
       gl!.flush()
