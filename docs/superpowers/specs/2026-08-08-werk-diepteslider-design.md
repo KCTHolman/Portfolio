@@ -75,20 +75,25 @@ In `app/styles/site.css` (rond regel 479) staat de actieve regel:
 }
 ```
 
-**Let op, buiten scope:** `app/styles/widget.css` bevat rond regel 656-660 een
-vergelijkbare regel `.dsv[data-depth="tech"] .dsv-entry-tech { display: block }`. Er
-bestaat nergens in de huidige DOM een element met exact class `dsv` dat ook
-`data-depth` draagt — dit lijkt dode CSS uit de periode vóór de React-refactor (zie de
-koptekst van `components/showcase/run-data.tsx`: "Dit stond eerder als data-attributes in
-de HTML, waar widget.js het weer uit terugleeg"). Dit ontwerp raakt die regel niet aan;
-opruimen is een apart, ongerelateerd klusje.
+**Let op, buiten scope:** `app/styles/widget.css` bevat rond regel 657-660 eerst een
+ongescopede `.dsv-entry-tech, .dsv-entry-fail { display: none; }` — nog actief, want
+`widget.css` wordt rechtstreeks geïmporteerd in `app/werk/page.tsx`, en dit is precies wat
+`site.css`'s override (regel 482-483) vandaag via hogere specificiteit teniet doet — en
+daaronder een tweede, wél dode regel: `.dsv[data-depth="tech"] .dsv-entry-tech { display:
+block }`. Er bestaat nergens in de huidige DOM een element met exact class `dsv` dat ook
+`data-depth` draagt, dus die scoped override is onbereikbaar — vermoedelijk een restant
+uit de periode vóór de React-refactor (zie de koptekst van
+`components/showcase/run-data.tsx`: "Dit stond eerder als data-attributen in de HTML, waar
+widget.js het weer uit terugleesde"). Dit ontwerp raakt geen van beide regels aan — de
+nieuwe CSS in dit ontwerp behoudt hetzelfde override-patroon voor beide tiers. Opruimen
+van alleen de tweede regel is een apart, ongerelateerd klusje.
 
 `components/showcase/technisch-data.tsx` exporteert vandaag `METRICS`, `CHECKS` en
 `ROADMAP` als losse data-arrays, gerenderd in de checks-`JourneySection` in
-`werk-journey.tsx`. Diezelfde sectie bevat ook al drie hand-geschreven `.dsv-runner`-kaarten
-(impact-analyse, self-hosted-vs-Action, RAG/MCP-eigendom) als kinderen van de
-"bouwen"-sectie — dat patroon (data-array vóór tabellarische content, inline JSX voor
-losse alinea's) hergebruikt dit ontwerp voor de nieuwe content.
+`werk-journey.tsx`. De bouwen-sectie bevat op zijn beurt al drie hand-geschreven
+`.dsv-runner`-kaarten (impact-analyse, self-hosted-vs-Action, RAG/MCP-eigendom) als losse
+kinderen — dat patroon (data-array vóór tabellarische content, inline JSX voor losse
+alinea's) hergebruikt dit ontwerp voor de nieuwe content in de checks-sectie.
 
 ## Architectuur
 
