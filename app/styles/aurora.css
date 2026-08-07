@@ -51,10 +51,15 @@
 }
 
 /* The wash's own breath: a slow brighten-and-dim independent of the colour
-   walk/sway in aurora.js, so the backdrop never sits at one fixed exposure. */
-@keyframes khBreathe {
-  0%, 100% { filter: url(#kh-paint) brightness(0.88) saturate(0.94); }
-  50%      { filter: url(#kh-paint) brightness(1.16) saturate(1.1); }
+   walk/sway in aurora.js, so the backdrop never sits at one fixed exposure.
+   This animates opacity on a separate overlay (.aur-breathe) instead of
+   filter on .aur-paint itself — .aur-paint carries the url(#kh-paint)
+   displacement filter, and animating any part of a filter chain forces the
+   browser to re-rasterize the whole chain (feTurbulence + feDisplacementMap
+   included) on every frame. Opacity on its own layer stays compositor-only. */
+@keyframes khBreatheOpacity {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
 }
 
 /* ---------- Backdrop --------------------------------------------------- */
@@ -85,7 +90,17 @@
   /* The boost is a stylesheet knob (see the narrow-screen block); the op comes
      from JS as an inline style, so the two have to be separate properties. */
   opacity: calc(var(--aur-paint-op, 0.62) * var(--aur-paint-boost, 1));
-  animation: khBreathe 26s ease-in-out infinite;
+}
+
+/* The breathing overlay lives inside .aur-paint (after the blobs) so its
+   blend mode only reacts with the blobs, not with the grain/vignette above. */
+.aur-breathe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background: radial-gradient(60% 50% at 50% 42%, rgba(255, 255, 255, 0.16), transparent 70%);
+  animation: khBreatheOpacity 26s ease-in-out infinite;
 }
 
 /* Trage machine (zie de framegat-meting in aurora-provider.tsx): dezelfde
@@ -93,11 +108,14 @@
    dwingt op elke kleurwissel een volledige software-rasterisatie van deze
    hele, schermvullende laag af, en is verreweg de duurste losse regel hier.
    khBreatheLite is dezelfde ademhaling zonder de url()-referentie erin, want
-   de keyframes zelf zouden anders bij elke cyclus het filter terugzetten. */
+   de keyframes zelf zouden anders bij elke cyclus het filter terugzetten.
+   Dit pad ademt dus al goedkoop via z'n eigen filter — .aur-breathe zou hier
+   alleen een tweede, overlappende ademhaling bovenop leggen. */
 .aur-paint--lite {
   filter: none;
   animation: khBreatheLite 26s ease-in-out infinite;
 }
+.aur-paint--lite .aur-breathe { display: none; }
 @keyframes khBreatheLite {
   0%, 100% { filter: brightness(0.88) saturate(0.94); }
   50%      { filter: brightness(1.16) saturate(1.1); }
@@ -118,6 +136,7 @@
     filter: none;
     animation: khBreatheLite 26s ease-in-out infinite;
   }
+  .aur-paint .aur-breathe { display: none; }
 }
 
 .aur-blob {
@@ -333,14 +352,16 @@
   .aur-stage--build .aur-blob,
   .aur-grain,
   .aur-stage,
-  .aur-paint { animation: none; }
+  .aur-paint,
+  .aur-breathe { animation: none; }
 }
 
 /* Verborgen tabblad: aurora-provider.tsx pauzeert hiermee ook de losse CSS
-   @keyframes (blobs, de filter-ademhaling, de korrel) — de rAF-kleurwandeling
+   @keyframes (blobs, de ademhaling, de korrel) — de rAF-kleurwandeling
    stopt daar al op visibilitychange, maar deze lopen op hun eigen animatie
    en zouden anders onzichtbaar door blijven draaien op de achtergrond. */
 .aur-stage--paused .aur-blob,
 .aur-stage--paused .aur-paint,
+.aur-stage--paused .aur-breathe,
 .aur-stage--paused .aur-grain { animation-play-state: paused; }
 

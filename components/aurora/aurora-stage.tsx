@@ -71,6 +71,7 @@ export function AuroraStage() {
           {BLOBS.map((n) => (
             <div key={n} className={`aur-blob aur-blob--${n}`} />
           ))}
+          <div className="aur-breathe" />
         </div>
         <svg className="aur-grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
           <rect width="100%" height="100%" filter="url(#kh-grain)" />
