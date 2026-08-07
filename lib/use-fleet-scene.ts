@@ -49,7 +49,7 @@ import {
   type BoatSpec,
   type Particle,
 } from '@/lib/fleet-geometry'
-import { isIOSWebKit, readReducedQuality, writeReducedQuality } from '@/lib/perf-quality'
+import { createFrameWatchdog, getTier, subscribeTier, type QualityTier } from '@/lib/perf-quality'
 
 export type FleetVariant = 'hero' | 'ambient' | 'journey' | 'showcase' | 'home-compass' | 'home-rocket' | 'home-gear'
 
@@ -255,68 +255,42 @@ export function useFleetScene({
     const MAGNET_X = homeMobileMagnet ? 18 : 12
     const MAGNET_Y = homeMobileMagnet ? 12 : 8
 
-    /* Terugval-niveau: 1 is vol, QUALITY_DEGRADE_FACTOR is wat perfCheck()
-       hieronder ervoor in de plaats zet zodra tekenen structureel te lang
-       duurt. Begint al verlaagd als een eerder bezoek op dít apparaat die
-       terugval al vaststelde — zie readReducedQuality() — of als dit WebKit
-       op iOS is: zelfde redenering als isIOSWebKit() in aurora-provider.tsx,
-       hier toegepast op het canvas in plaats van het SVG-filter. perfCheck()
-       oordeelt pas na formMs (1,8–2,6s) + PERF_WARMUP_MS + veertig samples —
-       op een iPhone is dát venster, op volle deeltjesdichtheid en
-       devicePixelRatio 2, precies de hapering die de terugval juist moet
-       voorkomen. Niet wachten op de meting scheelt 'm dus meteen, in plaats
-       van 'm één keer te laten zien voor hij verdwijnt. dprCap volgt mee: op
-       een tragere machine (of structureel op iOS) weegt de extra scherpte van
-       devicePixelRatio 2 zwaarder dan wat hij oplevert.
-
-       De overstap zelf mag niet te zien zijn: degradeQuality() verwijdert
-       niet in één klap een deel van de korrels (dat is precies de zichtbare
-       "pop" die een bezoeker wél zou opvallen), maar laat het teveel over
-       FADE_MS wegkrimpen tot niets — zie de fade-krimp in draw() en
-       pruneFadedParticles() hieronder, die pas ná die tijd de inmiddels
-       onzichtbare korrels daadwerkelijk uit de array haalt. Bij een meteen
-       toegepaste terugval (readReducedQuality() of isIOSWebKit(), hierboven)
-       is er nog niets getekend om af te bouwen, dus qualityScale staat dan
-       al laag vóór build() de deeltjes voor het eerst aanmaakt. */
+    /* Kwaliteitsniveau — 0/1/2, gedeeld met de aurora-achtergrond via
+       lib/perf-quality.ts. Zie dat bestand voor het hele regime (meteen
+       omlaag bij hapering, pas omhoog na een lang bewezen stabiel venster).
+       Geen browser-specifieke bovengrens hier: elk apparaat, elke
+       renderengine doorloopt dezelfde meting. */
+    function effectiveTier(): QualityTier {
+      return getTier()
+    }
     /* Showcase heeft, in tegenstelling tot de andere varianten, geen ene
        vorm/vloot maar de "zon" plus acht satellieten tegelijk — bij dezelfde
-       0.55 als de rest bleef die scène op een trage machine nog steeds
-       merkbaar zwaarder dan hero/journey/ambient met hun eigen 0.55. Een
-       stevigere terugval hier snijdt recht in dat verschil, zonder de andere
-       varianten aan te raken. */
-    const QUALITY_DEGRADE_FACTOR = variant === 'showcase' ? 0.35 : 0.55
-    /* Vlakke halvering van de deeltjesdichtheid, los van qualityScale's
-       perf-terugval hierboven: die springt pas bij structureel trage frames
-       in, terwijl dit een permanent lagere basislast op de GPU is. Moet
-       overal waar quality een aantal punten bepaalt worden meegenomen —
-       zie de journeyQuality/showcaseBoatDetail-parity-uitleg verderop. */
+       ondergrens als de rest bleef die scène op het laagste niveau nog
+       steeds merkbaar zwaarder dan hero/journey/ambient. Een lagere vloer
+       hier snijdt recht in dat verschil, zonder de andere varianten aan te
+       raken. Middelste stap ligt op het midden tussen vloer en vol — geen
+       eigen afweging nodig, gewoon een derde trede. */
+    const QUALITY_FLOOR = variant === 'showcase' ? 0.35 : 0.5
+    const QUALITY_STEPS: readonly [number, number, number] = [QUALITY_FLOOR, (QUALITY_FLOOR + 1) / 2, 1]
+    /* Vlakke halvering van de volle dichtheid, los van het tier-regime
+       hierboven: dat regime reageert op gemeten haperingen, dit is een
+       permanent lagere basislast op de GPU. Moet overal waar quality een
+       aantal punten bepaalt worden meegenomen — zie de
+       journeyQuality/showcaseBoatDetail-parity-uitleg verderop. */
     const BASE_DENSITY = 0.5
     const FADE_MS = 1600
-    let qualityScale = readReducedQuality() || isIOSWebKit() ? QUALITY_DEGRADE_FACTOR : 1
-    let dprCap = qualityScale < 1 ? 1 : 2
-    /* Meet pas een paar tellen nadat de instap voorbij is (die kost door de
-       forming-lerp toch al iets meer) en pas dan gericht: één venster van
-       samples, één keer een oordeel, geen continue meting die zelf weer
-       prestatie kost. Het echte interval tussen twee getekende frames — niet
-       de tijd die draw() zelf in JS doorbrengt — is de maat: op
-       GPU-versnelde canvas kan het echte rasterwerk buiten de JS-call om
-       gebeuren, dus alleen draw() opstoppen zou trager-dan-bedoeld tekenen op
-       een zwak GPU volledig missen. perfDone start al waar als dit bezoek de
-       terugval al kende — dan is er niets meer te meten. */
-    const PERF_SAMPLE_TARGET = 40
-    const PERF_BUDGET_MS = journeyLike || variant === 'showcase' ? 40 : 60
+
+    let tier = effectiveTier()
+    let qualityScale = QUALITY_STEPS[tier]
+    let dprCap = tier === 0 ? 1 : 2
+
+    /* Elk frame één sample; de watchdog telt zelf aaneengesloten reeksen bij
+       en meldt aan het gedeelde niveau zodra dat een stap rechtvaardigt (zie
+       createFrameWatchdog() in lib/perf-quality.ts). Pas ná formMs +
+       PERF_WARMUP_MS gevoed (zie loop() hieronder) — forming tekent met
+       opzet buiten de gewone cadans, dat zou de meting scheeftrekken. */
     const PERF_WARMUP_MS = 600
-    /* Eén losse hapering (een GC-pauze, een zware taak elders op de pagina)
-       mag de hele meting niet in zijn eentje kapen — zonder dak zou één rare
-       frame van bijvoorbeeld 500ms een gemiddelde optrekken dat 39 verder
-       prima frames tegenspreekt. sync() zet lastFrame bovendien terug op 0
-       zodra de lus na een verborgen tabblad hervat: die overgang zelf slaat
-       perfCheck() dan al over (zie de lastFrame > 0-voorwaarde in loop()),
-       dus dit dak vangt alleen de kleinere, wél-representatieve haperingen op. */
-    const PERF_SAMPLE_CAP_MS = 200
-    let perfSamples = 0
-    let perfSum = 0
-    let perfDone = qualityScale < 1
+    const watchdog = createFrameWatchdog(journeyLike || variant === 'showcase' ? 40 : 60)
 
     let w = 0
     let h = 0
@@ -560,8 +534,9 @@ export function useFleetScene({
     }
 
     function build(): void {
-      // qualityScale: 1 tenzij perfCheck() hieronder al vaststelde (dit
-      // bezoek of een vorig) dat deze machine minder aankan.
+      // qualityScale: op vol tenzij de watchdog hieronder (dit bezoek of een
+      // vorig, via het gedeelde niveau) al vaststelde dat deze machine
+      // minder aankan.
       let quality = (frozen ? 0.5 : 1) * qualityScale * BASE_DENSITY
       // Ambient tekent een handvol verre boten tegelijk — dezelfde
       // conservatieve korting als showcase's satellieten, uit hetzelfde
@@ -793,9 +768,9 @@ export function useFleetScene({
      *  opnieuw; de vorm zelf blijft staan, alleen de schaal verschuift. */
     function layout(): void {
       measure()
-      // dprCap zakt naar 1 zodra perfCheck() deze machine als traag
-      // aanmerkt — minder pixels om te vullen weegt zwaarder dan de extra
-      // scherpte, en de deeltjes zelf blijven op volle grootte.
+      // dprCap zakt naar 1 zodra het gedeelde niveau op 0 staat — minder
+      // pixels om te vullen weegt zwaarder dan de extra scherpte, en de
+      // deeltjes zelf blijven op volle grootte.
       const dpr = Math.min(dprCap, window.devicePixelRatio || 1)
 
       canvas!.width = Math.round(w * dpr)
@@ -1591,7 +1566,7 @@ export function useFleetScene({
             }
           }
           // Kwaliteitsterugval: dit deeltje is aangewezen om te verdwijnen
-          // (zie degradeQuality()) en krimpt over FADE_MS naar niets, in
+          // (zie applyTierDown()) en krimpt over FADE_MS naar niets, in
           // plaats van in één klap weg te vallen — pruneFadedParticles()
           // haalt 'm daarna pas echt uit de array.
           if (p.fadeStart !== undefined) {
@@ -1666,7 +1641,7 @@ export function useFleetScene({
 
     sceneRef.current = { setFormation }
 
-    /** Haalt de inmiddels op nul gekrompen korrels (zie degradeQuality()
+    /** Haalt de inmiddels op nul gekrompen korrels (zie applyTierDown()
      *  hieronder) daadwerkelijk uit parts/groups, en past dprCap toe op het
      *  canvas. Geen enkel overblijvend deeltje verandert van identiteit of
      *  positie — jx/jy/bx/by liggen al vast per object, dus verwijderen kan
@@ -1681,46 +1656,60 @@ export function useFleetScene({
       layout()
     }
 
-    /** Antwoord van perfCheck() hieronder op een machine die de volle vloot
-     *  niet soepel bijhoudt: geen instant herbouw (dat zou zelf de zichtbare
+    /** Eén stap omlaag: geen instant herbouw (dat zou zelf de zichtbare
      *  hapering zijn die dit juist moet voorkomen), maar een deel van de
      *  korrels — verspreid over de hele vloot, niet uit één hoek — laat
      *  draw() vanaf nu wegkrimpen. Zodra dat klaar is haalt
-     *  pruneFadedParticles() ze pas echt weg. Alleen ooit omlaag, nooit weer
-     *  omhoog: heen-en-weer schakelen tijdens hetzelfde bezoek zou zelf weer
-     *  als een hapering ogen. */
-    function degradeQuality(): void {
-      if (qualityScale < 1) return
-      qualityScale = QUALITY_DEGRADE_FACTOR
-      dprCap = 1
-      writeReducedQuality()
+     *  pruneFadedParticles() ze pas echt weg.
+     *
+     *  fadeShare is relatief aan de HUIDIGE dichtheid, niet aan vol: elke
+     *  korrel draagt al een vast, uniform verdeeld lotnummer (p.chaos) dat
+     *  nooit verandert, dus herhaalde stappen omlaag (2→1, later 1→0)
+     *  snijden consistent dieper in dezelfde, altijd oplopende rangorde —
+     *  geen korrel komt ooit terug op een lager niveau die op een hoger
+     *  niveau al verdween.
+     *
+     *  p.fadeStart === undefined in de guard hieronder is geen dubbele
+     *  check: op een machine die blijft haperen kan een tweede stap omlaag
+     *  vallen vóórdat de eerste fade + pruneFadedParticles() klaar is —
+     *  zonder de guard zou deze tweede aanroep een al half weggekrompen
+     *  korrel opnieuw op fadeStart=nu zetten en 'm zichtbaar laten
+     *  terugspringen naar volle grootte voor hij opnieuw krimpt. */
+    function applyTierDown(newTier: QualityTier): void {
+      const fadeShare = 1 - QUALITY_STEPS[newTier] / qualityScale
+      qualityScale = QUALITY_STEPS[newTier]
+      dprCap = newTier === 0 ? 1 : 2
+      tier = newTier
 
       const fadeStart = performance.now()
-      const fadeShare = 1 - QUALITY_DEGRADE_FACTOR
       for (const p of parts) {
-        // p.chaos is al een uniform verdeeld, stabiel eigen randomgetal
-        // (0..2π) — hergebruikt als lotnummer voor de terugval, zodat de
-        // te verwijderen korrels gelijkmatig over elke boot, elk stof en elk
-        // journey-stadium vallen in plaats van uit één plek te verdwijnen.
-        if (p.chaos / (Math.PI * 2) < fadeShare) p.fadeStart = fadeStart
+        if (p.fadeStart === undefined && p.chaos / (Math.PI * 2) < fadeShare) p.fadeStart = fadeStart
       }
 
       window.setTimeout(pruneFadedParticles, FADE_MS + 150)
     }
 
-    /** Eén oordeel, een paar tellen na de instap: hoe lang er gemiddeld
-     *  écht tussen twee getekende frames zit — niet hoe lang draw() zelf in
-     *  JS bezig is (zie de toelichting bij PERF_BUDGET_MS hierboven). Geen
-     *  doorlopende meting (die zou zelf weer prestatie kosten) — een venster
-     *  van PERF_SAMPLE_TARGET frames, dan klaar. Ligt het gemiddelde boven
-     *  PERF_BUDGET_MS, dan haalt deze machine de bedoelde snelheid niet,
-     *  ongeacht wat Lighthouse over de laadtijd zegt — dat meet iets anders. */
-    function perfCheck(gap: number): void {
-      perfSum += Math.min(gap, PERF_SAMPLE_CAP_MS)
-      perfSamples++
-      if (perfSamples < PERF_SAMPLE_TARGET) return
-      perfDone = true
-      if (perfSum / perfSamples > PERF_BUDGET_MS) degradeQuality()
+    /** Eén stap omhoog: anders dan applyTierDown() hierboven is er geen
+     *  lichte manier om korrels die al eerder wegkrompen en verwijderd zijn
+     *  weer terug te laten groeien — build() genereert de hele vloot bij een
+     *  andere quality opnieuw vanuit dezelfde RNG-stroom, dus een hogere
+     *  dichtheid is geen simpele aanvulling bovenop wat er al staat (zie de
+     *  parity-uitleg bij journeyQuality/showcaseBoatDetail verderop: de
+     *  inhoud van élke index verschuift zodra quality verandert, niet alleen
+     *  het totaal). Dit hergebruikt daarom letterlijk hetzelfde pad als een
+     *  resize (build + setFormation + layout) — t0 blijft ongemoeid, dus
+     *  forming staat allang op false en de nieuwe korrels verschijnen meteen
+     *  op hun eindpositie, zonder opnieuw naar binnen te vliegen. Een lichte
+     *  sprong in dichtheid, geen volledige scèneomwenteling — en zeldzaam
+     *  genoeg (pas na een lang bewezen stabiel venster) om dat te mogen
+     *  zijn. */
+    function applyTierUp(newTier: QualityTier): void {
+      qualityScale = QUALITY_STEPS[newTier]
+      dprCap = newTier === 0 ? 1 : 2
+      tier = newTier
+      build()
+      setFormation(presetIndexRef.current, true)
+      layout()
     }
 
     function loop(now: number): void {
@@ -1740,9 +1729,11 @@ export function useFleetScene({
         // Vóór lastFrame wordt overschreven: het interval tussen dít en het
         // vorige getekende frame is de prestatiemeting. Alleen na de instap
         // en zijn warmup geteld — forming zelf tekent bewust vaker dan de
-        // gewone cadans, dat zou de meting scheeftrekken.
-        if (!perfDone && !forming && lastFrame > 0 && now - t0 > formMs + PERF_WARMUP_MS) {
-          perfCheck(now - lastFrame)
+        // gewone cadans, dat zou de meting scheeftrekken. Loopt door voor de
+        // hele levensduur van de scène, niet één keer: dat is precies wat de
+        // omhoog-kant van het regime nodig heeft.
+        if (!forming && lastFrame > 0 && now - t0 > formMs + PERF_WARMUP_MS) {
+          watchdog.sample(now)
         }
         lastFrame = now
         if (now - lastPalette >= 220) {
@@ -1779,13 +1770,17 @@ export function useFleetScene({
         layout()
         /* lastFrame terug op 0: zonder dit zou loop()'s eerstvolgende
            aanroep now - lastFrame over de hele verborgen periode meten (soms
-           minuten) en dat als één prestatiesample doorgeven aan perfCheck().
+           minuten) en dat als één prestatiesample doorgeven aan de watchdog.
            Eén zo'n uitschieter kan een verder prima machine ten onrechte
            laten terugvallen. lastFrame > 0 is precies de voorwaarde die
            loop() al gebruikt om de allereerste tekenbeurt van de meting uit
            te sluiten — dit hergebruikt 'm om elke hervatting hetzelfde te
            behandelen als een eerste start. */
         lastFrame = 0
+        // Zelfde reden als lastFrame hierboven: de watchdog houdt zijn eigen
+        // laatst gemeten tijdstip bij, en zonder reset zou zijn eerste sample
+        // ná hervatten diezelfde hele verborgen periode als gat meten.
+        watchdog.reset()
         frame = requestAnimationFrame(loop)
       } else {
         syncPalette()
@@ -1867,6 +1862,16 @@ export function useFleetScene({
 
     document.addEventListener('visibilitychange', sync)
 
+    /* Reageert op een niveauwijziging waar die ook vandaan komt — deze scène
+       zelf (via de watchdog hierboven) of de aurora-achtergrond ernaast, die
+       hetzelfde gedeelde niveau leest en schrijft (zie lib/perf-quality.ts). */
+    const unsubscribeTier = subscribeTier(() => {
+      const nextEffective = effectiveTier()
+      if (nextEffective === tier) return
+      if (nextEffective < tier) applyTierDown(nextEffective)
+      else applyTierUp(nextEffective)
+    })
+
     readAccents()
     syncPalette()
     build()
@@ -1894,6 +1899,8 @@ export function useFleetScene({
       document.removeEventListener('pointerleave', releasePointer)
       document.removeEventListener('pointercancel', releasePointer)
       window.removeEventListener('blur', releasePointer)
+      unsubscribeTier()
+      watchdog.dispose()
       if (frame !== null) cancelAnimationFrame(frame)
     }
     /* presetIndex leest deze effect nergens rechtstreeks (alleen via de
