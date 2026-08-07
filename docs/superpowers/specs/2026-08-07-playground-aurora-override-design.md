@@ -49,6 +49,14 @@ Er bestaat vandaag geen enkel mechanisme om een los veld van een preset te overs
 `PRESETS` is een statische, readonly array en zowel `computeFrame` als `AuroraStage` lezen
 'm rechtstreeks.
 
+**Ook `deriveFormation`** (`lib/fleet-geometry.ts`) leest `PRESETS[presetIndex]`
+rechtstreeks — `preset.drift ?? DEFAULT_DRIFT` bepaalt mee hoe de vlootformatie schuift
+(zie `2026-08-05-aurora-preset-fleet-formation-design.md`). `Fleet`
+(`components/fleet.tsx`) geeft `activePreset` uit `useAurora()` door aan die functie, en
+`Fleet` staat ook op `/playground`. Dit override-mechanisme raakt die weg bewust niet aan
+(zie Buiten scope) — een drift-override verandert dus de kleur-zwaai, maar niet hoe de
+vloot ernaast staat.
+
 ## Architectuur
 
 ### Eén nieuw begrip: `AuroraOverride`, en `computeFrame` wordt preset-object-based
@@ -106,9 +114,12 @@ type AuroraContextValue = {
 - `setOverride(next)` is een platte setter (geen eigen mergelogica in de provider) — de
   aanroeper (het playground-paneel) geeft steeds het complete, gewenste object mee.
   `null` betekent: geen override, terug naar de kale preset.
-- `switchPreset(index)` roept er als eerste stap `setOverride(null)` bij aan: een nieuwe
-  preset is een schone basis om vanaf te experimenteren, geen stapeling op wat je net
-  aan het overriden was.
+- `switchPreset(index)` roept er als eerste stap `setOverride(null)` bij aan — vóór de
+  bestaande vroege `return` (`if (index === presetRef.current && !blendRef.current)
+  return`, `aurora-provider.tsx:163`). Zonder die volgorde zou het opnieuw aanklikken van
+  de al-actieve footer-swatch tijdens een override 'm stilletjes laten staan in plaats van
+  hem te wissen. Een nieuwe preset is een schone basis om vanaf te experimenteren, geen
+  stapeling op wat je net aan het overriden was.
 - `paint()` leest `overrideRef.current`, bouwt `applyOverride(PRESETS[presetRef.current]
   ?? PRESETS[0], overrideRef.current)` en geeft dát aan `computeFrame` mee — instant,
   zonder de 6s crossfade (die blijft uitsluitend voor echte presetwissels via
@@ -154,7 +165,7 @@ journey-paneel:
 - **Reset naar preset** — knop die `setOverride(null)` aanroept.
 
 Elke control initialiseert vanuit `effectivePreset` (dus: leeg override = toont de actieve
-preset se eigen waarden) en roept bij een wijziging `setOverride({ ...override, geo: {
+preset z'n eigen waarden) en roept bij een wijziging `setOverride({ ...override, geo: {
 ...override?.geo, scale: nextValue } })` (of het kleur-equivalent) aan.
 
 Preset-keuze zelf loopt via de al bestaande footer-swatches (site-breed) — er komt geen
@@ -163,8 +174,11 @@ tweede preset-picker binnen het playground-paneel.
 ## Nieuwe dependency
 
 `react-colorful` (~2.8kB, geen eigen dependencies) — `HslColorPicker`/`HslaColorPicker`
-werken rechtstreeks in HSL(A), dus geen omrekening naar/van RGB-hex nodig; sluit exact aan
-op de bestaande `Hsl`/`Hsla`-tuples.
+rekenen rechtstreeks in HSL(A), dus geen kleurruimte-omrekening naar/van RGB nodig. Ze
+nemen en leveren wél een **object** (`{h,s,l}`/`{h,s,l,a}`), geen tuple — dit project
+gebruikt overal `readonly [h,s,l]`/`readonly [h,s,l,a]`. Elke swatch heeft dus een kleine
+shape-mapping nodig op zowel de `color`-prop (tuple → object) als `onChange` (object →
+tuple); geen kleurwiskunde, maar wel iets om niet per ongeluk over te slaan.
 
 ## Wat verandert per bestand
 
@@ -192,3 +206,9 @@ op de bestaande `Hsl`/`Hsla`-tuples.
   gaan worden nu ook via override stuurbaar, niet de filteropbouw).
 - Geen validatie/clamping voorbij de sliders' eigen `min`/`max` — dit is een
   ontwikkelaarspaneel, geen publiek-gerichte UI.
+- **`deriveFormation`/`Fleet` blijven buiten bereik van de override.** Een drift-override
+  verandert de kleur-zwaai van de wash, maar niet hoe `Fleet` zijn formatie daarop baseert
+  — dat blijft rechtstreeks uit `PRESETS[activePreset]` lezen, ongeacht een actieve
+  override. Bewuste keuze: dit paneel gaat over de wash, niet over de vloot, en
+  `deriveFormation` meenemen zou een tweede, groter mechanisme (`Fleet`/`useFleetScene`)
+  in de override-doorgifte trekken voor een puur exploratief paneel.
