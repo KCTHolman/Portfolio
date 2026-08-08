@@ -660,7 +660,21 @@ export type JourneyStage = Point[][]
  *  bias als de boot dat voor die rol al deed. */
 const JOURNEY_SLOTS = SHAPES.map((s) => ({ edge: s.edge, fill: s.fill, bias: s.bias }))
 
-/** De boot als journey-stadium 0 — dezelfde acht polygonen als hierboven,
+/* Vouwbootje: het idee in zijn ruwste vorm, nog geen getuigde boot — een plat
+   gevouwen scheepje met twee zeil-vouwen en een paar plooilijnen. Journey-
+   stadium 0, groeit tijdens sectie "01 · Idee" uit tot BOAT_STAGE hieronder. */
+const PAPERBOAT_STAGE: JourneyStage = [
+  poly([0.14, 0.72], [0.86, 0.72], [0.68, 0.86], [0.32, 0.86]), // romp (hull-rol)
+  poly([0.46, 0.72], [0.46, 0.16], [0.74, 0.52]), // voorste zeil-vouw (mainsail-rol)
+  poly([0.46, 0.16], [0.28, 0.52], [0.46, 0.52]), // achterste zeil-vouw (jib-rol)
+  poly([0.86, 0.72], [0.94, 0.72], [0.86, 0.78]), // boegvouw (flyer-rol)
+  spar([0.46, 0.16], [0.46, 0.72], 0.006), // vouwlijn mast (mast-rol)
+  spar([0.14, 0.72], [0.46, 0.72], 0.005), // dekvouw links (boom-rol)
+  spar([0.46, 0.72], [0.86, 0.72], 0.005), // dekvouw rechts (sprit-rol)
+  poly([0.14, 0.72], [0.20, 0.72], [0.14, 0.78]), // stevenvouw (flag-rol)
+]
+
+/** De boot als journey-stadium 1 — dezelfde acht polygonen als hierboven,
  *  hier alleen herverpakt in het vormonafhankelijke formaat. */
 const BOAT_STAGE: JourneyStage = SHAPES.map((s) => s.pts)
 
@@ -796,18 +810,21 @@ const SHIELD_STAGE: JourneyStage = [
   poly([0.485, 0.16], [0.515, 0.16], [0.515, 0.19], [0.485, 0.19]), // klinknagel (flag-rol)
 ]
 
-/* Sleutel: baard links, schacht, en de tanden rechts — horizontaal, net als
-   de boot een duidelijke richting heeft. */
-const KEY_BOW: Point = [0.22, 0.46]
-const KEY_STAGE: JourneyStage = [
-  circlePoly(KEY_BOW[0], KEY_BOW[1], 0.16, 0.16, 36), // baard (hull-rol)
-  spar([0.34, 0.46], [0.8, 0.46], 0.045), // schacht (mainsail-rol)
-  poly([0.8, 0.4], [0.92, 0.4], [0.92, 0.5], [0.86, 0.5], [0.86, 0.58], [0.8, 0.58]), // tanden (jib-rol)
-  circlePoly(KEY_BOW[0], KEY_BOW[1], 0.09, 0.09, 26), // opening in de baard (flyer-rol)
-  spar([0.72, 0.46], [0.72, 0.58], 0.006), // extra tand (mast-rol)
-  spar([0.36, 0.4], [0.78, 0.4], 0.005), // schachtrand (boom-rol)
-  spar([0.36, 0.52], [0.78, 0.52], 0.005), // schachtrand (sprit-rol)
-  poly([0.205, 0.44], [0.235, 0.44], [0.235, 0.47], [0.22, 0.5], [0.205, 0.47]), // sleutelgat-accent (flag-rol)
+/* Anker: ring boven, schacht, en twee gehaakte vloeken onder. De vloeken
+   staan bewust op dezelfde rollen (mainsail-/jib-rol) als de twee vinnen van
+   ROCKET_STAGE hieronder — zelfde slotpaar, voor een rustige deeltjes-
+   overgang naar de raket die hierna komt. */
+const ANCHOR_RING: Point = [0.5, 0.16]
+const ANCHOR_CROWN: Point = [0.5, 0.62]
+const ANCHOR_STAGE: JourneyStage = [
+  circlePoly(ANCHOR_RING[0], ANCHOR_RING[1], 0.09, 0.09, 32), // ring (hull-rol)
+  poly(ANCHOR_CROWN, [0.22, 0.80], [0.34, 0.86], [0.42, 0.70]), // linkervloek (mainsail-rol)
+  poly(ANCHOR_CROWN, [0.78, 0.80], [0.66, 0.86], [0.58, 0.70]), // rechtervloek (jib-rol)
+  spar([0.5, 0.24], [0.5, 0.62], 0.045), // schacht (flyer-rol)
+  spar([0.34, 0.28], [0.66, 0.28], 0.028), // stok (mast-rol)
+  spar([0.44, 0.24], [0.44, 0.60], 0.005), // schachtrand (boom-rol)
+  spar([0.56, 0.24], [0.56, 0.60], 0.005), // schachtrand (sprit-rol)
+  poly([0.485, 0.13], [0.515, 0.13], [0.515, 0.16], [0.485, 0.16]), // moerpuntje (flag-rol)
 ]
 
 /* Raket: neus boven, romp, twee vinnen en een vlam onderaan — de vlam wordt
@@ -902,13 +919,14 @@ export function buildBoatSplash(boat: BoatSpec, index: number, quality: number):
   return parts
 }
 
-/** Geordend: elk journey-stadium van boot tot raket. */
+/** Geordend: elk journey-stadium van vouwbootje tot raket. */
 export const JOURNEY_STAGES: JourneyStage[] = [
+  PAPERBOAT_STAGE,
   BOAT_STAGE,
   COMPASS_STAGE,
   GEAR_STAGE,
   SHIELD_STAGE,
-  KEY_STAGE,
+  ANCHOR_STAGE,
   ROCKET_STAGE,
 ]
 
