@@ -699,12 +699,6 @@
 }
 .dsv-entry-fail code { color: rgba(251, 213, 112, 0.9); }
 
-.dsv-btn--depth[aria-pressed="true"] {
-  border-color: rgba(125, 224, 210, 0.45);
-  background: rgba(125, 224, 210, 0.12);
-  color: var(--dsv-acc-soft);
-}
-
 /* The three phases of the epic, spelled out inside the step that decides on
    them: what gets built, and what "done" means for each. */
 .dsv-phases {
@@ -852,8 +846,6 @@
   color: var(--dsv-acc-soft);
 }
 .dsv-btn--play:hover { background: rgba(125, 224, 210, 0.18); }
-
-.dsv-btn--depth { min-width: 166px; }
 
 /* ---------- Technisch --------------------------------------------------- */
 
@@ -1263,7 +1255,6 @@
     letter-spacing: 0.12em;
   }
   .dsv-btn--play { min-width: 126px; }
-  .dsv-btn--depth { min-width: 148px; }
 
   .dsv-tech {
     margin-top: 22px;

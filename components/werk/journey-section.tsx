@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 
 /* Eén halte in het scrollverhaal: alleen de kernzin staat in de "verhalende"
-   stand. Alles daaronder — tech, fail, én losse children zoals een
-   checks-grid of een RAG/MCP-alinea — zit in één gezamenlijke wikkel die de
-   diepgang-schakelaar in werk-journey.tsx in één keer in- en uitschakelt
-   (data-depth op de gezamenlijke root, zie .dsv-depth-extra in site.css). */
+   stand. Alles daaronder zit in twee tiers, allebei gestuurd door data-depth
+   op de gezamenlijke root in werk-journey.tsx (zie .dsv-depth-extra in
+   site.css): "techniek" voor tech/fail/children (zoals voorheen), en het
+   nieuwe "architectuur" voor deep — uitsluitend zichtbaar op het diepste
+   niveau, en additief: niets verdwijnt als je verder schuift. */
 
 type JourneySectionProps = {
   id: string
@@ -14,10 +15,21 @@ type JourneySectionProps = {
   tech?: ReactNode
   fail?: ReactNode
   children?: ReactNode
+  deep?: ReactNode
 }
 
-export function JourneySection({ id, eyebrow, title, lead, tech, fail, children }: JourneySectionProps) {
+export function JourneySection({
+  id,
+  eyebrow,
+  title,
+  lead,
+  tech,
+  fail,
+  children,
+  deep,
+}: JourneySectionProps) {
   const hasDepth = Boolean(tech || fail || children)
+  const hasDeep = Boolean(deep)
 
   return (
     <section id={id} className="kh-journey-section">
@@ -29,7 +41,7 @@ export function JourneySection({ id, eyebrow, title, lead, tech, fail, children 
       <p className="dsv-lead">{lead}</p>
 
       {hasDepth ? (
-        <div className="dsv-depth-extra">
+        <div className="dsv-depth-extra" data-tier="techniek">
           {tech ? (
             <p className="dsv-entry-tech">
               <span className="dsv-tech-label">achtergrond</span>
@@ -43,6 +55,12 @@ export function JourneySection({ id, eyebrow, title, lead, tech, fail, children 
             </p>
           ) : null}
           {children}
+        </div>
+      ) : null}
+
+      {hasDeep ? (
+        <div className="dsv-depth-extra" data-tier="architectuur">
+          {deep}
         </div>
       ) : null}
     </section>
