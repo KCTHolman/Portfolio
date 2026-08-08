@@ -54,7 +54,7 @@ export function HomeHero() {
               </p>
               <div className="kh-cta-row">
                 <Link className="khcta khcta--primary" href="/werk/">
-                  Huidige AI-projecten &#8594;
+                  Waar ik momenteel aan bouw &#8594;
                 </Link>
                 <Link className="khcta khcta--ghost" href="/contact/">
                   Zeg hallo

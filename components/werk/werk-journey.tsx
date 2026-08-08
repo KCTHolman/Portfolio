@@ -64,15 +64,17 @@ export function WerkJourney() {
       <DirectionalTransition>
       <main className="kh-main kh-main--werk" id="inhoud">
         <section className="kh-werk-hero" style={{ padding: '56px 0 0', maxWidth: '520px' }}>
-          <p className="kh-eyebrow">Huidige AI-projecten</p>
+          <p className="kh-eyebrow">Waar ik momenteel aan bouw</p>
           <h1 className="kh-page-title">
             Een pijplijn die <span className="kh-accent">zichzelf</span> bewaakt
           </h1>
           <p className="kh-lead">
-            deSchouwVloot is waar de gitflow begint: geen productcode, maar de gedeelde workflows en
-            standaarden waarop mijn eigen projectrepo&apos;s draaien &mdash; de meeste daarvan priv&eacute;.
-            Van idee tot lancering, in kernzinnen met optioneel de techniek erachter: elke bewering
-            hieronder is na te trekken in deze publieke repo.
+            Ik bouw zo dat AI-agents het grootste deel van het ontwikkelproces zelfstandig kunnen
+            doen, zonder dat ik de controle over het resultaat uit handen geef. deSchouwVloot is de
+            gedeelde workflows en standaarden waarop mijn eigen projectrepo&apos;s draaien &mdash;
+            geen productcode, de meeste repo&apos;s zelf priv&eacute;. Van idee tot lancering, in
+            kernzinnen met optioneel de techniek erachter: elke bewering hieronder is na te trekken in
+            deze publieke repo.
           </p>
           <div style={{ marginTop: 20 }}>
             <div className="dsv-depth-slider">
@@ -138,7 +140,7 @@ export function WerkJourney() {
               id="bouwen"
               eyebrow="03 · Triage, plan, bouwen"
               title="De agent werkt het zelf uit"
-              lead="Triage bepaalt, in de eigen repo van dat project, wat voor werk het is en welk deel het raakt. Plannen doet twee dingen tegelijk: het toetst het idee aan wat ik voor dát project heb vastgelegd — constitution.md voor de harde grenzen, doelen.md voor de richting — én het maakt een impact-analyse, die de scope afbakent en vastlegt aan welke criteria het resultaat moet voldoen. Geen plan zonder afbakening en zonder een concrete manier om het na te trekken. Zo blijf ik ook hier aan het stuur, zonder dat ik per idee hoef te klikken: de eisen liggen al vast voordat de agent begint. Bouwen voert het plan daarna uit, op een eigen machine en met een limiet — loopt de agent vast, dan stopt hij vanzelf."
+              lead="Triage bepaalt wat voor werk het is; plannen toetst het aan mijn vastgelegde grenzen en bakent de scope af voordat er iets gebouwd wordt. Bouwen voert dat plan daarna uit op een eigen machine, met een limiet — loopt de agent vast, dan stopt hij vanzelf."
               tech={bouwen.tech}
               fail={bouwen.fail}
             >
@@ -378,7 +380,7 @@ export function WerkJourney() {
               id="mens"
               eyebrow="05 · Mens beslist"
               title="Precies drie soorten plekken"
-              lead="Waar de eisen uit stap 3 het kader al zetten, is dit waar ik zelf op de knop druk: bij de merge van elke fase, bij de uiteindelijke release, en bij een escalatie zodra een agent er zelf niet uitkomt. Drie soorten plekken, verder nergens — al het andere gaat vanzelf door zodra het groen staat."
+              lead="Ik grijp maar op drie momenten zelf in: bij de merge van elke fase, bij de release, en wanneer een agent escaleert omdat hij er zelf niet uitkomt. Verder nergens — al het andere gaat vanzelf door zodra het groen staat."
             >
               <p className="dsv-entry-tech">
                 <span className="dsv-tech-label">merge</span>
@@ -402,7 +404,7 @@ export function WerkJourney() {
               id="live"
               eyebrow="06 · Live"
               title="Van idee tot lancering"
-              lead="Wat er buiten staat is nooit half: pas als een epic in zijn geheel binnen is, gaat het naar buiten, met mijn goedkeuring op de release-knop. Elk project dat aanhaakt sluit op dezelfde manier aan: eigen doelen, eigen wetgeving in zijn constitution.md, eigen aanvullingen op de tests — en dezelfde drie plekken waar ik het stuur in handen houd. Van los idee tot lancering — de pijplijn doet het werk, ik zet de koers."
+              lead="Wat er buiten staat is nooit half: pas als een epic in zijn geheel binnen is, gaat het naar buiten, met mijn goedkeuring op de release-knop. Elk project dat aanhaakt sluit op dezelfde manier aan: eigen doelen, een eigen grondwet in zijn constitution.md die de harde grenzen vastlegt, eigen aanvullingen op de tests — en dezelfde drie plekken waar ik het stuur in handen houd. Van los idee tot lancering — de pijplijn doet het werk, ik zet de koers."
             />
           </div>
         </div>
