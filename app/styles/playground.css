@@ -236,9 +236,15 @@ main.kh-main--playground {
   margin-left: 8px;
 }
 
+/* Opent omhoog, niet omlaag: .kh-pg-shell duwt dit paneel met
+   justify-content:space-between al laag in het scherm, vlak boven de
+   sticky footer (site.css) — naar beneden openen liet de picker daarover-
+   heen en soms voorbij de viewport-rand lopen op kortere schermen. Boven de
+   swatch-rij staat altijd de rest van hetzelfde paneel (sliders, kop) al
+   zichtbaar binnen die ene viewport, dus daar is de ruimte wél gegarandeerd. */
 .kh-pg-popover {
   position: absolute;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 8px);
   left: 0;
   z-index: 20;
   padding: 10px;
