@@ -20,7 +20,7 @@ import { DirectionalTransition } from '@/components/directional-transition'
 import { Fleet } from '@/components/fleet-lazy'
 import { ScrollCue } from '@/components/scroll-cue'
 import { RUN_STEPS } from '@/components/showcase/run-data'
-import { CHECKS, METRICS, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
+import { CHECKS, INCIDENTS, METRICS, REPO, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
 import { useJourneyProgress } from '@/lib/use-journey-progress'
 
 import { JourneySection } from './journey-section'
@@ -205,6 +205,86 @@ export function WerkJourney() {
               lead="Zes bewakingen moeten groen zijn voordat er iets verdergaat. De tests draaien over de volledige rekenkern van het project, niet alleen over het ene stukje dat net veranderde. Een tweede agent leest het werk na; die review is advies, alleen de tests kunnen tegenhouden."
               tech={checks.tech}
               fail={checks.fail}
+              deep={
+                <>
+                  <div className="dsv-tech-label">Groen is geen bewijs</div>
+                  <p className="dsv-entry-detail" style={{ marginTop: 8 }}>
+                    Drie keer stond alles groen terwijl het systeem feitelijk kapot was &mdash; de
+                    verdediging is telkens hetzelfde principe: meet het gedrag, niet de configuratie.
+                  </p>
+                  <div className="dsv-checks" style={{ marginTop: 12 }}>
+                    {INCIDENTS.map((incident) => (
+                      <div key={incident.tag} className="dsv-check">
+                        <span className="dsv-check-tag">{incident.tag}</span>
+                        <span className="dsv-check-title">{incident.symptom}</span>
+                        <p className="dsv-check-body">{incident.lesson}</p>
+                        <a
+                          className="kh-link dsv-check-link"
+                          href={`${REPO}/blob/main/README.md`}
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          Bekijk in repo &rarr;
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="dsv-tech-label" style={{ marginTop: 20 }}>
+                    Vertrouwensniveaus, geen platte agent
+                  </div>
+                  <div className="dsv-runner" style={{ marginTop: 8 }}>
+                    <p className="dsv-runner-eyebrow">
+                      <span className="dsv-eyebrow-dot" aria-hidden="true" />
+                      untrusted vs. owner
+                    </p>
+                    <div>
+                      <div className="dsv-runner-title">Wat een agent mag, en wat niet</div>
+                      <p className="dsv-runner-body">
+                        Untrusted werk (PR- of issue-inhoud van buiten de flow) draait in een
+                        sandbox-container zonder docker-daemon en zonder host-mounts, nooit met
+                        deploy- of domein-secrets in scope, en nooit via{' '}
+                        <code>pull_request_target</code> naar een self-hosted runner.
+                        Owner-bevoegdheden (host-mutaties, releases, registraties) lopen
+                        uitsluitend via een apart, expliciet gelogd kanaal &mdash; nooit vanuit
+                        een workflow zelf.
+                      </p>
+                    </div>
+                    <a
+                      className="kh-link dsv-check-link"
+                      href={`${REPO}/blob/main/docs/architectuur.md`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Bekijk in repo &rarr;
+                    </a>
+                  </div>
+
+                  <div className="dsv-runner" style={{ marginTop: 12 }}>
+                    <p className="dsv-runner-eyebrow">
+                      <span className="dsv-eyebrow-dot" aria-hidden="true" />
+                      publieke kopie &middot; bewuste redactie
+                    </p>
+                    <div>
+                      <div className="dsv-runner-title">Publieke kopie &ne; publieke voordeur</div>
+                      <p className="dsv-runner-body">
+                        De host-diagnostiekworkflow en concrete hostcijfers (RAM, schijf,
+                        co-hostende diensten) zijn bewust uit deze publieke kopie gehaald:
+                        legitiem gereedschap voor de eigenaar, maar publiek een kant-en-klare
+                        doelwitlijst. Security-denken zit ook in wat je niet laat zien.
+                      </p>
+                    </div>
+                    <a
+                      className="kh-link dsv-check-link"
+                      href={`${REPO}/blob/main/README.md`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Bekijk in repo &rarr;
+                    </a>
+                  </div>
+                </>
+              }
             >
               <div className="dsv-tech-label" style={{ marginTop: 16 }}>
                 Gemeten, niet verzonnen &mdash; nulmeting v&oacute;&oacute;r dit ontwerp
