@@ -27,6 +27,15 @@ import { JourneySection } from './journey-section'
 
 const SECTION_IDS = ['idee', 'routering', 'bouwen', 'checks', 'mens', 'live'] as const
 
+const DEPTH_LEVELS = ['overzicht', 'techniek', 'architectuur'] as const
+type Depth = (typeof DEPTH_LEVELS)[number]
+
+const DEPTH_LABELS: Record<Depth, string> = {
+  overzicht: 'Overzicht',
+  techniek: 'Techniek',
+  architectuur: 'Architectuur',
+}
+
 export function WerkJourney() {
   const progressRef = useJourneyProgress(SECTION_IDS)
   /* Geen state: dit wisselt op de muis, niet op een render. draw() in
@@ -38,7 +47,7 @@ export function WerkJourney() {
   const onGithubLeave = () => {
     githubHoverRef.current = false
   }
-  const [depth, setDepth] = useState<'kern' | 'tech'>('kern')
+  const [depth, setDepth] = useState<Depth>('overzicht')
 
   const idee = RUN_STEPS[0]
   const routering = RUN_STEPS[1]
@@ -65,15 +74,27 @@ export function WerkJourney() {
             Van idee tot lancering, in kernzinnen met optioneel de techniek erachter: elke bewering
             hieronder is na te trekken in deze publieke repo.
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="dsv-btn dsv-btn--depth"
-              aria-pressed={depth === 'tech'}
-              onClick={() => setDepth((d) => (d === 'tech' ? 'kern' : 'tech'))}
-            >
-              {depth === 'tech' ? 'Verberg de techniek' : 'Toon de techniek'}
-            </button>
+          <div style={{ marginTop: 20 }}>
+            <div className="dsv-depth-slider">
+              <input
+                type="range"
+                min={0}
+                max={DEPTH_LEVELS.length - 1}
+                step={1}
+                value={DEPTH_LEVELS.indexOf(depth)}
+                onChange={(e) => setDepth(DEPTH_LEVELS[Number(e.target.value)])}
+                aria-label="Hoeveel diepgang wil je zien: overzicht, techniek of architectuur"
+              />
+              <div className="dsv-depth-labels">
+                {DEPTH_LEVELS.map((level) => (
+                  <span key={level} className={level === depth ? 'is-active' : undefined}>
+                    {DEPTH_LABELS[level]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p style={{ marginTop: 14 }}>
             <a
               className="kh-link"
               href="https://github.com/KCTHolman/deSchouwVloot"
@@ -86,10 +107,10 @@ export function WerkJourney() {
             >
               Gelijk naar de repo
             </a>
-          </div>
+          </p>
           <p style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'rgba(200, 220, 238, 0.55)' }}>
-            De kernzinnen hieronder staan er sowieso. Deze knop voegt per stap de achtergrond toe:
-            welk bestand of script het regelt, en wat er gebeurt als het misgaat.
+            De kernzinnen staan er sowieso. Deze schuif voegt per stap steeds meer laag toe: eerst
+            de achtergrond, dan de bewijsvoering erachter.
           </p>
           <ScrollCue />
         </section>

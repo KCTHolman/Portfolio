@@ -472,17 +472,44 @@ a.khnav[aria-current="page"]::after {
 }
 
 /* "Verhalend" toont uitsluitend de kernzin: tech, fail én losse children
-   (checks-grid, metrics, de RAG/MCP-alinea) zitten allemaal in .dsv-depth-extra
-   en gaan als één geheel open of dicht. Eén schakelaar voor alle zes secties
-   tegelijk, net als de bestaande "Technische versie"-knop dat nu al voor één
-   run doet. */
+   zitten in .dsv-depth-extra[data-tier="techniek"], de nieuwe Architectuur-
+   only content in .dsv-depth-extra[data-tier="architectuur"]. Eén schuif
+   (data-depth op de gezamenlijke root) stuurt alle zes secties tegelijk:
+   "techniek" toont tier "techniek", "architectuur" toont beide tiers —
+   niets verdwijnt bij verder schuiven. */
 .dsv-depth-extra { display: none; }
-.kh-werk-journey[data-depth="tech"] .dsv-depth-extra { display: block; }
 
-.kh-werk-journey[data-depth="tech"] .dsv-entry-tech,
-.kh-werk-journey[data-depth="tech"] .dsv-entry-fail {
+.kh-werk-journey[data-depth="techniek"] .dsv-depth-extra[data-tier="techniek"],
+.kh-werk-journey[data-depth="architectuur"] .dsv-depth-extra[data-tier="techniek"],
+.kh-werk-journey[data-depth="architectuur"] .dsv-depth-extra[data-tier="architectuur"] {
   display: block;
 }
+
+.kh-werk-journey[data-depth="techniek"] .dsv-entry-tech,
+.kh-werk-journey[data-depth="techniek"] .dsv-entry-fail,
+.kh-werk-journey[data-depth="architectuur"] .dsv-entry-tech,
+.kh-werk-journey[data-depth="architectuur"] .dsv-entry-fail {
+  display: block;
+}
+
+.dsv-depth-slider { max-width: 320px; }
+
+.dsv-depth-slider input[type='range'] {
+  width: 100%;
+  accent-color: var(--kh-teal);
+}
+
+.dsv-depth-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kh-ash);
+}
+
+.dsv-depth-labels .is-active { color: var(--kh-teal-soft); }
 
 /* ---------- Logboek: run links, feiten rechts ------------------------- */
 
