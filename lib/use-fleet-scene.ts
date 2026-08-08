@@ -222,17 +222,18 @@ export function useFleetScene({
      *  "ademende" instap. */
     const formMs = journeyLike ? 2600 : 1800
     /** Alleen relevant voor journeyLike: welk stadium hoort bij de allereerste
-     *  tekenbeurt van déze variant. journey start altijd bij de boot (scroll
-     *  begint boven), maar de drie homepage-scènes staan meteen op hun eigen,
-     *  vaste stadium (zie de rawProgress-toewijzing in draw()) — entryPos()
-     *  moet daarom vanaf de JUISTE vorm beginnen, niet altijd vanaf de boot,
-     *  anders oogt het laden als "boot verandert na een paar tellen in een
-     *  kompas/tandwiel", in plaats van die vorm die zelf scherp wordt. Zelfde
-     *  indices als de rawProgress-toewijzing in draw() hieronder (kompas 1,
-     *  tandwiel 2, raket het laatste stadium) — JOURNEY_STAGES' eigen
-     *  volgorde, niet showcase's afwijkende SHOWCASE_STAGES-volgorde. */
+     *  tekenbeurt van déze variant. journey start altijd bij het vouwbootje
+     *  (scroll begint boven), maar de drie homepage-scènes staan meteen op hun
+     *  eigen, vaste stadium (zie de rawProgress-toewijzing in draw()) —
+     *  entryPos() moet daarom vanaf de JUISTE vorm beginnen, niet altijd vanaf
+     *  het vouwbootje, anders oogt het laden als "vouwbootje verandert na een
+     *  paar tellen in een kompas/tandwiel", in plaats van die vorm die zelf
+     *  scherp wordt. Zelfde indices als de rawProgress-toewijzing in draw()
+     *  hieronder (kompas 2, tandwiel 3, raket het laatste stadium) —
+     *  JOURNEY_STAGES' eigen volgorde, niet showcase's afwijkende
+     *  SHOWCASE_STAGES-volgorde. */
     const initialJourneyStage =
-      variant === 'home-compass' ? 1 : variant === 'home-gear' ? 2 : variant === 'home-rocket' ? JOURNEY_STAGE_COUNT - 1 : 0
+      variant === 'home-compass' ? 2 : variant === 'home-gear' ? 3 : variant === 'home-rocket' ? JOURNEY_STAGE_COUNT - 1 : 0
     /** De drie homepage-alternatieven voor hero, die components/home-
      *  scene.tsx bij het laden loot. Op een telefoon is er geen aparte
      *  tekstkolom naast de vorm (zie de anker-override in build() en de
@@ -1256,9 +1257,9 @@ export function useFleetScene({
         variant === 'journey'
           ? (progressRef?.current ?? 0)
           : variant === 'home-compass'
-            ? 1
+            ? 2
             : variant === 'home-gear'
-              ? 2
+              ? 3
               : variant === 'home-rocket'
                 ? JOURNEY_STAGE_COUNT - 1
                 : 0
@@ -1274,7 +1275,7 @@ export function useFleetScene({
          volledig gevormd is. Alleen in dat bereik mag de naald los van de
          kast schommelen; op de boot zou hetzelfde slot (mainsail/jib) er als
          een raar trillend zeil uitzien. */
-      const compassStageIndex = 1
+      const compassStageIndex = 2
       const compassWeight =
         journeyLike
           ? journeyStage === compassStageIndex
@@ -1291,8 +1292,9 @@ export function useFleetScene({
          zodra de morph naar het kompas vertrekt. Hero/ambient tonen nooit
          iets anders dan een boot, dus die krijgen 'm altijd op 1; de
          homepage-scènes (home-compass/-gear/-rocket) staan altijd op hun
-         eigen stadium en dus altijd op 0. */
-      const boatWeight = journeyLike ? (journeyStage === 0 ? 1 - journeyT : 0) : 1
+         eigen stadium en dus altijd op 0. Stadium 1, niet 0 — stadium 0 is nu
+         het vouwbootje (zie PAPERBOAT_STAGE in fleet-geometry.ts). */
+      const boatWeight = journeyLike ? (journeyStage === 1 ? 1 - journeyT : 0) : 1
       const sailFlutter = frozen ? 0 : boatWeight
 
       /* Generaliseert de homepage-raket (variant "home-rocket", zie
