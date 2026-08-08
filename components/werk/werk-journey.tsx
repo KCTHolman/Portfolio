@@ -20,12 +20,21 @@ import { DirectionalTransition } from '@/components/directional-transition'
 import { Fleet } from '@/components/fleet-lazy'
 import { ScrollCue } from '@/components/scroll-cue'
 import { RUN_STEPS } from '@/components/showcase/run-data'
-import { CHECKS, METRICS, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
+import { CHECKS, INCIDENTS, METRICS, REPO, ROADMAP, WORKFLOWS_URL } from '@/components/showcase/technisch-data'
 import { useJourneyProgress } from '@/lib/use-journey-progress'
 
 import { JourneySection } from './journey-section'
 
 const SECTION_IDS = ['idee', 'routering', 'bouwen', 'checks', 'mens', 'live'] as const
+
+const DEPTH_LEVELS = ['overzicht', 'techniek', 'architectuur'] as const
+type Depth = (typeof DEPTH_LEVELS)[number]
+
+const DEPTH_LABELS: Record<Depth, string> = {
+  overzicht: 'Overzicht',
+  techniek: 'Techniek',
+  architectuur: 'Architectuur',
+}
 
 export function WerkJourney() {
   const progressRef = useJourneyProgress(SECTION_IDS)
@@ -38,7 +47,7 @@ export function WerkJourney() {
   const onGithubLeave = () => {
     githubHoverRef.current = false
   }
-  const [depth, setDepth] = useState<'kern' | 'tech'>('kern')
+  const [depth, setDepth] = useState<Depth>('overzicht')
 
   const idee = RUN_STEPS[0]
   const routering = RUN_STEPS[1]
@@ -55,25 +64,39 @@ export function WerkJourney() {
       <DirectionalTransition>
       <main className="kh-main kh-main--werk" id="inhoud">
         <section className="kh-werk-hero" style={{ padding: '56px 0 0', maxWidth: '520px' }}>
-          <p className="kh-eyebrow">Huidige AI-projecten</p>
+          <p className="kh-eyebrow">Waar ik momenteel aan bouw</p>
           <h1 className="kh-page-title">
             Een pijplijn die <span className="kh-accent">zichzelf</span> bewaakt
           </h1>
           <p className="kh-lead">
-            deSchouwVloot is waar de gitflow begint: geen productcode, maar de gedeelde workflows en
-            standaarden waarop mijn eigen projectrepo&apos;s draaien &mdash; de meeste daarvan priv&eacute;.
-            Van idee tot lancering, in kernzinnen met optioneel de techniek erachter: elke bewering
-            hieronder is na te trekken in deze publieke repo.
+            Ik bouw zo dat AI-agents het grootste deel van het ontwikkelproces zelfstandig kunnen
+            doen, zonder dat ik de controle over het resultaat uit handen geef. deSchouwVloot is de
+            gedeelde workflows en standaarden waarop mijn eigen projectrepo&apos;s draaien &mdash;
+            geen productcode, de meeste repo&apos;s zelf priv&eacute;. Van idee tot lancering, in
+            kernzinnen met optioneel de techniek erachter: elke bewering hieronder is na te trekken in
+            deze publieke repo.
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 20, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="dsv-btn dsv-btn--depth"
-              aria-pressed={depth === 'tech'}
-              onClick={() => setDepth((d) => (d === 'tech' ? 'kern' : 'tech'))}
-            >
-              {depth === 'tech' ? 'Verberg de techniek' : 'Toon de techniek'}
-            </button>
+          <div style={{ marginTop: 20 }}>
+            <div className="dsv-depth-slider">
+              <input
+                type="range"
+                min={0}
+                max={DEPTH_LEVELS.length - 1}
+                step={1}
+                value={DEPTH_LEVELS.indexOf(depth)}
+                onChange={(e) => setDepth(DEPTH_LEVELS[Number(e.target.value)])}
+                aria-label="Hoeveel diepgang wil je zien: overzicht, techniek of architectuur"
+              />
+              <div className="dsv-depth-labels">
+                {DEPTH_LEVELS.map((level) => (
+                  <span key={level} className={level === depth ? 'is-active' : undefined}>
+                    {DEPTH_LABELS[level]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p style={{ marginTop: 14 }}>
             <a
               className="kh-link"
               href="https://github.com/KCTHolman/deSchouwVloot"
@@ -86,10 +109,10 @@ export function WerkJourney() {
             >
               Gelijk naar de repo
             </a>
-          </div>
+          </p>
           <p style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'rgba(200, 220, 238, 0.55)' }}>
-            De kernzinnen hieronder staan er sowieso. Deze knop voegt per stap de achtergrond toe:
-            welk bestand of script het regelt, en wat er gebeurt als het misgaat.
+            De kernzinnen staan er sowieso. Deze schuif voegt per stap steeds meer laag toe: eerst
+            de achtergrond, dan de bewijsvoering erachter.
           </p>
           <ScrollCue />
         </section>
@@ -117,7 +140,7 @@ export function WerkJourney() {
               id="bouwen"
               eyebrow="03 · Triage, plan, bouwen"
               title="De agent werkt het zelf uit"
-              lead="Triage bepaalt, in de eigen repo van dat project, wat voor werk het is en welk deel het raakt. Plannen doet twee dingen tegelijk: het toetst het idee aan wat ik voor dát project heb vastgelegd — constitution.md voor de harde grenzen, doelen.md voor de richting — én het maakt een impact-analyse, die de scope afbakent en vastlegt aan welke criteria het resultaat moet voldoen. Geen plan zonder afbakening en zonder een concrete manier om het na te trekken. Zo blijf ik ook hier aan het stuur, zonder dat ik per idee hoef te klikken: de eisen liggen al vast voordat de agent begint. Bouwen voert het plan daarna uit, op een eigen machine en met een limiet — loopt de agent vast, dan stopt hij vanzelf."
+              lead="Triage bepaalt wat voor werk het is; plannen toetst het aan mijn vastgelegde grenzen en bakent de scope af voordat er iets gebouwd wordt. Bouwen voert dat plan daarna uit op een eigen machine, met een limiet — loopt de agent vast, dan stopt hij vanzelf."
               tech={bouwen.tech}
               fail={bouwen.fail}
             >
@@ -184,6 +207,86 @@ export function WerkJourney() {
               lead="Zes bewakingen moeten groen zijn voordat er iets verdergaat. De tests draaien over de volledige rekenkern van het project, niet alleen over het ene stukje dat net veranderde. Een tweede agent leest het werk na; die review is advies, alleen de tests kunnen tegenhouden."
               tech={checks.tech}
               fail={checks.fail}
+              deep={
+                <>
+                  <div className="dsv-tech-label">Groen is geen bewijs</div>
+                  <p className="dsv-entry-detail" style={{ marginTop: 8 }}>
+                    Drie keer stond alles groen terwijl het systeem feitelijk kapot was &mdash; de
+                    verdediging is telkens hetzelfde principe: meet het gedrag, niet de configuratie.
+                  </p>
+                  <div className="dsv-checks" style={{ marginTop: 12 }}>
+                    {INCIDENTS.map((incident) => (
+                      <div key={incident.tag} className="dsv-check">
+                        <span className="dsv-check-tag">{incident.tag}</span>
+                        <span className="dsv-check-title">{incident.symptom}</span>
+                        <p className="dsv-check-body">{incident.lesson}</p>
+                        <a
+                          className="kh-link dsv-check-link"
+                          href={`${REPO}/blob/main/README.md`}
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          Bekijk in repo &rarr;
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="dsv-tech-label" style={{ marginTop: 20 }}>
+                    Vertrouwensniveaus, geen platte agent
+                  </div>
+                  <div className="dsv-runner" style={{ marginTop: 8 }}>
+                    <p className="dsv-runner-eyebrow">
+                      <span className="dsv-eyebrow-dot" aria-hidden="true" />
+                      untrusted vs. owner
+                    </p>
+                    <div>
+                      <div className="dsv-runner-title">Wat een agent mag, en wat niet</div>
+                      <p className="dsv-runner-body">
+                        Untrusted werk (PR- of issue-inhoud van buiten de flow) draait in een
+                        sandbox-container zonder docker-daemon en zonder host-mounts, nooit met
+                        deploy- of domein-secrets in scope, en nooit via{' '}
+                        <code>pull_request_target</code> naar een self-hosted runner.
+                        Owner-bevoegdheden (host-mutaties, releases, registraties) lopen
+                        uitsluitend via een apart, expliciet gelogd kanaal &mdash; nooit vanuit
+                        een workflow zelf.
+                      </p>
+                    </div>
+                    <a
+                      className="kh-link dsv-check-link"
+                      href={`${REPO}/blob/main/docs/architectuur.md`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Bekijk in repo &rarr;
+                    </a>
+                  </div>
+
+                  <div className="dsv-runner" style={{ marginTop: 12 }}>
+                    <p className="dsv-runner-eyebrow">
+                      <span className="dsv-eyebrow-dot" aria-hidden="true" />
+                      publieke kopie &middot; bewuste redactie
+                    </p>
+                    <div>
+                      <div className="dsv-runner-title">Publieke kopie &ne; publieke voordeur</div>
+                      <p className="dsv-runner-body">
+                        De host-diagnostiekworkflow en concrete hostcijfers (RAM, schijf,
+                        co-hostende diensten) zijn bewust uit deze publieke kopie gehaald:
+                        legitiem gereedschap voor de eigenaar, maar publiek een kant-en-klare
+                        doelwitlijst. Security-denken zit ook in wat je niet laat zien.
+                      </p>
+                    </div>
+                    <a
+                      className="kh-link dsv-check-link"
+                      href={`${REPO}/blob/main/README.md`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Bekijk in repo &rarr;
+                    </a>
+                  </div>
+                </>
+              }
             >
               <div className="dsv-tech-label" style={{ marginTop: 16 }}>
                 Gemeten, niet verzonnen &mdash; nulmeting v&oacute;&oacute;r dit ontwerp
@@ -277,7 +380,7 @@ export function WerkJourney() {
               id="mens"
               eyebrow="05 · Mens beslist"
               title="Precies drie soorten plekken"
-              lead="Waar de eisen uit stap 3 het kader al zetten, is dit waar ik zelf op de knop druk: bij de merge van elke fase, bij de uiteindelijke release, en bij een escalatie zodra een agent er zelf niet uitkomt. Drie soorten plekken, verder nergens — al het andere gaat vanzelf door zodra het groen staat."
+              lead="Ik grijp maar op drie momenten zelf in: bij de merge van elke fase, bij de release, en wanneer een agent escaleert omdat hij er zelf niet uitkomt. Verder nergens — al het andere gaat vanzelf door zodra het groen staat."
             >
               <p className="dsv-entry-tech">
                 <span className="dsv-tech-label">merge</span>
@@ -301,7 +404,7 @@ export function WerkJourney() {
               id="live"
               eyebrow="06 · Live"
               title="Van idee tot lancering"
-              lead="Wat er buiten staat is nooit half: pas als een epic in zijn geheel binnen is, gaat het naar buiten, met mijn goedkeuring op de release-knop. Elk project dat aanhaakt sluit op dezelfde manier aan: eigen doelen, eigen wetgeving in zijn constitution.md, eigen aanvullingen op de tests — en dezelfde drie plekken waar ik het stuur in handen houd. Van los idee tot lancering — de pijplijn doet het werk, ik zet de koers."
+              lead="Wat er buiten staat is nooit half: pas als een epic in zijn geheel binnen is, gaat het naar buiten, met mijn goedkeuring op de release-knop. Elk project dat aanhaakt sluit op dezelfde manier aan: eigen doelen, een eigen grondwet in zijn constitution.md die de harde grenzen vastlegt, eigen aanvullingen op de tests — en dezelfde drie plekken waar ik het stuur in handen houd. Van los idee tot lancering — de pijplijn doet het werk, ik zet de koers."
             />
           </div>
         </div>
