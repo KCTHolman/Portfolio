@@ -94,9 +94,9 @@ sectie is er geen tussenliggende tween: `frac` staat daar meteen op `1`, dus die
 in één keer volledig. Dat laatste mechanisme bestond al vóór dit ontwerp (het is niet nieuw
 toegevoegd voor de raket) en blijft ongewijzigd.
 
-**Drie** plekken in `use-fleet-scene.ts` verwijzen naar **absolute** stadium-indices in
+**Vier** plekken in `use-fleet-scene.ts` verwijzen naar **absolute** stadium-indices in
 plaats van relatief aan `JOURNEY_STAGE_COUNT`, en moeten daarom expliciet meeschuiven — dit
-zijn twee bijna-identieke ternaries op verschillende plekken, niet één:
+zijn drie losse plekken, niet één:
 
 - Regel ~235, `initialJourneyStage`: `variant === 'home-compass' ? 1 : variant ===
   'home-gear' ? 2 : ...`. Wordt precies één keer gebruikt (regel ~994-995), om de
@@ -105,14 +105,22 @@ zijn twee bijna-identieke ternaries op verschillende plekken, niet één:
 - Regel ~1256-1264, de `rawProgress`-toewijzing: dezelfde `'home-compass' ? 1 :
   'home-gear' ? 2 : ...`-keten, maar dan als bron van `clampedProgress` →
   `journeyStage`/`journeyNext`, wat élk frame bepaalt welk stadium daadwerkelijk getekend
-  wordt. **Dit is de belangrijkste van de twee** — zonder deze fix blijft de
+  wordt. **Dit is de belangrijkste van de vier** — zonder deze fix blijft de
   homepage-scène "kompas" permanent `journeyStage 1` (na de opschuiving: de boot) tonen in
   plaats van het kompas, ongeacht de fix aan `initialJourneyStage`.
 - Regel ~1277: `const compassStageIndex = 1` — bepaalt wanneer de kompasnaald los van de
   kast mag schommelen (zie `NEEDLE_SLOTS`).
+- Regel ~1295: `const boatWeight = journeyLike ? (journeyStage === 0 ? 1 - journeyT : 0) :
+  1` — hardcodeert stadium 0 als "dit is de boot". Stuurt twee lopende effecten voor de
+  `journey`-variant: het wapperende zeil (`sailFlutter`, regel ~1296, gebruikt op regel
+  ~1645/~1756) en het uitdoven van het kielwater bij het weglopen van de boot (regel
+  ~1906, `r *= boatWeight`). Na de opschuiving is de boot stadium 1, niet 0 — zonder deze
+  fix wapperen de zeilen (en dooft het kielwater) op het vouwbootje in plaats van op de
+  echte, getuigde boot.
 
-Alle drie moeten van `1`/`2` naar `2`/`3` (kompas en tandwiel schuiven ieder één positie
-op in de nieuwe, zeven-stadia-lange array).
+Alle vier moeten aangepast: de eerste drie van `1`/`2` naar `2`/`3` (kompas en tandwiel
+schuiven ieder één positie op), `boatWeight`'s `journeyStage === 0` wordt
+`journeyStage === 1` (de boot schuift van stadium 0 naar stadium 1).
 
 Alle ándere verwijzingen (`atRocketStage`, `rocketIndex`, `stageIdx`) zijn al relatief
 (`JOURNEY_STAGE_COUNT - 1`) en volgen het laatste stadium automatisch, wat het ook is.
@@ -168,27 +176,30 @@ bestaande `JOURNEY_STAGE_COUNT - 1`-relatieve verwijzing wijst na deze wijziging
 naar het nieuwe laatste stadium (index 6, raket) — daar is geen aparte aanpassing voor
 nodig.
 
-### 3. De drie absolute indices meeschuiven
+### 3. De vier absolute indices meeschuiven
 
 - Regel ~235 (`initialJourneyStage`): `'home-compass' ? 1 : 'home-gear' ? 2` →
   `'home-compass' ? 2 : 'home-gear' ? 3`.
 - Regel ~1256-1264 (de `rawProgress`-toewijzing, zelfde ternary-keten, los van regel ~235):
   ook `'home-compass' ? 1 : 'home-gear' ? 2` → `'home-compass' ? 2 : 'home-gear' ? 3`. Dit
-  is de belangrijkste van de drie — deze stuurt `journeyStage` elk frame, dus zonder deze
+  is de belangrijkste van de vier — deze stuurt `journeyStage` elk frame, dus zonder deze
   fix blijft de homepage-scène "kompas" na de opschuiving de boot tonen, ook als regel
   ~235 wel is aangepast.
 - Regel ~1277: `compassStageIndex = 1` → `compassStageIndex = 2`.
+- Regel ~1295: `boatWeight`'s `journeyStage === 0` → `journeyStage === 1` (stuurt het
+  wapperende zeil en het uitdoven van het kielwater — die moeten bij de echte boot horen,
+  niet bij het nieuwe vouwbootje-stadium).
 
-Zonder alle drie deze fixes toont de homepage-scène "kompas" straks de boot, en schommelt
-de kompasnaald-logica op het verkeerde stadium.
+Zonder alle vier deze fixes toont de homepage-scène "kompas" straks de boot, schommelt de
+kompasnaald-logica op het verkeerde stadium, en wapperen zeil/kielwater op het vouwbootje
+in plaats van op de boot.
 
 ## Wat verandert per bestand
 
 - `lib/fleet-geometry.ts` — nieuwe `PAPERBOAT_STAGE` en `ANCHOR_STAGE`, `KEY_STAGE`/
   `KEY_BOW` verwijderd, `JOURNEY_STAGES` herordend naar zeven stadia.
-- `lib/use-fleet-scene.ts` — drie hardgecodeerde stadium-indices (regel ~235, ~1256-1264,
-  ~1277)
-  aangepast aan de nieuwe posities van kompas/tandwiel.
+- `lib/use-fleet-scene.ts` — vier hardgecodeerde stadium-indices (regel ~235, ~1256-1264,
+  ~1277, ~1295) aangepast aan de nieuwe posities van kompas/tandwiel/boot.
 
 ## Buiten scope
 
