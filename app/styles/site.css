@@ -328,6 +328,13 @@ a.khnav[aria-current="page"]::after {
 
 .kh-koen-hero .kh-scroll-cue {
   margin-top: auto;
+  /* margin-top:auto duwt de pijl alleen naar de onderkant van de
+     min-height-doos hierboven — als de intro-tekst op een bepaalde
+     venstergrootte tóch hoger uitvalt dan die reservering, groeit de doos
+     mee en zou de pijl onder de sticky footer schuiven. sticky+bottom
+     klemt 'm hard op de rand van de gereserveerde 90px, hoe dan ook. */
+  position: sticky;
+  bottom: 90px;
 }
 
 .kh-koen-panels {
@@ -366,6 +373,11 @@ a.khnav[aria-current="page"]::after {
 
 .kh-werk-hero .kh-scroll-cue {
   margin-top: auto;
+  /* Zelfde vangnet als .kh-koen-hero .kh-scroll-cue hierboven: als de
+     intro-tekst de min-height-reservering opeet, klemt dit de pijl hard
+     op de rand in plaats van 'm onder de footer te laten schuiven. */
+  position: sticky;
+  bottom: 90px;
 }
 
 /* Scroll-hint onder de intro-alinea: gewoon in de leesstroom, geen
@@ -381,9 +393,18 @@ a.khnav[aria-current="page"]::after {
      zelf zou door die animation genegeerd worden. */
   --boost: 1;
   transition: transform 0.35s ease;
+  /* Verschijnt pas na 4s: de intro-alinea krijgt eerst de aandacht, het
+     pijltje meldt zich als leeshint zodra je er (waarschijnlijk) doorheen
+     bent, niet meteen bij het laden. */
+  opacity: 0;
+  animation: khScrollAppear 0.8s ease-out 4s forwards;
 }
 
 .kh-scroll-cue:hover { transform: scale(1.08); --boost: 1.5; }
+
+@keyframes khScrollAppear {
+  to { opacity: 1; }
+}
 
 /* Ademen, geen bounce: traag, met een lichte adem-in op de schaal in
    plaats van een strak op-en-neer tikje. Stopt zodra de driehoekjes
