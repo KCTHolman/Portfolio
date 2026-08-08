@@ -28,8 +28,13 @@
    gewoon door, dus een onterechte aanname corrigeert zichzelf net zo snel
    als bij een eerste bezoek.
 
-   Geen hardgecodeerde uitzondering per renderengine: elke browser doorloopt
-   precies dezelfde meting, en het gemeten niveau is het enige dat telt.
+   Eén hardgecodeerde uitzondering: Firefox en Safari komen nooit boven de
+   vloer uit, ook niet na een overtuigend goed venster. Beide renderengines
+   zijn merkbaar strenger in wat ze op deze WebGL2-laag soepel houden dan
+   Chromium — de meting zelf zou ze best na een tijdje omhoog laten
+   klimmen, maar dat niveau bleek daar in de praktijk niet houdbaar. Elke
+   andere browser doorloopt gewoon de volle meting hierboven, zonder
+   bovengrens.
    ========================================================================== */
 
 export type QualityTier = 0 | 1
@@ -62,6 +67,29 @@ function writeStoredTier(tier: QualityTier): void {
   }
 }
 
+/* Firefox en Safari: nooit voorbij de vloor, zie de toelichting bovenaan dit
+   bestand. Sniffen op userAgent is verder nergens in deze scène nodig
+   (fleet-gl.ts's Safari-vermelding is alleen proza over de WebGL2-context
+   die ontbreekt) — dit is de ene, bewuste uitzondering.
+
+   De safari-check moet Chrome/Edge/Firefox op iOS uitsluiten: die bevatten
+   allemaal "Safari" in hun userAgent (Apple's WebView-regel op iOS), maar
+   zijn niet de Safari-renderengine waar dit om gaat. */
+function detectTierCap(): QualityTier {
+  if (typeof navigator === 'undefined') return MAX_TIER
+  const ua = navigator.userAgent
+  const isFirefox = /firefox/i.test(ua)
+  const isSafari = /^(?!.*(chrome|chromium|crios|fxios|edg|android)).*safari/i.test(ua)
+  return isFirefox || isSafari ? 0 : MAX_TIER
+}
+
+let tierCap: QualityTier | null = null
+
+function ensureTierCap(): QualityTier {
+  if (tierCap === null) tierCap = detectTierCap()
+  return tierCap
+}
+
 /* ---------- de gedeelde teller zelf --------------------------------------
    Eén module-brede waarde: de vloot-canvas en de aurora-achtergrond lezen en
    schrijven 'm allebei, zodat een terugval op de een de ander niet blind op
@@ -83,12 +111,15 @@ let cooldownUntil = 0
 
 function ensureTier(): QualityTier {
   // Optimistisch: start op vol tenzij dit apparaat eerder al `0` opsloeg.
-  if (tier === null) tier = readStoredTier() ?? MAX_TIER
+  // Math.min met de cap vangt ook een Firefox/Safari-bezoeker die vóór deze
+  // uitzondering al een `1` had opgeslagen — die zakt hier meteen terug.
+  if (tier === null) tier = Math.min(ensureTierCap(), readStoredTier() ?? MAX_TIER) as QualityTier
   return tier
 }
 
-/** Huidig gedeeld niveau — hetzelfde voor elke consument, geen enkele
- *  browser-specifieke uitzondering of bovengrens. */
+/** Huidig gedeeld niveau — hetzelfde voor elke consument, met precies één
+ *  uitzondering: Firefox en Safari komen hier nooit boven de vloer uit, zie
+ *  de toelichting bovenaan dit bestand. */
 export function getTier(): QualityTier {
   return ensureTier()
 }
@@ -122,10 +153,12 @@ export function reportBad(now: number): void {
 
 /** Alleen als er nog ruimte is én de afkoeltijd van een eerdere terugval
  *  voorbij is; de aanroeper telt zelf het venster van aaneengesloten goede
- *  samples (zie createFrameWatchdog()). */
+ *  samples (zie createFrameWatchdog()). `ensureTierCap()` in plaats van
+ *  `MAX_TIER`: op Firefox/Safari staat de cap al op 0, dus die stap komt
+ *  hier nooit voorbij hun vloer, hoe lang het goede venster ook duurt. */
 export function reportGood(now: number): void {
   const t = ensureTier()
-  if (t >= MAX_TIER || now < cooldownUntil) return
+  if (t >= ensureTierCap() || now < cooldownUntil) return
   setTier((t + 1) as QualityTier)
 }
 

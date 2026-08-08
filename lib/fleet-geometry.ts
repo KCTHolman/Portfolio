@@ -108,11 +108,37 @@ function spar(a: Point, b: Point, thick: number): Point[] {
   ]
 }
 
+/** Twee sparren aan elkaar, a-v en v-b, als één dikke haak. Voor een vinkje
+ *  dat via zijn slot het vulbudget van een heel zeil krijgt — een dunne
+ *  polylijn (de vorige versie) heeft daar geen oppervlak voor en oogt dan
+ *  als een wazige vlek in plaats van een scherp vinkje. */
+function chevron(a: Point, v: Point, b: Point, thick: number): Point[] {
+  function normal(p: Point, q: Point): [number, number] {
+    const dx = q[0] - p[0]
+    const dy = q[1] - p[1]
+    const len = Math.hypot(dx, dy) || 1
+    return [(-dy / len) * thick, (dx / len) * thick]
+  }
+  const [n1x, n1y] = normal(a, v)
+  const [n2x, n2y] = normal(v, b)
+  return [
+    [a[0] + n1x, a[1] + n1y],
+    [v[0] + n1x, v[1] + n1y],
+    [v[0] + n2x, v[1] + n2y],
+    [b[0] + n2x, b[1] + n2y],
+    [b[0] - n2x, b[1] - n2y],
+    [v[0] - n2x, v[1] - n2y],
+    [v[0] - n1x, v[1] - n1y],
+    [a[0] - n1x, a[1] - n1y],
+  ]
+}
+
 const P = {
   mastTop: [0.392, 0.044],
   mastFoot: [0.424, 0.742],
-  // grootzeil
-  head: [0.396, 0.070],
+  // grootzeil — het voorlijk begint op de mastop zelf, anders lijkt de mast
+  // los van het zeil te steken in plaats van 'm te dragen.
+  head: [0.392, 0.044],
   tack: [0.420, 0.678],
   clew: [0.038, 0.734],
   // binnenfok
@@ -341,10 +367,17 @@ export type Particle = {
    *  per vorm-stadium, zodat draw() er per frame tussen kan lerpen. */
   jx?: number[]
   jy?: number[]
-  /** Alleen journey-deeltjes: welke slot (0-7) dit deeltje hoort — zo kan
-   *  draw() bijvoorbeeld alleen de kompasnaald (slot 1/2) om de as laten
-   *  schommelen zonder de kast en de tikken mee te draaien. */
+  /** Welke slot (0-7) dit deeltje hoort — zo kan draw() bijvoorbeeld alleen
+   *  de kompasnaald of de zeilen (slot 1/2/3) los van de romp iets laten
+   *  doen, zonder de rest van de vorm mee te trekken. Journey-deeltjes
+   *  krijgen 'm via buildJourneyIdentities(), gewone boot-deeltjes via
+   *  buildBoat(). */
   slot?: number
+  /** Hoort dit deeltje bij het kielwater onder de romp? Geen eigen vorm-rol
+   *  (het bestaat niet als apart slot, alleen als losse veeg — zie
+   *  buildBoat()), maar draw() moet 'm wel herkennen om 'm te laten
+   *  opspatten in plaats van stil te liggen. */
+  wake?: boolean
   /** Alleen journey-deeltjes: eigen stijgsnelheid voor de lancering aan het
    *  eind, in pixels per seconde — pas van kracht zodra het laatste stadium
    *  (de raket) volledig gevormd is. */
@@ -560,7 +593,7 @@ export function buildBoat(boat: BoatSpec, index: number, quality: number): Parti
   const d = boat.depth
   const detail = boatDetail(boat, quality)
 
-  for (const shape of SHAPES) {
+  SHAPES.forEach((shape, slot) => {
     const pts: Point[] = []
     const edge = Math.max(6, Math.round(shape.edge * detail))
     edgePoints(shape.pts, edge, rnd, pts)
@@ -574,9 +607,14 @@ export function buildBoat(boat: BoatSpec, index: number, quality: number): Parti
       // Eén op de twintig driehoekjes pakt een amberen vonk, waar het deel ook
       // uit put. Zonder die uitschieters wordt het veld te netjes.
       const col = rnd() < 0.05 ? 4 : pick(rnd, shape.bias)
-      parts.push(particle(pt[0], pt[1], col, d, rnd))
+      const p = particle(pt[0], pt[1], col, d, rnd)
+      // Zelfde slot-nummering als buildJourneyIdentities(): zo kan draw() de
+      // zeilen (1/2/3) laten wapperen zonder de journey-specifieke opbouw
+      // hier over te moeten nemen.
+      p.slot = slot
+      parts.push(p)
     }
-  }
+  })
 
   // Kielwater: een korte veeg onder de romp die de boot op het water zet zonder
   // dat er een horizon getekend hoeft te worden.
@@ -585,9 +623,15 @@ export function buildBoat(boat: BoatSpec, index: number, quality: number): Parti
     const t = rnd()
     const x = 0.03 + t * 0.93
     const spread = Math.sin(t * Math.PI)
-    parts.push(
-      particle(x, 0.905 + rnd() * 0.055 * (1.4 - spread), rnd() < 0.3 ? 5 : pick(rnd, [2, 3]), d * 0.55 * spread, rnd),
+    const p = particle(
+      x,
+      0.905 + rnd() * 0.055 * (1.4 - spread),
+      rnd() < 0.3 ? 5 : pick(rnd, [2, 3]),
+      d * 0.55 * spread,
+      rnd,
     )
+    p.wake = true
+    parts.push(p)
   }
 
   return parts
@@ -740,14 +784,7 @@ const SHIELD_INNER = poly(
   [0.5, 0.76],
   curve([0.5, 0.76], [0.32, 0.22], -0.3, 10),
 )
-const SHIELD_CHECK: Point[] = [
-  [0.35, 0.52],
-  [0.4, 0.47],
-  [0.47, 0.58],
-  [0.64, 0.33],
-  [0.69, 0.38],
-  [0.48, 0.68],
-]
+const SHIELD_CHECK = chevron([0.34, 0.5], [0.46, 0.66], [0.7, 0.3], 0.035)
 const SHIELD_STAGE: JourneyStage = [
   SHIELD_OUTLINE, // hull-rol
   SHIELD_INNER, // mainsail-rol
@@ -831,6 +868,36 @@ export function buildRocketPuff(boat: BoatSpec, index: number, quality: number):
       parts.push(p)
     }
   })
+
+  return parts
+}
+
+/** Zelfde kielwater-veeg als buildBoat(), maar los: de journey-boot bestaat
+ *  niet uit SHAPES met een wake-staart erachteraan (buildJourneyIdentities()
+ *  levert alleen de acht morph-slots), dus zonder dit wolkje vaart de
+ *  journey-boot in het niets. Eigen zaad, zodat dit nooit toevallig
+ *  hetzelfde patroon trekt als buildBoat()'s eigen kielwater. */
+export function buildBoatSplash(boat: BoatSpec, index: number, quality: number): Particle[] {
+  const rnd = rng(0x2f61 + index * 977)
+  const parts: Particle[] = []
+  const d = boat.depth
+  const detail = boatDetail(boat, quality)
+
+  const wake = Math.round(90 * detail)
+  for (let w = 0; w < wake; w++) {
+    const t = rnd()
+    const x = 0.03 + t * 0.93
+    const spread = Math.sin(t * Math.PI)
+    const p = particle(
+      x,
+      0.905 + rnd() * 0.055 * (1.4 - spread),
+      rnd() < 0.3 ? 5 : pick(rnd, [2, 3]),
+      d * 0.55 * spread,
+      rnd,
+    )
+    p.wake = true
+    parts.push(p)
+  }
 
   return parts
 }
@@ -970,6 +1037,11 @@ export function buildJourneyIdentities(detail: number, seed = 0): Particle[] {
  *  naaldhelften bij het kompas) — de enige slots die draw() onafhankelijk
  *  van de rest om de as mag laten schommelen. */
 export const NEEDLE_SLOTS = [1, 2]
+
+/** De drie zeil-slots (grootzeil, fok, kluiver) — alleen op de boot zelf
+ *  zinvol om te laten wapperen; op elke andere vorm zijn dit gewoon de
+ *  tikken/spaken/vinnen van dat stadium. */
+export const SAIL_SLOTS = [1, 2, 3]
 
 /** Posities voor één journey-stadium, in dezelfde slot-en-volgorde als
  *  buildJourneyIdentities. Eigen RNG-instantie per (stadium, slot) — geen

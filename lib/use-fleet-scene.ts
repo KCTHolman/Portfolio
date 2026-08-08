@@ -27,6 +27,7 @@ import {
   LEAD_W,
   NEEDLE_SLOTS,
   RATIO,
+  SAIL_SLOTS,
   SETTLE,
   SHOWCASE_BOATS,
   SHOWCASE_COMPASS_STAGE,
@@ -39,6 +40,7 @@ import {
   boatDetail,
   buildAmbientDust,
   buildBoat,
+  buildBoatSplash,
   buildJourneyIdentities,
   buildJourneyStage,
   buildRocketPuff,
@@ -384,6 +386,19 @@ export function useFleetScene({
        scène duurt blijft herhalen. */
     const ROCKET_BOB_FREQ = 0.5
     const ROCKET_BOB_AMP_FRAC = 0.05
+    /* Wapperend zeil: een trage golf die langs grootzeil/fok/kluiver reist
+       (zie SAIL_SLOTS), geen starre draai zoals de kompasnaald. FLUTTER_WAVE
+       zet de golflengte t.o.v. de boothoogte — bewust minder dan een halve
+       cyclus over de volle hoogte, anders golft het doek en niet het zeil. */
+    const FLUTTER_FREQ = 1.1
+    const FLUTTER_WAVE = 5.5
+    const FLUTTER_AMP = 0.012
+    /* Opspattend kielwater: elke wake-korrel (zie p.wake) doorloopt een eigen
+       cyclus van oplichten en een klein kiepje omhoog, op dezelfde jf/jp die
+       'm al voor de gewone jitter had — geen nieuwe velden nodig. De macht 3
+       op de kiep maakt er een kort tikje van in plaats van een trage deining. */
+    const SPLASH_FREQ = 1.6
+    const SPLASH_KICK_PX = 3.2
     /* Homepage, variant "home-rocket": een viertakt die de raket echt laat
        vertrekken in plaats van op-en-neer te laten stuiteren. De lancering
        zelf bouwt op, zoals een echte start: eerst ontsteking — een
@@ -399,7 +414,29 @@ export function useFleetScene({
     type HomeRocketPhase = 'formed' | 'launch' | 'gone' | 'reform'
     let homeRocketPhase: HomeRocketPhase = 'formed'
     let homeRocketPhaseStart = t0
+    /* Journey: of de scroll de vorige frame al aan het eind stond — zie
+       atRocketStage in draw(). Bij elke overgang (aankomst óf vertrek) moet
+       de viertakt-klok vers beginnen op 'formed'; zonder deze vlag zou
+       terugscrollen tijdens 'gone' de raket blijvend onzichtbaar laten, en
+       een latere nieuwe aankomst zou hervatten waar een vorige cyclus ooit
+       bleef steken in plaats van netjes bij het begin. */
+    let wasAtRocketStage = false
+    /* Journey: is de raket al eens gelanceerd sinds de laatste aankomst?
+       Home-rocket negeert dit (die cyclus draait voor altijd door, zie de
+       faseovergang in draw()) — journey lanceert bij aankomst precies
+       eenmaal en blijft daarna gevormd staan, in plaats van iedere
+       HOME_ROCKET_HOLD_SEC opnieuw te vertrekken terwijl er nog gelezen
+       wordt. Terugscrollen en opnieuw aankomen (zie hierboven) zet 'm weer
+       op false, dus een nieuwe aankomst lanceert weer vers. */
+    let rocketLaunchedOnce = false
     const HOME_ROCKET_HOLD_SEC = 5
+    /* Journey: een korte adempauze, geen dode wachttijd. Bij home-rocket is
+       de hold de rust vóór een volgende cyclus van een doorlopende
+       homepage-scène — daar mag het lang stilstaan. Bij journey is aankomst
+       bij de raket zelf al de climax van de scroll, dus moet de ontsteking
+       er kort op volgen — maar 0 bleek te abrupt: dan is er geen moment om
+       de aankomst zelf even te registreren voor de vlam meteen losbarst. */
+    const JOURNEY_ROCKET_HOLD_SEC = 0.8
     const HOME_ROCKET_LAUNCH_SEC = 4
     /* Letterlijk de instructie: het scherm blijft precies 3 tellen leeg
        voordat de driehoekjes weer verschijnen. */
@@ -645,6 +682,18 @@ export function useFleetScene({
         for (const p of buildJourneyIdentities(quality)) {
           p.boat = 0
           parts.push(p)
+        }
+
+        // Alleen journey vaart ooit als boot (home-compass/-gear/-rocket
+        // staan altijd op hun eigen stadium, nooit op de boot) — de rest
+        // van het wolkje blijft hier dus ongebruikt maar onschadelijk: zie
+        // boatWeight in draw(), die de straal op 0 houdt zolang dit geen
+        // boot is.
+        if (variant === 'journey') {
+          for (const p of buildBoatSplash(anchor, 0, quality)) {
+            p.boat = 0
+            parts.push(p)
+          }
         }
       } else if (variant === 'showcase') {
         // Een hele vloot die tegelijk van gedaante wisselt: elke boot krijgt
@@ -929,7 +978,15 @@ export function useFleetScene({
       }
 
       parts.forEach((p, i) => {
-        if (journeyStages && p.boat === 0) {
+        // p.slot !== undefined: alleen de acht morph-slots van
+        // buildJourneyIdentities() horen een jx/jy-array te krijgen. Boot 0
+        // draagt bij journey ook het losse kielwater-wolkje van
+        // buildBoatSplash() (zie build() hierboven) — dat heeft geen slot en
+        // geen eigen stadium, en moet net als een gewone boot-deeltje via
+        // p.ux/p.uy hieronder aan bx/by komen. Zonder deze guard grijpt
+        // journeyStages[stadium][i] mis zodra i voorbij de 2356 identity-
+        // deeltjes komt: er bestaat op die index geen stadium-punt.
+        if (journeyStages && p.boat === 0 && p.slot !== undefined) {
           const owner = boats[0]
           p.jx = journeyStages.map((pts) => (pts[i][0] - 0.5) * owner.pw)
           p.jy = journeyStages.map((pts) => (pts[i][1] - 0.48) * owner.ph)
@@ -1230,6 +1287,29 @@ export function useFleetScene({
       const needleCos = Math.cos(needleWobble)
       const needleSin = Math.sin(needleWobble)
 
+      /* Hoe "boot" het huidige beeld is — 1 op de boot zelf, aflopend naar 0
+         zodra de morph naar het kompas vertrekt. Hero/ambient tonen nooit
+         iets anders dan een boot, dus die krijgen 'm altijd op 1; de
+         homepage-scènes (home-compass/-gear/-rocket) staan altijd op hun
+         eigen stadium en dus altijd op 0. */
+      const boatWeight = journeyLike ? (journeyStage === 0 ? 1 - journeyT : 0) : 1
+      const sailFlutter = frozen ? 0 : boatWeight
+
+      /* Generaliseert de homepage-raket (variant "home-rocket", zie
+         homeRocketPhase hierboven) naar de journey-raket: home-rocket staat
+         met haar hardgecodeerde rawProgress altijd al op het laatste
+         stadium, dus deze voorwaarde is voor die variant altijd waar en
+         verandert daar niets. Voor journey wordt 'm alleen waar zodra de
+         scroll het laatste stadium (de raket) écht heeft bereikt — niet
+         tijdens de overgang ervoor. */
+      const atRocketStage = journeyLike && journeyStage === JOURNEY_STAGE_COUNT - 1
+      if (atRocketStage !== wasAtRocketStage) {
+        homeRocketPhase = 'formed'
+        homeRocketPhaseStart = now
+        rocketLaunchedOnce = false
+        wasAtRocketStage = atRocketStage
+      }
+
       /* Hover op een GitHub-link trekt de vorm naar het raket-stadium toe, en
          weer terug bij het verlaten — een vloeiende overgang, geen knip, op
          dezelfde manier als de formatie-tween hierboven. */
@@ -1251,15 +1331,23 @@ export function useFleetScene({
       }
       const liftoffRise = liftoffStart === null ? 0 : (now - liftoffStart) / 1000
 
-      /* Home-rocket: eigen viertakt-klok, zie de toelichting bij
-         homeRocketPhase hierboven. Schuift zelf door naar de volgende fase
-         zodra de huidige lang genoeg heeft gestaan; frozen (reduced motion)
-         slaat dit hele blok over, dus dan blijft de fase permanent 'formed'. */
-      if (variant === 'home-rocket' && !frozen) {
+      /* Viertakt-klok, zie de toelichting bij homeRocketPhase hierboven.
+         Schuift zelf door naar de volgende fase zodra de huidige lang
+         genoeg heeft gestaan; frozen (reduced motion) slaat dit hele blok
+         over, dus dan blijft de fase permanent 'formed'. Generiek over
+         home-rocket (altijd atRocketStage, draait voor altijd door) en
+         journey (alleen atRocketStage na aankomst, en dankzij
+         rocketLaunchedOnce maar één keer per aankomst — zie hierboven). */
+      if (atRocketStage && !frozen) {
         const phaseElapsed = (now - homeRocketPhaseStart) / 1000
-        if (homeRocketPhase === 'formed' && phaseElapsed >= HOME_ROCKET_HOLD_SEC) {
+        if (
+          homeRocketPhase === 'formed' &&
+          phaseElapsed >= (variant === 'home-rocket' ? HOME_ROCKET_HOLD_SEC : JOURNEY_ROCKET_HOLD_SEC) &&
+          (variant === 'home-rocket' || !rocketLaunchedOnce)
+        ) {
           homeRocketPhase = 'launch'
           homeRocketPhaseStart = now
+          rocketLaunchedOnce = true
           seedHomeRocketLaunch()
         } else if (homeRocketPhase === 'launch' && phaseElapsed >= HOME_ROCKET_LAUNCH_SEC) {
           homeRocketPhase = 'gone'
@@ -1273,13 +1361,13 @@ export function useFleetScene({
           homeRocketPhaseStart = now
         }
       }
-      const homeRocketPhaseElapsed = variant === 'home-rocket' ? (now - homeRocketPhaseStart) / 1000 : 0
+      const homeRocketPhaseElapsed = atRocketStage ? (now - homeRocketPhaseStart) / 1000 : 0
       /* Hoever de traagste korrel (vy 45, zie buildJourneyIdentities() in
          fleet-geometry.ts) minstens omhoog moet om de hele vorm boven de
          canvasrand te krijgen — de onderkant (de vlam) staat het verst van
          de rand af, dus die bepaalt de maat. Elk frame opnieuw uit boats[0]
          gelezen: goedkoop, en blijft zo ook na een resize kloppen. */
-      const homeRocketOwner = variant === 'home-rocket' ? boats[0] : undefined
+      const homeRocketOwner = atRocketStage ? boats[0] : undefined
       const homeRocketClear = homeRocketOwner ? homeRocketOwner.py + homeRocketOwner.ph * 0.6 + 40 : 0
       /* 0..1 door de launch-fase, 1 zodra 'gone' is (blijft daar op
          maximum staan — anders zakt de vorm halverwege de wachttijd
@@ -1550,6 +1638,14 @@ export function useFleetScene({
               by = wy
             }
 
+            // Wapperend zeil: alleen op de journey-boot zelf (variant
+            // 'showcase' heeft haar eigen scènes, geen los zeil-moment), en
+            // alleen de drie zeil-slots — de romp/mast/giek moeten strak
+            // blijven staan, anders wappert de hele boot.
+            if (sailFlutter > 0 && variant !== 'showcase' && p.slot !== undefined && SAIL_SLOTS.includes(p.slot)) {
+              bx += Math.sin(time * FLUTTER_FREQ + (by / (o.ph || 1)) * FLUTTER_WAVE + p.jp) * o.pw * FLUTTER_AMP * sailFlutter
+            }
+
             // Hover trekt naar het raket-stadium toe, geleidelijk: bij
             // githubWeight 0 verandert hier niets, bij 1 staat de volledige
             // raket er, alles ertussen is een rechte lerp naar dat doel.
@@ -1598,7 +1694,7 @@ export function useFleetScene({
             // uitlaat naar haar eigen hoogte in de druppel) en schaalt pas
             // tijdens het losraken ook zijwaarts mee, zodat de burst dan
             // pas echt uitwaaiert.
-            if (variant === 'home-rocket' && p.slot === 3 && homeRocketPhase === 'launch') {
+            if (atRocketStage && p.slot === 3 && homeRocketPhase === 'launch') {
               const local = Math.max(0, Math.min(1, (homeRocketLaunchT - p.lag) / (1 - 0.45)))
               if (local > 0) {
                 if (local < HOME_ROCKET_FLAME_BUILD_FRAC) {
@@ -1653,8 +1749,15 @@ export function useFleetScene({
             }
           } else {
             const o = boats[p.boat]
-            x = o.px + o.dx + p.bx * o.cos - p.by * o.sin
-            y = o.py + o.dy + p.bx * o.sin + p.by * o.cos
+            // Wapperend zeil: zelfde golf als de journey-boot hierboven,
+            // hier op de vaste p.bx/p.by van een gewone hero/ambient-boot in
+            // plaats van een gelerpt journey-stadium.
+            let bx = p.bx
+            if (sailFlutter > 0 && p.slot !== undefined && SAIL_SLOTS.includes(p.slot)) {
+              bx += Math.sin(time * FLUTTER_FREQ + (p.by / (o.ph || 1)) * FLUTTER_WAVE + p.jp) * o.pw * FLUTTER_AMP * sailFlutter
+            }
+            x = o.px + o.dx + bx * o.cos - p.by * o.sin
+            y = o.py + o.dy + bx * o.sin + p.by * o.cos
             distort = o.distort
             if (p.rocket) {
               // Elk deeltje heeft al een eigen p.lag (0..0.45) — hergebruikt
@@ -1685,6 +1788,14 @@ export function useFleetScene({
             x += Math.sin(time * p.jf + p.jp) * ja
             y += Math.cos(time * p.jf * 0.8 + p.jp) * ja * 0.7
           }
+
+          // Opspattend kielwater: hergebruikt de eigen jf/jp van het deeltje
+          // (geen nieuwe velden) op een hogere frequentie, zodat het los
+          // staat van de trage algemene jitter hierboven. De macht 3 maakt
+          // er een kort tikje van — alleen het topje van de sinus geeft een
+          // kiepje, de rest van de cyclus ligt de korrel stil.
+          const wakePop = p.wake && !frozen ? Math.max(0, Math.sin(time * p.jf * SPLASH_FREQ + p.jp)) : 0
+          if (wakePop > 0) y -= wakePop * wakePop * wakePop * SPLASH_KICK_PX
 
           if (forming) {
             // smoothstep, geen ease(): die laatste trekt hard van start (drie
@@ -1765,7 +1876,7 @@ export function useFleetScene({
             // doorloopt elke vlam-korrel haar eigen opflakkeren-en-
             // losraken, gestaffeld via p.lag — zie de toelichting bij
             // HOME_ROCKET_FLAME_BUILD_FRAC hierboven.
-            if (variant === 'home-rocket' && p.slot === 3) {
+            if (atRocketStage && p.slot === 3) {
               if (homeRocketPhase !== 'launch') {
                 r = 0
               } else {
@@ -1784,10 +1895,21 @@ export function useFleetScene({
             // Home-rocket, gone: sowieso onzichtbaar, los van of
             // homeRocketAscend de rand ook echt gehaald heeft — een
             // vangnet voor uitzonderlijke schermafmetingen.
-            if (variant === 'home-rocket' && homeRocketPhase === 'gone') {
+            if (atRocketStage && homeRocketPhase === 'gone') {
               r = 0
             }
+            // Journey's eigen kielwater (buildBoatSplash) hoort alleen bij
+            // de boot zelf — dooft uit zodra de morph naar het kompas
+            // vertrekt, net als de rest van boatWeight hierboven. Hero/
+            // ambient hebben geen journeyStage en blijven dus altijd op 1.
+            if (p.wake && journeyLike) {
+              r *= boatWeight
+            }
           }
+          // Opspattend kielwater: het lichtje pulseert op de kiep hierboven
+          // mee, zodat een korrel oplicht net op het moment dat 'm omhoog
+          // tikt — dat leest als een druppel die het licht vangt.
+          if (wakePop > 0) r *= 0.55 + 0.9 * wakePop
           // Kwaliteitsterugval: dit deeltje is aangewezen om te verdwijnen
           // (zie applyTierDown()) en krimpt over FADE_MS naar niets, in
           // plaats van in één klap weg te vallen — pruneFadedParticles()
@@ -1809,7 +1931,7 @@ export function useFleetScene({
       // hierboven. `elapsed` telt door vanaf de ontsteking, ook nog een
       // stuk in 'gone', zodat de wolk niet abrupt stopt op het moment dat
       // de raket zelf de rand bereikt.
-      if (variant === 'home-rocket' && !frozen) {
+      if (atRocketStage && !frozen) {
         if (homeRocketPhase === 'launch') {
           drawHomeRocketBillow(homeRocketPhaseElapsed)
         } else if (homeRocketPhase === 'gone') {
