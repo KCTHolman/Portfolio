@@ -2016,6 +2016,27 @@ export function useFleetScene({
      *  korrel opnieuw op fadeStart=nu zetten en 'm zichtbaar laten
      *  terugspringen naar volle grootte voor hij opnieuw krimpt. */
     function applyTierDown(newTier: QualityTier): void {
+      /* Journey/showcase kennen geen fade-eruit: layout() wijst elk deeltje
+         via zijn vaste index toe aan een per-stadium positie-array die bij
+         ELKE aanroep vers herrekend wordt uit qualityScale (zie de parity-
+         uitleg bij journeyQuality/showcaseBoatDetail in layout()). Een deel
+         van de deeltjes laten wegdrijven zonder de identiteiten opnieuw te
+         genereren, laat het aantal uit de pas lopen met wat die formule
+         zodra qualityScale hieronder verandert teruggeeft — de eerste
+         layout()-aanroep die daarna langskomt (ook pruneFadedParticles()'
+         eigen aanroep, ver vóórdat de fade zelfs maar is uitgefaded) leest
+         dan een index die niet meer bestaat. Direct herbouwen, net als
+         applyTierUp() hieronder, houdt beide kanten synchroon. */
+      if (journeyLike || variant === 'showcase') {
+        qualityScale = QUALITY_STEPS[newTier]
+        dprCap = newTier === MAX_TIER ? 2 : 1
+        tier = newTier
+        build()
+        setFormation(presetIndexRef.current, true)
+        layout()
+        return
+      }
+
       const fadeShare = 1 - QUALITY_STEPS[newTier] / qualityScale
       qualityScale = QUALITY_STEPS[newTier]
       dprCap = newTier === MAX_TIER ? 2 : 1
