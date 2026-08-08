@@ -96,7 +96,7 @@ toegevoegd voor de raket) en blijft ongewijzigd.
 
 **Vier** plekken in `use-fleet-scene.ts` verwijzen naar **absolute** stadium-indices in
 plaats van relatief aan `JOURNEY_STAGE_COUNT`, en moeten daarom expliciet meeschuiven — dit
-zijn drie losse plekken, niet één:
+zijn vier losse plekken, niet één:
 
 - Regel ~235, `initialJourneyStage`: `variant === 'home-compass' ? 1 : variant ===
   'home-gear' ? 2 : ...`. Wordt precies één keer gebruikt (regel ~994-995), om de
