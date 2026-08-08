@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 /* De inhoud van de technische weergave. Elke naam hieronder is een echt
    bestand of principe uit de publieke repo, niet gladgestreken voor de show. */
 
-const REPO = 'https://github.com/KCTHolman/deSchouwVloot'
+export const REPO = 'https://github.com/KCTHolman/deSchouwVloot'
 
 export type Metric = {
   n: string
@@ -100,3 +100,30 @@ export const ROADMAP: RoadmapEntry[] = [
 ]
 
 export const WORKFLOWS_URL = `${REPO}/tree/main/.github/workflows`
+
+export type Incident = { tag: string; symptom: string; lesson: string }
+
+/** Groen is geen bewijs — drie keer stond alles groen terwijl het systeem kapot was. */
+export const INCIDENTS: Incident[] = [
+  {
+    tag: 'I23',
+    symptom: 'de golden-set slaagt',
+    lesson:
+      'elk geval won met 3-0, dus geen enkel te breed trefwoord kon iets kantelen — de run ' +
+      'slaagde voor altijd. Nu moeten grensgevallen met marge 1 winnen.',
+  },
+  {
+    tag: 'I27',
+    symptom: 'trigger, pad, naam en permissies allemaal correct',
+    lesson:
+      'toch tien uur lang geen enkele run — de complete spine lag plat. Nu wordt gemeten of ' +
+      'de bron liep én de luisteraar reageerde, niet alleen of de configuratie klopte.',
+  },
+  {
+    tag: 'I28',
+    symptom: 'de spine "werkt", niets is rood',
+    lesson:
+      'een station miste een script bij de consument, draaide fail-closed, en mergede per ' +
+      'constructie nooit meer. Nu is dat expliciet getest.',
+  },
+]
