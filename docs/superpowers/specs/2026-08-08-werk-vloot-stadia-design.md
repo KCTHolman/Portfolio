@@ -94,14 +94,25 @@ sectie is er geen tussenliggende tween: `frac` staat daar meteen op `1`, dus die
 in één keer volledig. Dat laatste mechanisme bestond al vóór dit ontwerp (het is niet nieuw
 toegevoegd voor de raket) en blijft ongewijzigd.
 
-Twee plekken in `use-fleet-scene.ts` verwijzen naar **absolute** stadium-indices in plaats
-van relatief aan `JOURNEY_STAGE_COUNT`, en moeten daarom expliciet meeschuiven:
+**Drie** plekken in `use-fleet-scene.ts` verwijzen naar **absolute** stadium-indices in
+plaats van relatief aan `JOURNEY_STAGE_COUNT`, en moeten daarom expliciet meeschuiven — dit
+zijn twee bijna-identieke ternaries op verschillende plekken, niet één:
 
-- Regel ~235: `variant === 'home-compass' ? 1 : variant === 'home-gear' ? 2 : ...` — de
-  homepage-scènes tonen een vast stadium, hardgecodeerd op de huidige positie van kompas
-  (1) en tandwiel (2).
+- Regel ~235, `initialJourneyStage`: `variant === 'home-compass' ? 1 : variant ===
+  'home-gear' ? 2 : ...`. Wordt precies één keer gebruikt (regel ~994-995), om de
+  begin-positie van de entry-scatter-animatie te zetten vóórdat de vorm voor het eerst
+  "aankomt" — heeft geen invloed op wat er in latere frames getekend wordt.
+- Regel ~1256-1264, de `rawProgress`-toewijzing: dezelfde `'home-compass' ? 1 :
+  'home-gear' ? 2 : ...`-keten, maar dan als bron van `clampedProgress` →
+  `journeyStage`/`journeyNext`, wat élk frame bepaalt welk stadium daadwerkelijk getekend
+  wordt. **Dit is de belangrijkste van de twee** — zonder deze fix blijft de
+  homepage-scène "kompas" permanent `journeyStage 1` (na de opschuiving: de boot) tonen in
+  plaats van het kompas, ongeacht de fix aan `initialJourneyStage`.
 - Regel ~1277: `const compassStageIndex = 1` — bepaalt wanneer de kompasnaald los van de
   kast mag schommelen (zie `NEEDLE_SLOTS`).
+
+Alle drie moeten van `1`/`2` naar `2`/`3` (kompas en tandwiel schuiven ieder één positie
+op in de nieuwe, zeven-stadia-lange array).
 
 Alle ándere verwijzingen (`atRocketStage`, `rocketIndex`, `stageIdx`) zijn al relatief
 (`JOURNEY_STAGE_COUNT - 1`) en volgen het laatste stadium automatisch, wat het ook is.
@@ -157,20 +168,26 @@ bestaande `JOURNEY_STAGE_COUNT - 1`-relatieve verwijzing wijst na deze wijziging
 naar het nieuwe laatste stadium (index 6, raket) — daar is geen aparte aanpassing voor
 nodig.
 
-### 3. De twee absolute indices meeschuiven
+### 3. De drie absolute indices meeschuiven
 
-- Regel ~235: `'home-compass' ? 1 : 'home-gear' ? 2` → `'home-compass' ? 2 : 'home-gear' ?
-  3` (kompas en tandwiel staan nu twee/drie posities in plaats van één/twee).
+- Regel ~235 (`initialJourneyStage`): `'home-compass' ? 1 : 'home-gear' ? 2` →
+  `'home-compass' ? 2 : 'home-gear' ? 3`.
+- Regel ~1256-1264 (de `rawProgress`-toewijzing, zelfde ternary-keten, los van regel ~235):
+  ook `'home-compass' ? 1 : 'home-gear' ? 2` → `'home-compass' ? 2 : 'home-gear' ? 3`. Dit
+  is de belangrijkste van de drie — deze stuurt `journeyStage` elk frame, dus zonder deze
+  fix blijft de homepage-scène "kompas" na de opschuiving de boot tonen, ook als regel
+  ~235 wel is aangepast.
 - Regel ~1277: `compassStageIndex = 1` → `compassStageIndex = 2`.
 
-Zonder deze twee fixes toont de homepage-scène "kompas" straks de boot, en schommelt de
-kompasnaald-logica op het verkeerde stadium.
+Zonder alle drie deze fixes toont de homepage-scène "kompas" straks de boot, en schommelt
+de kompasnaald-logica op het verkeerde stadium.
 
 ## Wat verandert per bestand
 
 - `lib/fleet-geometry.ts` — nieuwe `PAPERBOAT_STAGE` en `ANCHOR_STAGE`, `KEY_STAGE`/
   `KEY_BOW` verwijderd, `JOURNEY_STAGES` herordend naar zeven stadia.
-- `lib/use-fleet-scene.ts` — twee hardgecodeerde stadium-indices (regel ~235, ~1277)
+- `lib/use-fleet-scene.ts` — drie hardgecodeerde stadium-indices (regel ~235, ~1256-1264,
+  ~1277)
   aangepast aan de nieuwe posities van kompas/tandwiel.
 
 ## Buiten scope
